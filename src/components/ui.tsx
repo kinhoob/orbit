@@ -20,6 +20,8 @@ export const styles = StyleSheet.create({
   input:{borderWidth:1,borderColor:t.colors.border,borderRadius:12,padding:16,fontSize:16,color:t.colors.text,backgroundColor:t.colors.surface},
   button:{backgroundColor:t.colors.primary,padding:17,borderRadius:12,alignItems:'center'},
   buttonText:{color:'#FFFFFF',fontSize:16,fontWeight:'600'},
-  link:{color:t.colors.primary,fontSize:16,paddingVertical:10},
+  link:{color:t.colors.accentStrong,fontSize:16,paddingVertical:10},
+  buttonOutline:{borderWidth:1,borderColor:t.colors.border,borderRadius:12,padding:15,alignItems:'center',backgroundColor:t.colors.surface},
+  buttonOutlineText:{color:t.colors.text,fontSize:16,fontWeight:'600'},
   error:{color:t.colors.error,lineHeight:22},
 });
