@@ -41,6 +41,7 @@ function VisibilityPicker({ value, onChange, disabled }: { value: Visibility; on
             key={option.id}
             accessibilityRole="radio"
             accessibilityState={{ selected: active, disabled }}
+            {...({ 'aria-checked': active } as object)}
             disabled={disabled}
             onPress={() => onChange(option.id)}
             style={[detail.segment, active && detail.segmentActive, disabled && { opacity: 0.5 }]}
