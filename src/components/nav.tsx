@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { MotionPressable } from './motion';
+import { Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../design/tokens';
 
@@ -41,7 +42,7 @@ function NavItem(props: TabBarProps & { item: (typeof NAV_ITEMS)[number]; layout
   const { focused, onPress, onLongPress } = useNavItem(props, props.item.name);
   const side = props.layout === 'side';
   return (
-    <Pressable
+    <MotionPressable
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
       {...{ 'aria-selected': focused }}
@@ -58,7 +59,7 @@ function NavItem(props: TabBarProps & { item: (typeof NAV_ITEMS)[number]; layout
     >
       <Text style={{ color: focused ? tokens.colors.primary : tokens.colors.muted, fontSize: side ? 20 : 24, lineHeight: side ? 24 : 28 }}>{props.item.icon}</Text>
       <Text style={{ color: focused ? tokens.colors.primary : tokens.colors.muted, fontSize: side ? 16 : 11, fontWeight: focused ? '700' : '400' }}>{props.item.title}</Text>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -94,4 +95,4 @@ export function BottomBar(props: TabBarProps) {
 export function ResponsiveTabBar(props: TabBarProps) {
   const { width } = useWindowDimensions();
   return width >= SIDEBAR_BREAKPOINT ? <SideBar {...props} /> : <BottomBar {...props} />;
-  }
+      }
