@@ -1,8 +1,9 @@
 import { requireSupabase } from '../../lib/supabase';
-import { rankByLikes as rank, sortRecent as recent, friendIdsOf as friends, withLike as withLikePure, relativeTime as relTime } from '../../domain/timelines.mjs';
+import { rankByLikes as rank, sortRecent as recent, friendIdsOf as friends, withLike as withLikePure, relativeTime as relTime, newestCreatedAt as newest } from '../../domain/timelines.mjs';
 export { withLikePure as withLike, relTime as relativeTime, friends as friendIdsOf };
 export const rankByLikes = rank;
 export const sortRecent = recent;
+export const newestCreatedAt = newest;
 
 // Timelines do Explorar (pedido do Marco em 18/11/2026, estilo X):
 // - "Descobrir": avaliacoes publicas ordenadas pelas mais curtidas.
@@ -103,6 +104,41 @@ export async function listFriendsTimeline(userId: string): Promise<FeedReview[]>
   return recent(await attachLikes((data || []) as JoinedRow[], userId));
 }
 
+// Balao "Novas publicacoes": a contagem abaixo e o sinal real — so avaliacoes
+// mais novas que a mais recente ja exibida, dentro das mesmas regras de
+// visibilidade e bloqueio (RLS) das timelines. Nada de badge cosmetico.
+
+/** Conta avaliacoes publicas mais novas que `since` (timeline Descobrir). */
+export async function countNewerDiscoverReviews(since: string): Promise<number> {
+  const { count, error } = await requireSupabase()
+    .from('ratings')
+    .select('id', { count: 'exact', head: true })
+    .eq('visibility', 'public')
+    .gt('created_at', since);
+  if (error) throw error;
+  return count || 0;
+}
+
+/** Conta avaliacoes de amigos aceitos mais novas que `since` (timeline Amigos). */
+export async function countNewerFriendReviews(userId: string, since: string): Promise<number> {
+  const sb = requireSupabase();
+  const { data: friendships, error: fe } = await sb
+    .from('friendships')
+    .select('requester_id,addressee_id,status')
+    .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+  if (fe) throw fe;
+  const ids = friends(userId, friendships || []);
+  if (!ids.length) return 0;
+  const { count, error } = await sb
+    .from('ratings')
+    .select('id', { count: 'exact', head: true })
+    .in('user_id', ids)
+    .in('visibility', ['public', 'friends'])
+    .gt('created_at', since);
+  if (error) throw error;
+  return count || 0;
+}
+
 /** Curtir/descurtir uma avaliacao (RLS: apenas visivel e de outra pessoa). */
 export async function setRatingLike(ratingId: string, userId: string, liked: boolean): Promise<void> {
   const sb = requireSupabase();
@@ -113,4 +149,4 @@ export async function setRatingLike(ratingId: string, userId: string, liked: boo
     const { error } = await sb.from('rating_likes').delete().eq('rating_id', ratingId).eq('user_id', userId);
     if (error) throw error;
   }
-}
+      }
