@@ -149,4 +149,4 @@ export async function setRatingLike(ratingId: string, userId: string, liked: boo
     const { error } = await sb.from('rating_likes').delete().eq('rating_id', ratingId).eq('user_id', userId);
     if (error) throw error;
   }
-      }
+}
