@@ -7,7 +7,7 @@ import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/f
 import { Pager } from '../../src/components/pager';
 import { searchMedia, MediaItem } from '../../src/features/catalog/data';
 import { searchPublicCatalog, publicProviderCredit, publicCoverageLabel } from '../../src/features/catalog/public-search';
-import { listDiscoverTimeline, listFriendsTimeline, setRatingLike, withLike, newestCreatedAt, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
+import { listDiscoverTimeline, listFriendsTimeline, setRatingLike, withLike, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { tokens as t } from '../../src/design/tokens';
@@ -49,8 +49,13 @@ export default function Discover() {
   // verificacao leve a cada 60 s conta avaliacoes mais novas que a mais recente
   // exibida. A lista atual NAO muda sozinha; o balao aparece e o toque carrega
   // as novidades e volta ao topo.
-  const discoverSince=newestCreatedAt(discoverQuery.data||[]);
-  const friendsSince=newestCreatedAt(friendsQuery.data||[]);
+  // Marca d'agua monotonica: avanca com o snapshot verificado (nao com a pagina
+  // rankeada) e confirma no toque do balao — nunca regride nem prende em loop.
+  const [watermarks,setWatermarks]=useState<{descobrir:string|null;amigos:string|null}>({descobrir:null,amigos:null});
+  useEffect(()=>{setWatermarks((w)=>({...w,descobrir:advanceWatermark(w.descobrir,discoverQuery.data?.newest??null)}));},[discoverQuery.data?.newest]);
+  useEffect(()=>{setWatermarks((w)=>({...w,amigos:advanceWatermark(w.amigos,friendsQuery.data?.newest??null)}));},[friendsQuery.data?.newest]);
+  const discoverSince=watermarks.descobrir;
+  const friendsSince=watermarks.amigos;
   const newerDiscover=useQuery({
     queryKey:['timeline-newer','descobrir',session?.user.id,discoverSince],
     queryFn:()=>countNewerDiscoverReviews(discoverSince as string),
@@ -82,10 +87,11 @@ export default function Discover() {
     });
   };
   const applyOverrides=(list?:FeedReview[])=>(list||[]).map((r)=>likedOverride[r.rating_id]||r);
+  const pageReviews=(q:typeof discoverQuery)=>q.data?.reviews;
   const renderTimeline=(q:typeof discoverQuery,emptyText:string)=>{
     if(q.isPending)return <Text style={styles.body}>Carregando avaliações…</Text>;
     if(q.isError)return <Text style={styles.error}>Não foi possível carregar a timeline.</Text>;
-    const reviews=applyOverrides(q.data);
+    const reviews=applyOverrides(pageReviews(q));
     return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
