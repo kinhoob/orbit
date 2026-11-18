@@ -18,6 +18,7 @@ Para somente instalar e verificar: `.\iniciar-orbit.ps1 -SomenteVerificar`. Depo
 
 - Navegação: Início, Descobrir, Criar, Salvos e Perfil.
 - Mural da Início com curadoria local de obras reais (metadados reais; todas as capas ilustradas localmente, sem imagem protegida); ver docs/visual-review.md.
+- Descobrir sem Supabase: busca pública ao vivo de séries/animes (TVmaze, CC BY-SA) e livros (Open Library), com atribuição na tela.
 - Cadastro, login, confirmação por link, recuperação de senha e persistência de sessão.
 - Busca no catálogo com filtro por categoria e estados de carregamento, erro e vazio.
 - Detalhes da obra, avaliação de 0 a 10, opinião e visibilidade pública, amigos ou privada.
