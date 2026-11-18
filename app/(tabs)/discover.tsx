@@ -2,7 +2,7 @@ import React, { useEffect,useState } from 'react';
 import { Text,TextInput } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Screen,styles,Button } from '../../src/components/ui';
-import { Categories,CatalogGrid,ConnectionNotice } from '../../src/components/catalog';
+import { Categories,CatalogGrid } from '../../src/components/catalog';
 import { searchMedia, MediaItem } from '../../src/features/catalog/data';
 import { searchPublicCatalog, PUBLIC_PROVIDER_CREDIT } from '../../src/features/catalog/public-search';
 import { supabase } from '../../src/lib/supabase';
@@ -23,8 +23,7 @@ export default function Discover() {
   });
   return <Screen><Text style={styles.eyebrow}>DESCUBRIR</Text><Text style={styles.title}>Seu próximo favorito está por aí.</Text><TextInput accessibilityLabel="Buscar obras" placeholder="Busque séries, animes, livros…" style={styles.input} value={search} onChangeText={setSearch}/><Categories value={category} onChange={setCategory}/>
     {!supabase?<>
-      <ConnectionNotice/>
-      <Text style={styles.body}>Enquanto isso, busca pública ao vivo de séries, animes e livros via {PUBLIC_PROVIDER_CREDIT}, com metadados reais e capas ilustradas. Filmes, álbuns e jogos aguardam um provedor com termos compatíveis.</Text>
+      <Text style={{...styles.body,color:'#5b6b70',fontSize:13}}>Busca pública ao vivo: séries, animes e livros · Fontes: {PUBLIC_PROVIDER_CREDIT} · Capas ilustradas, sem arte oficial</Text>
       {publicQuery.isPending?<Text style={styles.body}>Buscando em fontes públicas…</Text>:publicQuery.isError?<Text style={styles.body}>Busca pública indisponível agora.</Text>:publicQuery.data?.length?<CatalogGrid items={publicQuery.data}/>:term.trim().length>=2?<Text style={styles.body}>Nenhum resultado público para essa busca.</Text>:null}
     </>:query.isPending?<Text style={styles.body}>Buscando descobertas…</Text>:query.isError?<><Text style={styles.error}>Não foi possível carregar o catálogo.</Text><Button label="Tentar novamente" onPress={()=>{void query.refetch();}}/></>:query.data?.length?<CatalogGrid items={query.data}/>:<Text style={styles.body}>Nenhuma obra encontrada. O catálogo ainda pode estar vazio ou não há resultados para sua busca.</Text>}
   </Screen>;
