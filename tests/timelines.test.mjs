@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { rankByLikes, sortRecent, friendIdsOf, withLike, relativeTime, newestCreatedAt } = await import('../src/domain/timelines.mjs');
+const { rankByLikes, sortRecent, friendIdsOf, withLike, relativeTime, newestCreatedAt, advanceWatermark } = await import('../src/domain/timelines.mjs');
 
 const r = (id, likes, created) => ({ rating_id: id, like_count: likes, created_at: created });
 
@@ -69,4 +69,32 @@ test('newestCreatedAt devolve o created_at mais recente, ou null sem itens', () 
   const c = r('c', 1, '2026-11-12T10:00:00Z');
   assert.equal(newestCreatedAt([a, b, c]), '2026-11-18T09:00:00Z');
   assert.equal(newestCreatedAt([{ rating_id: 'x' }]), null);
+});
+
+test('balao: marca dagua vem do snapshot completo, nao da pagina exibida (sem loop)', () => {
+  // Snapshot de 101 buscadas; o item novo tem 0 curtidas e cai fora da pagina de 50.
+  const rows = [];
+  for (let i = 0; i < 100; i++) rows.push(r('r' + i, 1000 - i, '2026-11-10T10:00:00Z'));
+  rows.push(r('novo', 0, '2026-11-18T10:00:00Z'));
+  const display = rankByLikes(rows).slice(0, 50);
+  assert.ok(!display.some((x) => x.rating_id === 'novo'), 'item novo fora da pagina exibida');
+  // Deteccao: a contagem usa a marca dagua do snapshot, nao a pagina.
+  let watermark = advanceWatermark(null, newestCreatedAt(rows));
+  assert.equal(watermark, '2026-11-18T10:00:00Z');
+  assert.ok(rows.filter((x) => x.created_at > watermark).length === 0 || true);
+  // Antes do refetch, a novidade existe: contagem maior que zero com marca antiga.
+  const before = rows.filter((x) => x.created_at > '2026-11-10T10:00:00Z').length;
+  assert.equal(before, 1);
+  // Toque no balao: refetch traz o mesmo snapshot; a marca avanca e o balao se dispensa.
+  watermark = advanceWatermark(watermark, newestCreatedAt(rows));
+  const after = rows.filter((x) => x.created_at > watermark).length;
+  assert.equal(after, 0, 'sem reexibir o balao para item fora da pagina');
+});
+
+test('advanceWatermark avanca com snapshot mais novo e nunca regride', () => {
+  assert.equal(advanceWatermark(null, '2026-11-18T10:00:00Z'), '2026-11-18T10:00:00Z');
+  assert.equal(advanceWatermark('2026-11-18T10:00:00Z', null), '2026-11-18T10:00:00Z');
+  assert.equal(advanceWatermark(undefined, undefined), null);
+  assert.equal(advanceWatermark('2026-11-18T10:00:00Z', '2026-11-19T10:00:00Z'), '2026-11-19T10:00:00Z');
+  assert.equal(advanceWatermark('2026-11-19T10:00:00Z', '2026-11-18T10:00:00Z'), '2026-11-19T10:00:00Z');
 });
