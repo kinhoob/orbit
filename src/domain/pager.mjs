@@ -32,6 +32,9 @@ export function pullOffset(dy) {
   return Math.min(Math.max(0, dy) * 0.5, PULL_MAX);
 }
 
+/** Ao soltar alem do limiar o conteudo recolhe: o indicador de carregamento aparece na linha "Atualizando…" abaixo das abas (pedido do Marco em 18/11/2026). */
+export const PULL_HOLD_OFFSET = 0;
+
 /** O gesto de puxar so comeca com a lista no topo e movimento vertical dominante. */
 export function shouldStartPull(atTop, dy, dx) {
   return Boolean(atTop) && dy > 10 && dy > Math.abs(dx) * 1.2;
