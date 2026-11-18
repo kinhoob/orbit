@@ -53,6 +53,25 @@ export function TimelineList({ reviews, onToggleLike }: { reviews: FeedReview[];
   );
 }
 
+/** Balao flutuante "Novas publicacoes" (referencia: X). So aparece quando ha
+ * avaliacoes novas de verdade; tocar carrega as novidades e volta ao topo. */
+export function NewPostsBubble({ visible, onPress }: { visible: boolean; onPress: () => void }) {
+  if (!visible) return null;
+  return (
+    <View pointerEvents="box-none" style={{ position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
+      <MotionPressable
+        accessibilityRole="button"
+        accessibilityLabel="Ver novas publicações"
+        onPress={onPress}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: tokens.colors.accentStrong, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.18)', elevation: 3 }}
+      >
+        <Icon name="arrow-up" size={14} color="#FFFFFF" />
+        <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 13 }}>Novas publicações</Text>
+      </MotionPressable>
+    </View>
+  );
+}
+
 /** Alternador das duas timelines (Descobrir | Amigos), referencia: abas do X. */
 export function TimelineTabs({ value, onChange }: { value: 'descobrir' | 'amigos'; onChange: (v: 'descobrir' | 'amigos') => void }) {
   const tabs = [
