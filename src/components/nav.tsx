@@ -96,4 +96,4 @@ export function BottomBar(props: TabBarProps) {
 export function ResponsiveTabBar(props: TabBarProps) {
   const { width } = useWindowDimensions();
   return width >= SIDEBAR_BREAKPOINT ? <SideBar {...props} /> : <BottomBar {...props} />;
-  }
+      }
