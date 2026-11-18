@@ -70,6 +70,10 @@ test('TMDB só entra com chave configurada e normaliza filmes', async () => {
   assert.equal(noKey.length, 0, 'sem chave não consulta TMDB');
   assert.equal(called.length, 0);
   process.env.EXPO_PUBLIC_TMDB_API_KEY = 'chave-de-teste';
+  const keyOnly = await searchPublicCatalog('duna', 'film', spy);
+  assert.equal(keyOnly.length, 0, 'só a chave não basta: exige aprovação comercial explícita');
+  assert.equal(called.length, 0);
+  process.env.EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED = 'true';
   const films = await searchPublicCatalog('duna', 'film', spy);
   assert.equal(films.length, 1);
   assert.equal(films[0].category, 'film');
@@ -77,4 +81,5 @@ test('TMDB só entra com chave configurada e normaliza filmes', async () => {
   assert.equal(films[0].releaseYear, 2021);
   assert.ok(called.every((u) => u.startsWith('https://api.themoviedb.org/3/search/movie')));
   delete process.env.EXPO_PUBLIC_TMDB_API_KEY;
+  delete process.env.EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED;
 });
