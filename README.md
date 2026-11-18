@@ -1,0 +1,67 @@
+# ORBIT
+
+Aplicativo social de descobertas culturais em React Native, Expo Router, TypeScript e Supabase. Amizades bidirecionais; sem seguidores.
+
+## Abrir o projeto
+
+Execute `INICIAR.cmd` nesta pasta. Alternativamente, no PowerShell:
+
+```powershell
+.\iniciar-orbit.ps1
+```
+
+O inicializador baixa a versão estável do Expo, lê sua matriz oficial de pacotes, alinha as dependências, instala, executa Expo Doctor, TypeScript e testes, e inicia a versão web. Precisa de internet e Node com npm. Os arquivos existentes do aplicativo são preservados. Se a política local impedir scripts PowerShell, use um terminal autorizado para scripts locais.
+
+Para somente instalar e verificar: `.\iniciar-orbit.ps1 -SomenteVerificar`. Depois de instalado: `npm run web`, `npm run android` ou `npm start`. Para testar regras sem baixar dependências: `node --test tests/*.test.mjs`.
+
+## Implementação atual
+
+- Navegação: Início, Descobrir, Criar, Salvos e Perfil.
+- Cadastro, login, confirmação por link, recuperação de senha e persistência de sessão.
+- Busca no catálogo com filtro por categoria e estados de carregamento, erro e vazio.
+- Detalhes da obra, avaliação de 0 a 10, opinião e visibilidade pública, amigos ou privada.
+- Adicionar/remover salvos e consultar os 100 itens recentes da biblioteca privada.
+- Edição de nome, username e biografia; logout com limpeza do cache.
+- Tokens neutros com alternativas em azul-claro e amarelo suave.
+- Migration com perfis, bloqueios, amizades, catálogo, avaliações, salvos e coleções, incluindo RLS.
+- Sete testes de regras: compatibilidade, notas e credenciais.
+
+As telas consultam o Supabase; não há pessoas, avaliações ou catálogo fictícios. Sem conexão, mostram estados informativos. Mural social, amizades pela interface, coleções pela interface, Daily, XP, loja, conquistas e moderação **ainda não estão implementados**. A estrutura do banco não representa uma interface concluída.
+
+## Supabase
+
+Copie `.env.example` para `.env` se ainda não existir. O inicializador também faz essa cópia sem sobrescrever arquivos existentes. Preencha:
+
+```dotenv
+EXPO_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICAVEL
+EXPO_PUBLIC_AUTH_REDIRECT_URL=http://localhost:8081/auth/callback
+```
+
+No Supabase aplique `supabase/migrations/202611150001_foundation.sql` pelo SQL Editor. Alternativa com CLI: `supabase init`, `supabase link --project-ref SEU_PROJECT_REF` e `supabase db push`.
+
+Ative confirmação de e-mail e senha mínima de 8 caracteres. Em Auth > URL Configuration, inclua o callback web e `orbit://auth/callback`. Em builds mobile use `EXPO_PUBLIC_AUTH_REDIRECT_URL=orbit://auth/callback`. Reinicie o Expo após mudar `.env`. Nenhuma chave service_role ou segredo de provedor pode entrar no app.
+
+O catálogo começa vazio. A importação por provedores externos pertence à próxima etapa; somente o backend pode escrever em `media_items`. Não há projeto remoto configurado automaticamente.
+
+## Validação e limitações
+
+Última verificação local: **7 testes de domínio passaram**. A máquina tem Node e npm. O ambiente do agente não conseguiu resolver `registry.npmjs.org` (`ENOTFOUND`), portanto não foi possível instalar dependências, gerar lockfile, executar TypeScript, abrir Expo ou verificar visualmente as telas. As versões iniciais em `package.json` ainda precisam ser alinhadas pelo inicializador. Testes de domínio não aprovam o build ou as políticas do banco.
+
+Autenticação, migrations e RLS precisam de validação com um projeto Supabase de desenvolvimento. O roteiro está em `docs/architecture.md`. Não publicar antes dessa verificação.
+
+## Estrutura
+
+| Pasta | Responsabilidade |
+| --- | --- |
+| app/(tabs)/ | Cinco áreas principais |
+| app/auth/ | Formulários e callback |
+| app/media/ | Detalhes e avaliação de obras |
+| src/components/ | Componentes reutilizáveis |
+| src/design/ | Tokens de interface |
+| src/features/ | Autenticação e catálogo |
+| src/domain/ | Regras puras |
+| supabase/migrations/ | Schema e políticas versionadas |
+| tests/ | Testes com Node |
+
+Próxima entrega: validar a base instalada e o Supabase, depois implementar mural, amizades e notificações. Daily, compatibilidade protegida e XP seguro seguem o plano em `docs/architecture.md`.
