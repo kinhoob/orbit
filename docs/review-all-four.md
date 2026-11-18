@@ -79,6 +79,8 @@ A URL e a chave acima são fictícias e exclusivas dos testes interceptados. Nã
 
 ## O que não foi aprovado
 
+Uma instalação limpa com `npm ci --ignore-scripts` foi concluída. O `npm audit` reportou 34 vulnerabilidades nas dependências herdadas de `main` (2 moderadas e 32 altas; nenhuma crítica). Os quatro PRs não alteram `package.json` nem `package-lock.json`. Não foi aplicado `npm audit fix`, pois as correções propostas incluem mudanças maiores de versões. Esse passivo deve ser avaliado antes de produção.
+
 Não houve escrita em um Supabase real nem execução das políticas RLS com JWTs A/B/C. A verificação de bloqueios e RLS foi por leitura da migration existente e testes isolados do cliente. Não houve teste em aparelho iOS/Android físico. Faça essas verificações antes de publicar o app.
 
 Sem alteração em `.env`, sem merge em `main` e sem deploy.
