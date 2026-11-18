@@ -4,6 +4,6 @@ export function relationWith(friendships, userId, otherId) {
   );
   if (!match) return { kind: 'none' };
   if (match.status === 'accepted') return { kind: 'friends', friendship: match };
-  if (match.status === 'rejected') return { kind: 'none' };
+  if (match.status === 'rejected') return { kind: 'rejected', friendship: match };
   return match.requester_id === userId ? { kind: 'outgoing', friendship: match } : { kind: 'incoming', friendship: match };
 }
