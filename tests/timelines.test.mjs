@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { rankByLikes, sortRecent, friendIdsOf, withLike, relativeTime } = await import('../src/domain/timelines.mjs');
+const { rankByLikes, sortRecent, friendIdsOf, withLike, relativeTime, newestCreatedAt } = await import('../src/domain/timelines.mjs');
 
 const r = (id, likes, created) => ({ rating_id: id, like_count: likes, created_at: created });
 
@@ -59,4 +59,14 @@ test('migration rating_likes: leitura respeita bloqueio do curtidor e do autor',
   const addPolicy = sql.split('create policy rating_likes_add')[1].split('create policy')[0];
   assert.ok(addPolicy.includes('r.user_id <> auth.uid()'), 'sem auto-curtida');
   assert.ok(addPolicy.includes('not public.is_blocked(auth.uid(), r.user_id)'), 'sem curtir autor bloqueado');
+});
+
+test('newestCreatedAt devolve o created_at mais recente, ou null sem itens', () => {
+  assert.equal(newestCreatedAt([]), null);
+  assert.equal(newestCreatedAt(undefined), null);
+  const a = r('a', 1, '2026-11-10T10:00:00Z');
+  const b = r('b', 1, '2026-11-18T09:00:00Z');
+  const c = r('c', 1, '2026-11-12T10:00:00Z');
+  assert.equal(newestCreatedAt([a, b, c]), '2026-11-18T09:00:00Z');
+  assert.equal(newestCreatedAt([{ rating_id: 'x' }]), null);
 });
