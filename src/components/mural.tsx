@@ -104,4 +104,4 @@ export function CuratedBadge() {
       <Text style={{ color: tokens.colors.muted, fontSize: 13, flexShrink: 1 }}>Obras reais de uma seleção local. Todas as capas são ilustradas, sem arte protegida. Ainda não é o catálogo conectado.</Text>
     </View>
   );
-  }
+}
