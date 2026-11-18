@@ -9,10 +9,19 @@
 //   consulta humana de livros, sem chave; pedem registro do app (fica a cargo
 //   do Marco), cache e nada de uso como backend em massa — busca sob demanda
 //   do usuário com cache do react-query se enquadra.
+// TMDB (filmes): SOMENTE com EXPO_PUBLIC_TMDB_API_KEY configurada. Os termos
+// (https://www.themoviedb.org/api-terms-of-use) exigem conta/chave e
+// atribuição, vedam uso comercial sem acordo escrito com o TMDB e vedam uso
+// em aplicações de IA. O ORBIT é um produto comercial (decisão do Marco em
+// 18/11/2026), então a chave só entra depois de ele obter o acordo comercial
+// com o TMDB: decisão e aceite dele, não executados aqui. Nesta rodada o
+// adaptador cobre só METADADOS de filmes; pôsteres dependem da atribuição
+// com logo exigida pelos termos e ficam para a ativação da chave.
 // Nenhum provedor de imagem é usado: capas continuam ilustradas localmente.
-// Álbuns (MusicBrainz: gratuito só para uso NÃO comercial), filmes e jogos
-// (TMDB/IGDB/Steam sem termos compatíveis sem chave/contrato) ficam de fora
-// até decisão do Marco. Detalhes em docs/visual-review.md.
+// Álbuns (MusicBrainz: API gratuita só para uso NÃO comercial; comercial
+// exige plano MetaBrainz) ficam de fora até decisão do Marco; arte de álbuns
+// não tem fonte com elegibilidade comercial verificada. Detalhes e URLs em
+// docs/visual-review.md.
 
 export type PublicItem = {
   id: string;
@@ -20,11 +29,14 @@ export type PublicItem = {
   creator: string;
   category: string;
   releaseYear: number | null;
-  source: 'TVmaze' | 'Open Library';
+  source: 'TVmaze' | 'Open Library' | 'TMDB';
   sourceUrl: string;
 };
 
-export const PUBLIC_PROVIDER_CREDIT = 'TVmaze (CC BY-SA) e Open Library/Internet Archive';
+const tmdbApiKey = () => (typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_TMDB_API_KEY : undefined) || '';
+
+export const publicProviderCredit = () => (tmdbApiKey() ? 'TMDB, TVmaze (CC BY-SA) e Open Library/Internet Archive' : 'TVmaze (CC BY-SA) e Open Library/Internet Archive');
+export const publicCoverageLabel = () => (tmdbApiKey() ? 'filmes, séries, animes e livros' : 'séries, animes e livros');
 
 type FetchLike = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
@@ -35,9 +47,11 @@ export async function searchPublicCatalog(search: string, category?: string, fet
   if (term.length < 2) return [];
   const wantTv = !category || category === 'series' || category === 'anime';
   const wantBooks = !category || category === 'book';
+  const wantFilms = (!category || category === 'film') && tmdbApiKey().length > 0;
   const jobs: Promise<PublicItem[]>[] = [];
   if (wantTv) jobs.push(searchTvmaze(term, fetchImpl));
   if (wantBooks) jobs.push(searchOpenLibrary(term, fetchImpl));
+  if (wantFilms) jobs.push(searchTmdb(term, tmdbApiKey(), fetchImpl));
   const settled = await Promise.allSettled(jobs);
   return settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : [])).slice(0, 40);
 }
@@ -80,5 +94,22 @@ async function searchOpenLibrary(term: string, fetchImpl: FetchLike): Promise<Pu
     releaseYear: doc.first_publish_year ?? null,
     source: 'Open Library' as const,
     sourceUrl: doc.key ? `https://openlibrary.org${doc.key}` : 'https://openlibrary.org',
+  })).filter((item) => item.title.length > 0);
+}
+
+type TmdbMovie = { id: number; title?: string; release_date?: string | null };
+
+async function searchTmdb(term: string, apiKey: string, fetchImpl: FetchLike): Promise<PublicItem[]> {
+  const res = await fetchImpl(`https://api.themoviedb.org/3/search/movie?api_key=${encodeURIComponent(apiKey)}&language=pt-BR&include_adult=false&query=${encodeURIComponent(term)}`);
+  if (!res.ok) return [];
+  const data = (await res.json()) as { results?: TmdbMovie[] };
+  return (data.results ?? []).slice(0, 20).map((movie) => ({
+    id: `tmdb-${movie.id}`,
+    title: movie.title ?? '',
+    creator: '',
+    category: 'film',
+    releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
+    source: 'TMDB' as const,
+    sourceUrl: `https://www.themoviedb.org/movie/${movie.id}`,
   })).filter((item) => item.title.length > 0);
 }
