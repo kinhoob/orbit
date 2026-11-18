@@ -58,6 +58,6 @@ test('o limiar de atualizacao e positivo e menor que o curso maximo', () => {
   assert.ok(PULL_THRESHOLD > 0 && PULL_THRESHOLD < PULL_MAX);
 });
 
-test('ao soltar alem do limiar o conteudo recolhe: a bolinha de carregar fica na linha "Atualizando…"', () => {
+test('ao soltar alem do limiar o conteudo recolhe: a bolinha de carregar aparece sozinha, centralizada abaixo das abas', () => {
   assert.equal(PULL_HOLD_OFFSET, 0);
 });
