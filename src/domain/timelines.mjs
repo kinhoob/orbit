@@ -35,6 +35,14 @@ export function newestCreatedAt(reviews) {
   return newest;
 }
 
+/** Marca d'agua das novidades: avanca com o snapshot mais recente verificado e
+ * nunca regride (uma pagina reordenada ou menor nao reabre o balao). */
+export function advanceWatermark(current, snapshotNewest) {
+  if (!snapshotNewest) return current || null;
+  if (!current) return snapshotNewest;
+  return snapshotNewest > current ? snapshotNewest : current;
+}
+
 /** Tempo relativo curto em pt-BR para o cartao da timeline. */
 export function relativeTime(iso, now = new Date()) {
   const diff = Math.max(0, now.getTime() - new Date(iso).getTime());
