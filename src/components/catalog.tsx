@@ -13,7 +13,7 @@ export function Categories({value,onChange,compact=false}:{value:string;onChange
 export function MediaCard({item}:{item:MediaItem}) {
   const body=<>
     {item.cover_url ? <Image source={{uri:item.cover_url}} style={{width:'100%',aspectRatio:item.category==='album'?1:0.7}} accessibilityLabel={`Capa de ${item.title}`} /> : <IllustratedCover category={item.category} aspectRatio={item.category==='album'?1:0.7} />}
-    <View style={{padding:14,gap:6}}><Text style={{fontSize:16,fontWeight:'600',color:tokens.colors.text}}>{item.title}</Text><Text style={{color:tokens.colors.muted,fontSize:12}}>{categories.find(c=>c.id===item.category)?.label || 'Outros'}{item.release_year?` · ${item.release_year}`:''}</Text>{item.description?<Text style={{color:tokens.colors.muted,fontSize:12}}>{item.description}</Text>:null}</View>
+    <View style={{padding:14,gap:6}}><Text style={{fontSize:16,fontWeight:'600',color:tokens.colors.text}}>{item.title}</Text><Text style={{color:tokens.colors.muted,fontSize:12}}>{item.creator?`${item.creator} · `:''}{categories.find(c=>c.id===item.category)?.label || 'Outros'}{item.release_year?` · ${item.release_year}`:''}</Text>{item.description?<Text style={{color:tokens.colors.muted,fontSize:12}}>{item.description}</Text>:null}</View>
   </>;
   const cardStyle={width:'100%',backgroundColor:tokens.colors.surface,borderRadius:18,overflow:'hidden'} as const;
   if(item.source_url){
