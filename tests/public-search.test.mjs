@@ -58,28 +58,15 @@ test('falha de um provedor não derruba o outro e busca curta não consulta nada
   assert.equal(await searchPublicCatalog('d', undefined, fetchOk).then((r) => r.length), 0);
 });
 
-test('TMDB só entra com chave configurada e normaliza filmes', async () => {
+test('adaptador TMDB permanece desativado mesmo com chave e flag', async () => {
   const { searchPublicCatalog } = await import('../src/features/catalog/public-search.ts');
-  const tmdbPayload = { results: [
-    { id: 10, title: 'Duna', release_date: '2021-10-01' },
-    { id: 11, title: '', release_date: null },
-  ] };
   const called = [];
-  const spy = async (url) => { called.push(url); return { ok: true, json: async () => tmdbPayload }; };
-  const noKey = await searchPublicCatalog('duna', 'film', spy);
-  assert.equal(noKey.length, 0, 'sem chave não consulta TMDB');
-  assert.equal(called.length, 0);
+  const spy = async (url) => { called.push(url); return { ok: true, json: async () => ({ results: [{ id: 10, title: 'Duna', release_date: '2021-10-01' }] }) }; };
   process.env.EXPO_PUBLIC_TMDB_API_KEY = 'chave-de-teste';
-  const keyOnly = await searchPublicCatalog('duna', 'film', spy);
-  assert.equal(keyOnly.length, 0, 'só a chave não basta: exige aprovação comercial explícita');
-  assert.equal(called.length, 0);
   process.env.EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED = 'true';
   const films = await searchPublicCatalog('duna', 'film', spy);
-  assert.equal(films.length, 1);
-  assert.equal(films[0].category, 'film');
-  assert.equal(films[0].source, 'TMDB');
-  assert.equal(films[0].releaseYear, 2021);
-  assert.ok(called.every((u) => u.startsWith('https://api.themoviedb.org/3/search/movie')));
+  assert.equal(films.length, 0, 'esqueleto inerte: flags não ativam o TMDB');
+  assert.equal(called.length, 0, 'nenhuma chamada ao TMDB sem ativação deliberada em código');
   delete process.env.EXPO_PUBLIC_TMDB_API_KEY;
   delete process.env.EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED;
 });
