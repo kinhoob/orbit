@@ -26,6 +26,15 @@ export function withLike(review, liked) {
   return { ...review, liked_by_me: liked, like_count: Math.max(0, review.like_count + (liked ? 1 : -1)) };
 }
 
+/** Maior created_at da lista exibida: marca d'agua para detectar publicacoes novas de verdade. Null se a lista estiver vazia. */
+export function newestCreatedAt(reviews) {
+  let newest = null;
+  for (const review of reviews || []) {
+    if (review && typeof review.created_at === 'string' && (newest === null || review.created_at > newest)) newest = review.created_at;
+  }
+  return newest;
+}
+
 /** Tempo relativo curto em pt-BR para o cartao da timeline. */
 export function relativeTime(iso, now = new Date()) {
   const diff = Math.max(0, now.getTime() - new Date(iso).getTime());
@@ -38,4 +47,3 @@ export function relativeTime(iso, now = new Date()) {
   if (days < 30) return `${days} d`;
   return new Date(iso).toLocaleDateString('pt-BR');
 }
-
