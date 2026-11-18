@@ -9,14 +9,16 @@
 //   consulta humana de livros, sem chave; pedem registro do app (fica a cargo
 //   do Marco), cache e nada de uso como backend em massa — busca sob demanda
 //   do usuário com cache do react-query se enquadra.
-// TMDB (filmes): SOMENTE com EXPO_PUBLIC_TMDB_API_KEY configurada. Os termos
+// TMDB (filmes): SOMENTE com EXPO_PUBLIC_TMDB_API_KEY configurada E
+// EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED=true. Os termos
 // (https://www.themoviedb.org/api-terms-of-use) exigem conta/chave e
-// atribuição, vedam uso comercial sem acordo escrito com o TMDB e vedam uso
-// em aplicações de IA. O ORBIT é um produto comercial (decisão do Marco em
-// 18/11/2026), então a chave só entra depois de ele obter o acordo comercial
-// com o TMDB: decisão e aceite dele, não executados aqui. Nesta rodada o
+// atribuição com logo, vedam uso comercial sem acordo escrito com o TMDB
+// (seção 2, possíveis taxas) e vedam uso em aplicações de IA. O ORBIT é um
+// produto comercial (decisão do Marco em 18/11/2026), então a chave e a
+// flag de aprovação só entram depois de ele obter o acordo comercial com o
+// TMDB: decisão e aceite dele, não executados aqui. Nesta rodada o
 // adaptador cobre só METADADOS de filmes; pôsteres dependem da atribuição
-// com logo exigida pelos termos e ficam para a ativação da chave.
+// com logo exigida pelos termos e ficam para a ativação.
 // Nenhum provedor de imagem é usado: capas continuam ilustradas localmente.
 // Álbuns (MusicBrainz: API gratuita só para uso NÃO comercial; comercial
 // exige plano MetaBrainz) ficam de fora até decisão do Marco; arte de álbuns
@@ -34,9 +36,10 @@ export type PublicItem = {
 };
 
 const tmdbApiKey = () => (typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_TMDB_API_KEY : undefined) || '';
+const tmdbEnabled = () => tmdbApiKey().length > 0 && (typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED : undefined) === 'true';
 
-export const publicProviderCredit = () => (tmdbApiKey() ? 'TMDB, TVmaze (CC BY-SA) e Open Library/Internet Archive' : 'TVmaze (CC BY-SA) e Open Library/Internet Archive');
-export const publicCoverageLabel = () => (tmdbApiKey() ? 'filmes, séries, animes e livros' : 'séries, animes e livros');
+export const publicProviderCredit = () => (tmdbEnabled() ? 'TMDB, TVmaze (CC BY-SA) e Open Library/Internet Archive' : 'TVmaze (CC BY-SA) e Open Library/Internet Archive');
+export const publicCoverageLabel = () => (tmdbEnabled() ? 'filmes, séries, animes e livros' : 'séries, animes e livros');
 
 type FetchLike = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
@@ -47,7 +50,7 @@ export async function searchPublicCatalog(search: string, category?: string, fet
   if (term.length < 2) return [];
   const wantTv = !category || category === 'series' || category === 'anime';
   const wantBooks = !category || category === 'book';
-  const wantFilms = (!category || category === 'film') && tmdbApiKey().length > 0;
+  const wantFilms = (!category || category === 'film') && tmdbEnabled();
   const jobs: Promise<PublicItem[]>[] = [];
   if (wantTv) jobs.push(searchTvmaze(term, fetchImpl));
   if (wantBooks) jobs.push(searchOpenLibrary(term, fetchImpl));
