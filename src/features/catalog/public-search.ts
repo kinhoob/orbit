@@ -9,16 +9,16 @@
 //   consulta humana de livros, sem chave; pedem registro do app (fica a cargo
 //   do Marco), cache e nada de uso como backend em massa — busca sob demanda
 //   do usuário com cache do react-query se enquadra.
-// TMDB (filmes): SOMENTE com EXPO_PUBLIC_TMDB_API_KEY configurada E
-// EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED=true. Os termos
+// TMDB (filmes): adaptador DESATIVADO (esqueleto). Não é chamado em nenhum
+// caminho, mesmo com chave configurada. Os termos
 // (https://www.themoviedb.org/api-terms-of-use) exigem conta/chave e
 // atribuição com logo, vedam uso comercial sem acordo escrito com o TMDB
-// (seção 2, possíveis taxas) e vedam uso em aplicações de IA. O ORBIT é um
-// produto comercial (decisão do Marco em 18/11/2026), então a chave e a
-// flag de aprovação só entram depois de ele obter o acordo comercial com o
-// TMDB: decisão e aceite dele, não executados aqui. Nesta rodada o
-// adaptador cobre só METADADOS de filmes; pôsteres dependem da atribuição
-// com logo exigida pelos termos e ficam para a ativação.
+// (seção 2, possíveis taxas; contato comercial oficial:
+// sales@themoviedb.org) e vedam uso em aplicações de IA. O ORBIT é um
+// produto comercial (decisão do Marco em 18/11/2026), então a ativação
+// exige TODAS as condições: acordo comercial firmado pelo Marco, chave de
+// API dele, atribuição com logo implementada na tela e uma mudança de código
+// deliberada ligando o adaptador. Até lá, filmes não entram na busca ao vivo.
 // Nenhum provedor de imagem é usado: capas continuam ilustradas localmente.
 // Álbuns (MusicBrainz: API gratuita só para uso NÃO comercial; comercial
 // exige plano MetaBrainz) ficam de fora até decisão do Marco; arte de álbuns
@@ -35,11 +35,11 @@ export type PublicItem = {
   sourceUrl: string;
 };
 
-const tmdbApiKey = () => (typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_TMDB_API_KEY : undefined) || '';
-const tmdbEnabled = () => tmdbApiKey().length > 0 && (typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED : undefined) === 'true';
+// Esqueleto desativado: a ativação é uma mudança de código deliberada
+// (ver cabeçalho), nunca apenas variáveis de ambiente.
 
-export const publicProviderCredit = () => (tmdbEnabled() ? 'TMDB, TVmaze (CC BY-SA) e Open Library/Internet Archive' : 'TVmaze (CC BY-SA) e Open Library/Internet Archive');
-export const publicCoverageLabel = () => (tmdbEnabled() ? 'filmes, séries, animes e livros' : 'séries, animes e livros');
+export const publicProviderCredit = () => 'TVmaze (CC BY-SA) e Open Library/Internet Archive';
+export const publicCoverageLabel = () => 'séries, animes e livros';
 
 type FetchLike = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
@@ -50,11 +50,9 @@ export async function searchPublicCatalog(search: string, category?: string, fet
   if (term.length < 2) return [];
   const wantTv = !category || category === 'series' || category === 'anime';
   const wantBooks = !category || category === 'book';
-  const wantFilms = (!category || category === 'film') && tmdbEnabled();
   const jobs: Promise<PublicItem[]>[] = [];
   if (wantTv) jobs.push(searchTvmaze(term, fetchImpl));
   if (wantBooks) jobs.push(searchOpenLibrary(term, fetchImpl));
-  if (wantFilms) jobs.push(searchTmdb(term, tmdbApiKey(), fetchImpl));
   const settled = await Promise.allSettled(jobs);
   return settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : [])).slice(0, 40);
 }
