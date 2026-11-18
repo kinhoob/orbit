@@ -13,7 +13,6 @@ export const NAV_ITEMS = [
   { name: 'index', title: 'Início', icon: 'home' },
   { name: 'discover', title: 'Descobrir', icon: 'compass' },
   { name: 'create', title: 'Criar', icon: 'plus' },
-  { name: 'saved', title: 'Salvos', icon: 'bookmark' },
   { name: 'profile', title: 'Perfil', icon: 'user' },
 ] as const satisfies ReadonlyArray<{ name: string; title: string; icon: IconName }>;
 
@@ -59,7 +58,7 @@ function NavItem(props: TabBarProps & { item: (typeof NAV_ITEMS)[number]; layout
       ]}
     >
       <Icon name={props.item.icon} size={side ? 22 : 24} color={focused ? tokens.colors.accentStrong : tokens.colors.muted} strokeWidth={focused ? 2.4 : 2} />
-      <Text style={{ color: focused ? tokens.colors.accentStrong : tokens.colors.muted, fontSize: side ? 16 : 11, fontWeight: focused ? '700' : '400' }}>{props.item.title}</Text>
+      {!side && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: focused ? tokens.colors.accentStrong : 'transparent' }} />}
     </MotionPressable>
   );
 }
