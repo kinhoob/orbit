@@ -1,4 +1,5 @@
 import React from 'react';
+import { CardEntrance } from './motion';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { categories } from '../features/catalog/data';
 import { DEMO_MURAL_LABEL, type DemoMuralItem } from '../features/home/demo-data';
@@ -74,7 +75,7 @@ export function MuralWall({ items }: { items: DemoMuralItem[] }) {
     <View style={{ flexDirection: 'row', gap: GAP, alignItems: 'flex-start', width: '100%' }}>
       {split.map((column, index) => (
         <View key={index} style={{ flex: 1, gap: GAP, minWidth: 0 }}>
-          {column.map((item) => <MuralTile key={item.id} item={item} />)}
+          {column.map((item) => <CardEntrance key={item.id} index={items.indexOf(item)}><MuralTile item={item} /></CardEntrance>)}
         </View>
       ))}
     </View>
@@ -90,4 +91,4 @@ export function DemoBadge() {
       <Text style={{ color: tokens.colors.muted, fontSize: 13 }}>Capas e títulos locais, só para avaliar o layout. Não vêm do catálogo real.</Text>
     </View>
   );
-                    }
+}
