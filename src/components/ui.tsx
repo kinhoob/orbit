@@ -7,10 +7,12 @@ import { tokens as t } from '../design/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export function Screen({children,maxWidth=560,onRefresh,refreshing=false,scrollRef}:React.PropsWithChildren<{maxWidth?:number;onRefresh?:()=>void;refreshing?:boolean;scrollRef?:React.RefObject<React.ComponentRef<typeof ScrollView>|null>}>) {
   const insets = useSafeAreaInsets();
-  // Nativo: RefreshControl padrao. Web: gesto de puxar proprio (o RefreshControl
-  // do react-native-web e um stub sem gesto).
+  // Nativo: RefreshControl padrao para o GESTO, com spinner transparente de
+  // proposito — a bolinha de carregar aparece na linha "Atualizando…" abaixo
+  // das abas (pedido do Marco em 18/11/2026), sem spinner duplicado. Web: gesto
+  // de puxar proprio (o RefreshControl do react-native-web e um stub sem gesto).
   const pull = useWebPullToRefresh(refreshing,onRefresh);
-  const scroll=<ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" onScroll={pull.enabled?pull.onScroll:undefined} scrollEventThrottle={pull.enabled?16:undefined} contentContainerStyle={[styles.screen,{paddingTop:Math.max(insets.top+24,48),paddingBottom:Math.max(insets.bottom+24,32)}]} refreshControl={!pull.enabled&&onRefresh?<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accentStrong} colors={[t.colors.accentStrong]} progressBackgroundColor={t.colors.surface}/>:undefined}><ScreenMotion testID="screen-motion" style={[styles.content,{maxWidth}]}>{children}</ScreenMotion></ScrollView>;
+  const scroll=<ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" onScroll={pull.enabled?pull.onScroll:undefined} scrollEventThrottle={pull.enabled?16:undefined} contentContainerStyle={[styles.screen,{paddingTop:Math.max(insets.top+24,48),paddingBottom:Math.max(insets.bottom+24,32)}]} refreshControl={!pull.enabled&&onRefresh?<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="transparent" colors={['transparent']} progressBackgroundColor="transparent"/>:undefined}><ScreenMotion testID="screen-motion" style={[styles.content,{maxWidth}]}>{children}</ScreenMotion></ScrollView>;
   if(!pull.enabled) return scroll;
   return <View style={styles.pullRoot} {...pull.panHandlers}>
     <Animated.View pointerEvents="none" style={[styles.pullIndicator,{opacity:pull.pull.interpolate({inputRange:[0,24,48],outputRange:[0,0.35,1],extrapolate:'clamp'})}]}>
