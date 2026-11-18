@@ -16,7 +16,7 @@ export default function Profile() {
     {loading?<Text style={styles.body}>Carregando sessão…</Text>:!session?<><Text style={styles.body}>Crie seu perfil para registrar gostos e construir sua biblioteca.</Text><Link href="/auth" style={styles.link}>Entrar ou criar conta →</Link></>:<>
       <Text style={styles.body}>{session.user.email}</Text>{query.isPending?<Text style={styles.body}>Carregando seu perfil…</Text>:query.isError?<><Text style={styles.error}>Não foi possível carregar seu perfil. Verifique se as migrations foram aplicadas.</Text><Button label="Tentar novamente" onPress={()=>{void query.refetch();}}/></>:<>
       <Text style={styles.body}>Nome</Text><TextInput style={styles.input} accessibilityLabel="Nome" value={name} onChangeText={setName} maxLength={80} editable={!busy}/><Text style={styles.body}>Username</Text><TextInput style={styles.input} accessibilityLabel="Username" autoCapitalize="none" value={username} onChangeText={setUsername} maxLength={30} editable={!busy}/><Text style={styles.body}>Biografia</Text><TextInput style={[styles.input,{minHeight:110,textAlignVertical:'top'}]} accessibilityLabel="Biografia" multiline value={bio} onChangeText={setBio} maxLength={500} editable={!busy}/><Button label={busy?'Salvando…':'Salvar perfil'} disabled={busy} onPress={()=>{void save();}}/></>}
-      <Button label="Sair da conta" disabled={busy} onPress={()=>{void signout();}}/>{!!message&&<Text accessibilityRole="alert" style={styles.body}>{message}</Text>}
+      <Link href="/friends" style={styles.link}>Amizades →</Link><Button label="Sair da conta" disabled={busy} onPress={()=>{void signout();}}/>{!!message&&<Text accessibilityRole="alert" style={styles.body}>{message}</Text>}
     </>}
   </Screen>;
 }
