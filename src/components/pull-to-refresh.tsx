@@ -5,8 +5,8 @@ import { pullOffset, shouldStartPull, PULL_THRESHOLD, PULL_HOLD_OFFSET } from '.
 /**
  * "Puxar para atualizar" na WEB (no nativo, a Screen usa o RefreshControl
  * padrao). Arrastar para baixo com a lista no topo revela o indicador do
- * gesto; ao soltar alem do limiar o conteudo recolhe e o carregamento aparece
- * na linha "Atualizando…" abaixo das abas (pedido do Marco em 18/11/2026).
+ * gesto; ao soltar alem do limiar o conteudo recolhe e a bolinha de
+ * carregamento aparece sozinha, centralizada abaixo das abas.
  */
 export function useWebPullToRefresh(refreshing: boolean, onRefresh?: () => void) {
   const enabled = Platform.OS === 'web' && !!onRefresh;
