@@ -16,7 +16,7 @@ const writes=[];
 await page.evaluateOnNewDocument(({me})=>{const token=btoa(JSON.stringify({alg:'HS256',typ:'JWT'}))+'.'+btoa(JSON.stringify({sub:me,exp:Math.floor(Date.now()/1000)+86400}))+'.test';localStorage.setItem('sb-orbit-test-auth-token',JSON.stringify({access_token:token,refresh_token:'isolated-fixture',expires_at:Math.floor(Date.now()/1000)+86400,expires_in:86400,token_type:'bearer',user:{id:me,aud:'authenticated',email:'demo@example.invalid'}}));},{me});
 await page.setRequestInterception(true);
 page.on('request',async req=>{
- if(!req.url().startsWith('https://orbit-test.supabase.co')) return req.continue();
+ if(!req.url().startsWith('https://orbit-test.supabase.co')) return req.url().startsWith('http://127.0.0.1:8813/') ? req.continue() : req.abort();
  const u=new URL(req.url()), method=req.method();let result=[];
  if(method==='OPTIONS') return req.respond({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'GET,POST,PATCH,DELETE,OPTIONS'}});
  if(u.pathname.endsWith('/profiles')) result=people;
