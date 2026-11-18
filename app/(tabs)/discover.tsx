@@ -95,7 +95,9 @@ export default function Discover() {
     return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
-  return <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}><Text style={styles.eyebrow}>EXPLORAR</Text><Text style={styles.title}>Seu próximo favorito está por aí.</Text><TextInput accessibilityLabel="Buscar obras" placeholder="Busque séries, animes, livros…" style={styles.input} value={search} onChangeText={setSearch}/><Categories value={category} onChange={setCategory}/>
+  // Sem titulo grande: o Explorar abre direto na busca e no feed (abas no topo,
+  // publicacoes em sequencia), seguindo a referencia do X enviada pelo Marco.
+  return <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}><TextInput accessibilityLabel="Buscar obras" placeholder="Busque séries, animes, livros…" style={styles.input} value={search} onChangeText={setSearch}/><Categories value={category} onChange={setCategory}/>
     {searching||!supabase||!session?<>
       {!supabase?<>
         <Text style={{...styles.body,color:'#5b6b70',fontSize:13}}>Busca pública ao vivo: {publicCoverageLabel()} · Fontes: {publicProviderCredit()} · Capas ilustradas, sem arte oficial</Text>
@@ -104,7 +106,7 @@ export default function Discover() {
       {!session&&supabase?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>:null}
     </>:<>
       <TimelineTabs value={timeline} onChange={setTimeline}/>
-      {updating?<View style={{flexDirection:'row',alignItems:'center',gap:8}}><ActivityIndicator size="small" color={t.colors.accentStrong}/><Text style={{...styles.body,fontSize:13}}>Atualizando…</Text></View>:null}
+      {updating?<View style={{alignItems:'center'}}><ActivityIndicator size="small" color={t.colors.accentStrong}/></View>:null}
       <Pager index={TIMELINE_ORDER.indexOf(timeline)} onIndexChange={(i)=>setTimeline(TIMELINE_ORDER[i]||'descobrir')} accessibilityLabel="Timelines do Explorar">
         <View style={{position:'relative'}}>
           <NewPostsBubble visible={(newerDiscover.data||0)>0} onPress={()=>openNewer(discoverQuery)}/>
