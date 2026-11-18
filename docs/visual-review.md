@@ -35,11 +35,18 @@ Quando o Supabase não está configurado, a tela Descobrir passa a oferecer busc
 - NÃO integrados nesta rodada: álbuns via MusicBrainz (a API é gratuita apenas para uso NÃO comercial — https://musicbrainz.org/doc/MusicBrainz_API — e o ORBIT pode ter uso comercial; exigiria plano comercial), filmes e jogos (TMDB com restrições já citadas; IGDB exige chave/conta; API da Steam é não oficial). Entram quando o Marco decidir o provedor.
 - Implementação: src/features/catalog/public-search.ts (normalização + atribuição por item, sem chave e sem segredo), com testes de unidade sem rede em tests/public-search.test.mjs.
 
-## Caminhos candidatos para filmes e álbuns (verificado em 18/11/2026)
+## Caminhos para filmes e álbuns (produto comercial; verificado em 18/11/2026)
 
-- Filmes — candidato, elegibilidade em aberto: TMDB (https://www.themoviedb.org/api-terms-of-use). Acesso: conta gratuita criada pelo Marco + chave de API (custo US$ 0); exige aceite dos termos por ele e atribuição com logo do TMDB no app. Os termos vedam uso comercial sem acordo separado e vedam uso em aplicações de IA; se essas restrições se aplicam ao ORBIT depende da natureza do produto (protótipo pessoal vs. produto comercial) e da leitura dos termos — pendente de decisão do Marco, sem recomendação fechada nesta rodada. Alternativa avaliada: OMDb (https://www.omdbapi.com/legal.htm) — chave gratuita de baixo volume, mas os termos limitam a uso pessoal/não comercial ("may not use... in connection with any commercial endeavors"); não recomendado se o ORBIT tiver fins comerciais.
-- Álbuns — candidato: MusicBrainz para metadados (dados centrais CC0; API gratuita para uso não comercial — https://musicbrainz.org/doc/MusicBrainz_API — com plano comercial da MetaBrainz se o app for comercial) mantendo capas ilustradas, pois a Cover Art Archive não concede licença da arte ("por sua conta e risco"). Arte real de álbuns: nenhum provedor com elegibilidade verificada nesta rodada; Spotify for Developers foi cogitado, mas seus termos de exibição e limites de acesso NÃO foram verificados em fonte oficial, então NÃO é um caminho recomendado até essa verificação. Discogs avaliado: dados parcialmente CC0, imagens só com key/secret e sob os API Terms of Use.
-- Bloqueio real: a decisão sobre a natureza do produto e, depois, a criação de conta e o aceite de termos são passos do Marco. Se ele optar por um provedor com chave (ex.: EXPO_PUBLIC_TMDB_API_KEY), o adaptador entra no mesmo ponto de integração de src/features/catalog/public-search.ts.
+- Contexto: o Marco confirmou em 18/11/2026 que o ORBIT é um produto comercial. Isso elimina provedores restritos a uso pessoal/não comercial.
+- Filmes: TMDB é o único caminho completo verificado (metadados + pôsteres). Os termos (https://www.themoviedb.org/api-terms-of-use) exigem conta/chave e atribuição com logo, vedam uso comercial SEM acordo escrito com o TMDB (seção 2, possíveis taxas) e vedam uso em aplicações de IA. Próximo passo concreto: o Marco obtém o acordo comercial com o TMDB e cria a chave (decisão e aceite dele, nada assumido aqui). O adaptador já está implementado atrás de EXPO_PUBLIC_TMDB_API_KEY cobrindo METADADOS de filmes na busca pública; pôsteres só entram com a atribuição de logo exigida pelos termos, pendente de ativação. OMDb descartado: licença pessoal/não comercial (https://www.omdbapi.com/legal.htm).
+- Álbuns, metadados: MusicBrainz é candidato, mas a API pública é gratuita só para uso NÃO comercial (https://musicbrainz.org/doc/MusicBrainz_API). Para uso comercial há planos pagos da MetaBrainz; alternativa técnica são os dumps de dados CC0. Decisão de custo do Marco.
+- Álbuns, arte: nenhuma fonte com elegibilidade comercial verificada nesta rodada. Cover Art Archive não concede licença ("por sua conta e risco"); Spotify for Developers restringe transferência/monetização de conteúdo (https://developer.spotify.com/terms) e não foi verificado como elegível; Discogs tem dados parcialmente CC0, mas imagens só com key/secret e sob os API Terms of Use. Capas de álbuns seguem ilustradas.
+- Bloqueio real: a contratação do acordo comercial TMDB (filmes) e a decisão sobre MetaBrainz (metadados de álbuns) são passos do Marco, com possível custo. Com a chave TMDB configurada (EXPO_PUBLIC_TMDB_API_KEY), filmes entram na busca ao vivo pelo adaptador já implementado em src/features/catalog/public-search.ts.
+
+## Menu e salvos (pedido do Marco em 18/11/2026)
+
+- Menu só com ícones, seguindo a referência do app do Pinterest: Início, Descobrir, Criar e Perfil, com rótulo de acessibilidade em cada item e estado ativo em azul-petróleo com indicador.
+- Salvos aparecem apenas dentro do próprio perfil (seção "Seus salvos", privada por RLS com policy de dono). A aba Salvos saiu do menu e a rota antiga redireciona para o perfil.
 
 ## Proveniência dos metadados da curadoria
 
@@ -62,7 +69,7 @@ Quando o Supabase não está configurado, a tela Descobrir passa a oferecer busc
 
 ## Validação desta rodada
 
-- `npm ci` limpa, TypeScript sem erros, 23 testes Node passando (3 de integridade da curadoria + 3 da busca pública, sem rede).
+- `npm ci` limpa, TypeScript sem erros, 24 testes Node passando (3 de integridade da curadoria + 4 da busca pública incluindo TMDB sem rede, todos com fetch simulado).
 - Export web concluído; suíte de movimento no bundle real passando (transições por frame, toque, filtros, redução de movimento ao vivo, teclado, 390/1440 px sem overflow).
 - Conferido no bundle real que nenhuma imagem externa é carregada no mural; capas ilustradas confirmadas em todas as categorias. Vídeo do bundle real inspecionado.
 - `react-native-svg@15.16.0` adicionada via alinhamento do Expo. Auditoria da instalação: reavaliar `npm audit` antes de produção; esta rodada não alterou outras dependências.
