@@ -1,15 +1,16 @@
-import React, { useCallback,useEffect,useState } from 'react';
-import { Text,TextInput,View } from 'react-native';
+import React, { useCallback,useEffect,useRef,useState } from 'react';
+import { ActivityIndicator,ScrollView,Text,TextInput,View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Screen,styles,Button } from '../../src/components/ui';
 import { Categories,CatalogGrid } from '../../src/components/catalog';
-import { TimelineTabs,TimelineList } from '../../src/components/feed';
+import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/feed';
 import { Pager } from '../../src/components/pager';
 import { searchMedia, MediaItem } from '../../src/features/catalog/data';
 import { searchPublicCatalog, publicProviderCredit, publicCoverageLabel } from '../../src/features/catalog/public-search';
-import { listDiscoverTimeline, listFriendsTimeline, setRatingLike, withLike, type FeedReview } from '../../src/features/feed/timelines';
+import { listDiscoverTimeline, listFriendsTimeline, setRatingLike, withLike, newestCreatedAt, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
+import { tokens as t } from '../../src/design/tokens';
 
 type TimelineId = 'descobrir'|'amigos';
 const TIMELINE_ORDER: TimelineId[] = ['descobrir','amigos'];
@@ -19,6 +20,7 @@ export default function Discover() {
   const [timeline,setTimeline]=useState<TimelineId>('descobrir');
   const [likedOverride,setLikedOverride]=useState<Record<string,FeedReview>>({});
   const [refreshing,setRefreshing]=useState(false);
+  const scrollRef=useRef<React.ComponentRef<typeof ScrollView>>(null);
   const {session}=useAuth();
   useEffect(()=>{const timer=setTimeout(()=>setTerm(search),300);return()=>clearTimeout(timer);},[search]);
   const searching=term.trim().length>=2;
@@ -43,6 +45,28 @@ export default function Discover() {
     queryFn:()=>listFriendsTimeline(session!.user.id),
     enabled:timelinesOn,
   });
+  // Balao "Novas publicacoes" (pedido do Marco em 18/11/2026, estilo X): uma
+  // verificacao leve a cada 60 s conta avaliacoes mais novas que a mais recente
+  // exibida. A lista atual NAO muda sozinha; o balao aparece e o toque carrega
+  // as novidades e volta ao topo.
+  const discoverSince=newestCreatedAt(discoverQuery.data||[]);
+  const friendsSince=newestCreatedAt(friendsQuery.data||[]);
+  const newerDiscover=useQuery({
+    queryKey:['timeline-newer','descobrir',session?.user.id,discoverSince],
+    queryFn:()=>countNewerDiscoverReviews(discoverSince as string),
+    enabled:timelinesOn&&!!discoverSince,
+    refetchInterval:60*1000,
+  });
+  const newerFriends=useQuery({
+    queryKey:['timeline-newer','amigos',session?.user.id,friendsSince],
+    queryFn:()=>countNewerFriendReviews(session!.user.id,friendsSince as string),
+    enabled:timelinesOn&&!!friendsSince,
+    refetchInterval:60*1000,
+  });
+  const openNewer=(q:typeof discoverQuery)=>{
+    void q.refetch();
+    scrollRef.current?.scrollTo({y:0,animated:true});
+  };
   // Puxar para baixo atualiza as duas timelines (pedido do Marco em 18/11/2026).
   const onRefresh=useCallback(()=>{
     if(!timelinesOn)return;
@@ -65,7 +89,7 @@ export default function Discover() {
     return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
-  return <Screen onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}><Text style={styles.eyebrow}>EXPLORAR</Text><Text style={styles.title}>Seu próximo favorito está por aí.</Text><TextInput accessibilityLabel="Buscar obras" placeholder="Busque séries, animes, livros…" style={styles.input} value={search} onChangeText={setSearch}/><Categories value={category} onChange={setCategory}/>
+  return <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}><Text style={styles.eyebrow}>EXPLORAR</Text><Text style={styles.title}>Seu próximo favorito está por aí.</Text><TextInput accessibilityLabel="Buscar obras" placeholder="Busque séries, animes, livros…" style={styles.input} value={search} onChangeText={setSearch}/><Categories value={category} onChange={setCategory}/>
     {searching||!supabase||!session?<>
       {!supabase?<>
         <Text style={{...styles.body,color:'#5b6b70',fontSize:13}}>Busca pública ao vivo: {publicCoverageLabel()} · Fontes: {publicProviderCredit()} · Capas ilustradas, sem arte oficial</Text>
@@ -74,10 +98,16 @@ export default function Discover() {
       {!session&&supabase?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>:null}
     </>:<>
       <TimelineTabs value={timeline} onChange={setTimeline}/>
-      {updating?<Text style={{...styles.body,fontSize:13}}>Atualizando…</Text>:null}
+      {updating?<View style={{flexDirection:'row',alignItems:'center',gap:8}}><ActivityIndicator size="small" color={t.colors.accentStrong}/><Text style={{...styles.body,fontSize:13}}>Atualizando…</Text></View>:null}
       <Pager index={TIMELINE_ORDER.indexOf(timeline)} onIndexChange={(i)=>setTimeline(TIMELINE_ORDER[i]||'descobrir')} accessibilityLabel="Timelines do Explorar">
-        <View>{renderTimeline(discoverQuery,'Ainda não há avaliações públicas. As mais curtidas aparecem aqui.')}</View>
-        <View>{renderTimeline(friendsQuery,'Quando seus amigos avaliarem obras, as avaliações aparecem aqui, das mais recentes.')}</View>
+        <View style={{position:'relative'}}>
+          <NewPostsBubble visible={(newerDiscover.data||0)>0} onPress={()=>openNewer(discoverQuery)}/>
+          {renderTimeline(discoverQuery,'Ainda não há avaliações públicas. As mais curtidas aparecem aqui.')}
+        </View>
+        <View style={{position:'relative'}}>
+          <NewPostsBubble visible={(newerFriends.data||0)>0} onPress={()=>openNewer(friendsQuery)}/>
+          {renderTimeline(friendsQuery,'Quando seus amigos avaliarem obras, as avaliações aparecem aqui, das mais recentes.')}
+        </View>
       </Pager>
     </>}
   </Screen>;
