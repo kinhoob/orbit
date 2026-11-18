@@ -28,12 +28,18 @@ Sem Supabase, Início mostra o mural de curadoria local identificado como tal; D
 
 ## Busca pública ao vivo (Descobrir sem Supabase)
 
-Quando o Supabase não está configurado, a tela Descobrir passa a oferecer busca pública AO VIVO com metadados reais, identificada na tela como busca pública (não é o catálogo conectado). Capas continuam ilustradas localmente — nenhum provedor de imagem é usado.
+Quando o Supabase não está configurado, a tela Descobrir passa a oferecer busca pública AO VIVO com metadados reais, com um rótulo curto de fontes/cobertura ("Busca pública ao vivo: séries, animes e livros · Fontes · Capas ilustradas") em vez de texto técnico. Capas continuam ilustradas localmente — nenhum provedor de imagem é usado.
 
 - TVmaze (séries e animes): API REST pública, gratuita, sem chave, com CORS liberado e dados sob CC BY-SA, conforme a página oficial da API (https://www.tvmaze.com/api#licensing). A atribuição exigida aparece na tela ("Fonte: TVmaze") e cada item carrega a URL do TVmaze; uso respeita ShareAlike.
 - Open Library/Internet Archive (livros): API pública para descoberta e consulta humana de livros, sem chave (https://openlibrary.org/developers/api). As diretrizes pedem registro do aplicativo, cache e vedam uso como backend em massa ou infraestrutura comercial de alto tráfego; a busca sob demanda do usuário com cache de 10 min se enquadra. O registro do app (gratuito) fica como passo recomendado para o Marco.
 - NÃO integrados nesta rodada: álbuns via MusicBrainz (a API é gratuita apenas para uso NÃO comercial — https://musicbrainz.org/doc/MusicBrainz_API — e o ORBIT pode ter uso comercial; exigiria plano comercial), filmes e jogos (TMDB com restrições já citadas; IGDB exige chave/conta; API da Steam é não oficial). Entram quando o Marco decidir o provedor.
 - Implementação: src/features/catalog/public-search.ts (normalização + atribuição por item, sem chave e sem segredo), com testes de unidade sem rede em tests/public-search.test.mjs.
+
+## Caminho recomendado para filmes e álbuns (verificado em 18/11/2026)
+
+- Filmes — recomendado: TMDB (https://www.themoviedb.org/api-terms-of-use). Acesso: conta gratuita criada pelo Marco + chave de API (custo US$ 0); exige aceite dos termos por ele e atribuição com logo do TMDB no app; uso comercial requer acordo separado e os termos vedam uso em aplicações de IA. Alternativa avaliada: OMDb (https://www.omdbapi.com/legal.htm) — chave gratuita de baixo volume, mas os termos limitam a uso pessoal/não comercial ("may not use... in connection with any commercial endeavors"); não recomendado se o ORBIT tiver fins comerciais.
+- Álbuns — recomendado: MusicBrainz para metadados (dados centrais CC0; API gratuita para uso não comercial — https://musicbrainz.org/doc/MusicBrainz_API — com plano comercial da MetaBrainz se o app for comercial) mantendo capas ilustradas, pois a Cover Art Archive não concede licença da arte ("por sua conta e risco"). Para arte real de álbuns, o caminho concreto é Spotify for Developers (conta gratuita do Marco; imagens de álbum sob os termos de exibição do Spotify, com atribuição e link). Discogs avaliado: dados parcialmente CC0, imagens só com key/secret e sob os API Terms of Use.
+- Bloqueio real: criação de conta e aceite de termos são passos do Marco. Com a chave (ex.: EXPO_PUBLIC_TMDB_API_KEY), o adaptador entra no mesmo ponto de integração de src/features/catalog/public-search.ts.
 
 ## Proveniência dos metadados da curadoria
 
