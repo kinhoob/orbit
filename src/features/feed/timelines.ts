@@ -1,9 +1,10 @@
 import { requireSupabase } from '../../lib/supabase';
-import { rankByLikes as rank, sortRecent as recent, friendIdsOf as friends, withLike as withLikePure, relativeTime as relTime, newestCreatedAt as newest } from '../../domain/timelines.mjs';
+import { rankByLikes as rank, sortRecent as recent, friendIdsOf as friends, withLike as withLikePure, relativeTime as relTime, newestCreatedAt as newest, advanceWatermark as advance } from '../../domain/timelines.mjs';
 export { withLikePure as withLike, relTime as relativeTime, friends as friendIdsOf };
 export const rankByLikes = rank;
 export const sortRecent = recent;
 export const newestCreatedAt = newest;
+export const advanceWatermark = advance;
 
 // Timelines do Explorar (pedido do Marco em 18/11/2026, estilo X):
 // - "Descobrir": avaliacoes publicas ordenadas pelas mais curtidas.
@@ -14,6 +15,7 @@ export const newestCreatedAt = newest;
 
 export type FeedAuthor = { id: string; username: string | null; display_name: string; avatar_url: string | null };
 export type FeedMedia = { id: string; title: string; category: string; release_year: number | null };
+export type TimelinePage = { reviews: FeedReview[]; newest: string | null };
 export type FeedReview = {
   rating_id: string;
   score: number;
@@ -71,8 +73,11 @@ async function attachLikes(rows: JoinedRow[], userId: string): Promise<FeedRevie
     .filter((r): r is FeedReview => r !== null);
 }
 
-/** Timeline Descobrir: avaliacoes publicas, das mais curtidas. */
-export async function listDiscoverTimeline(userId: string): Promise<FeedReview[]> {
+/** Timeline Descobrir: avaliacoes publicas, das mais curtidas.
+ * `newest` e a marca d'agua das novidades: vem do snapshot completo buscado
+ * (ate 100), NAO da pagina exibida (50) — uma avaliacao nova com poucas
+ * curtidas pode ficar fora da pagina sem deixar o balao preso em loop. */
+export async function listDiscoverTimeline(userId: string): Promise<TimelinePage> {
   const { data, error } = await requireSupabase()
     .from('ratings')
     .select(SELECT)
@@ -80,11 +85,12 @@ export async function listDiscoverTimeline(userId: string): Promise<FeedReview[]
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) throw error;
-  return rank(await attachLikes((data || []) as JoinedRow[], userId)).slice(0, 50);
+  const joined = await attachLikes((data || []) as JoinedRow[], userId);
+  return { reviews: rank(joined).slice(0, 50), newest: newest(joined) };
 }
 
 /** Timeline Amigos: so amigos aceitos, visibilidade publica ou amigos, recentes. */
-export async function listFriendsTimeline(userId: string): Promise<FeedReview[]> {
+export async function listFriendsTimeline(userId: string): Promise<TimelinePage> {
   const sb = requireSupabase();
   const { data: friendships, error: fe } = await sb
     .from('friendships')
@@ -92,7 +98,7 @@ export async function listFriendsTimeline(userId: string): Promise<FeedReview[]>
     .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
   if (fe) throw fe;
   const ids = friends(userId, friendships || []);
-  if (!ids.length) return [];
+  if (!ids.length) return { reviews: [], newest: null };
   const { data, error } = await sb
     .from('ratings')
     .select(SELECT)
@@ -101,7 +107,8 @@ export async function listFriendsTimeline(userId: string): Promise<FeedReview[]>
     .order('created_at', { ascending: false })
     .limit(50);
   if (error) throw error;
-  return recent(await attachLikes((data || []) as JoinedRow[], userId));
+  const joined = await attachLikes((data || []) as JoinedRow[], userId);
+  return { reviews: recent(joined), newest: newest(joined) };
 }
 
 // Balao "Novas publicacoes": a contagem abaixo e o sinal real — so avaliacoes
