@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {compatibility} from '../src/domain/compatibility.mjs';
+import {validateCredentials} from '../src/features/auth/validation.mjs';
+import {parseScore} from '../src/domain/rating.mjs';
+test('ratings accept zero, ten and localized decimal scores',()=>{assert.equal(parseScore('0'),0);assert.equal(parseScore('10'),10);assert.equal(parseScore('8,5'),8.5);});
+test('ratings reject missing, out of bounds or malformed values',()=>{for(const value of ['', ' ', '-1','11','8.55','Infinity','7abc'])assert.equal(parseScore(value),null);});
+test('compatibility does not claim a percentage without sufficient common works',()=>assert.equal(compatibility([[10,10]]),null));
+test('compatibility follows absolute rating differences',()=>assert.equal(compatibility([[10,9],[9,10],[8,8]],3),93));
+test('opposite ratings yield zero',()=>assert.equal(compatibility(Array(5).fill([0,10])),0));
+test('invalid ratings are rejected',()=>assert.throws(()=>compatibility([[NaN,5]],1),RangeError));
+test('credentials reject malformed email and short passwords',()=>{assert.ok(validateCredentials('invalid','12345678'));assert.ok(validateCredentials('a@b.com','123'));assert.equal(validateCredentials('a@b.com','12345678'),null);});
