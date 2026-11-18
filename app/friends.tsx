@@ -53,7 +53,7 @@ export default function Friends() {
     queryFn: () => fetchProfilesByIds(otherIds),
   });
   const results = useQuery({
-    queryKey: ['profile-search', term],
+    queryKey: ['profile-search', userId, term],
     enabled: !!supabase && !!userId && !!term.trim(),
     queryFn: () => searchProfiles(term, userId!),
   });
@@ -67,8 +67,8 @@ export default function Friends() {
   const act = useMutation({
     mutationFn: async (op: { type: 'send'; otherId: string } | { type: 'respond'; id: string; accept: boolean } | { type: 'delete'; id: string }) => {
       if (op.type === 'send') await sendRequest(userId!, op.otherId);
-      else if (op.type === 'respond') await respondToRequest(op.id, op.accept);
-      else await deleteFriendship(op.id);
+      else if (op.type === 'respond') await respondToRequest(op.id, op.accept, userId!);
+      else await deleteFriendship(op.id, userId!);
     },
     onSuccess: async (_data, op) => {
       await refresh();
@@ -79,20 +79,23 @@ export default function Friends() {
             ? op.accept
               ? 'Solicitação aceita. Vocês são amigos agora.'
               : 'Solicitação recusada.'
-            : 'Amizade removida.',
+            : 'Solicitação ou amizade removida.',
       );
     },
     onError: (error) => {
       setMessage(error instanceof Error && error.message === 'duplicate' ? 'Já existe uma solicitação entre vocês.' : 'Não foi possível concluir. Tente novamente.');
     },
   });
-  const busy = act.isPending;
+  const busy = act.isPending || !friendships.isSuccess || !known.isSuccess;
 
   function relationFor(otherId: string): Relation {
     return relationWith(friendships.data || [], userId!, otherId);
   }
   function ActionButtons({ otherId }: { otherId: string }) {
     const relation = relationFor(otherId);
+    if (relation.kind === 'rejected') {
+      return <Button label="Limpar solicitação recusada" disabled={busy} onPress={() => act.mutate({ type: 'delete', id: relation.friendship.id })} />;
+    }
     if (relation.kind === 'friends') {
       return <Button label="Remover" disabled={busy} onPress={() => act.mutate({ type: 'delete', id: relation.friendship.id })} />;
     }
@@ -171,6 +174,7 @@ export default function Friends() {
                 ))
               ))}
           </View>
+          {known.isError && <View style={styles.card}><Text style={styles.error}>Não foi possível carregar os perfis.</Text><Button label="Tentar carregar perfis" onPress={() => void known.refetch()} /></View>}
           {friendships.isPending ? (
             <Text style={styles.body}>Carregando suas amizades…</Text>
           ) : friendships.isError ? (
