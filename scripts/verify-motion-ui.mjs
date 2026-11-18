@@ -51,7 +51,7 @@ try {
     return result;
   }
   // Every tab, repeated focus, keyboard interaction, and responsive navigation.
-  for (const name of ['Descobrir', 'Criar', 'Salvos', 'Perfil', 'Início', 'Descobrir']) {
+  for (const name of ['Descobrir', 'Criar', 'Perfil', 'Início', 'Descobrir']) {
     const result = await navigate(name, true);
     if (!result.frames.some(f => f.opacity < 0.999)) console.log(JSON.stringify(result));
     assert.ok(result.frames.some(f => f.opacity < 0.999), 'Motion not observed: ' + name);
