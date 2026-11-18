@@ -26,6 +26,20 @@ Sem Supabase, Início mostra o mural de curadoria local identificado como tal; D
 - Perfil com cabeçalho (iniciais, nome, @username, e-mail) e biografia em destaque; edição vira ação secundária; estado deslogado e Salvos vazios ganham ícone e texto próprios. Nenhum número, atividade ou pessoa inventada.
 - Nova dependência: `react-native-svg` na versão alinhada ao Expo instalado, usada só para os ícones. `package.json` e `package-lock.json` mudaram apenas por ela.
 
+## Busca pública ao vivo (Descobrir sem Supabase)
+
+Quando o Supabase não está configurado, a tela Descobrir passa a oferecer busca pública AO VIVO com metadados reais, identificada na tela como busca pública (não é o catálogo conectado). Capas continuam ilustradas localmente — nenhum provedor de imagem é usado.
+
+- TVmaze (séries e animes): API REST pública, gratuita, sem chave, com CORS liberado e dados sob CC BY-SA, conforme a página oficial da API (https://www.tvmaze.com/api#licensing). A atribuição exigida aparece na tela ("Fonte: TVmaze") e cada item carrega a URL do TVmaze; uso respeita ShareAlike.
+- Open Library/Internet Archive (livros): API pública para descoberta e consulta humana de livros, sem chave (https://openlibrary.org/developers/api). As diretrizes pedem registro do aplicativo, cache e vedam uso como backend em massa ou infraestrutura comercial de alto tráfego; a busca sob demanda do usuário com cache de 10 min se enquadra. O registro do app (gratuito) fica como passo recomendado para o Marco.
+- NÃO integrados nesta rodada: álbuns via MusicBrainz (a API é gratuita apenas para uso NÃO comercial — https://musicbrainz.org/doc/MusicBrainz_API — e o ORBIT pode ter uso comercial; exigiria plano comercial), filmes e jogos (TMDB com restrições já citadas; IGDB exige chave/conta; API da Steam é não oficial). Entram quando o Marco decidir o provedor.
+- Implementação: src/features/catalog/public-search.ts (normalização + atribuição por item, sem chave e sem segredo), com testes de unidade sem rede em tests/public-search.test.mjs.
+
+## Proveniência dos metadados da curadoria
+
+- Álbuns (6): conferidos no MusicBrainz, release IDs em cada item de src/features/home/curated-data.mjs (ex.: Kind of Blue — https://musicbrainz.org/release/e32a3f0b-1c19-3170-bb1c-650893774744; Random Access Memories — /f6758afb-ecff-410e-8979-b131cfa3c6d3; OK Computer — /6a09041b-0f79-3278-88d9-0552dd28d37f; Clube da Esquina — /556ebda7-7ad3-4b21-b672-73722e486a00; Getz/Gilberto — /1cb544a7-f1d6-4159-9661-8645cbaf257c; Construção — /4ad7a356-d1d8-4367-8b33-dbb31c29517f).
+- Filmes, séries, animes, jogos e livros (16): título, criador e ano são fatos amplamente publicados, conferidos em fontes editoriais públicas (páginas oficiais de estúdio/editora e Wikipédia) durante a curadoria; séries e animes agora também cobertos pela busca pública TVmaze descrita acima.
+
 ## Fontes e direitos (verificado em 18/11/2026)
 
 - Metadados das obras (título, criador, ano) são fatos e foram conferidos em fontes públicas (MusicBrainz para álbuns; demais obras em fontes editoriais públicas).
@@ -42,7 +56,7 @@ Sem Supabase, Início mostra o mural de curadoria local identificado como tal; D
 
 ## Validação desta rodada
 
-- `npm ci` limpa, TypeScript sem erros, 20 testes Node passando (3 novos testes de integridade da curadoria).
+- `npm ci` limpa, TypeScript sem erros, 23 testes Node passando (3 de integridade da curadoria + 3 da busca pública, sem rede).
 - Export web concluído; suíte de movimento no bundle real passando (transições por frame, toque, filtros, redução de movimento ao vivo, teclado, 390/1440 px sem overflow).
 - Conferido no bundle real que nenhuma imagem externa é carregada no mural; capas ilustradas confirmadas em todas as categorias. Vídeo do bundle real inspecionado.
 - `react-native-svg@15.16.0` adicionada via alinhamento do Expo. Auditoria da instalação: reavaliar `npm audit` antes de produção; esta rodada não alterou outras dependências.
