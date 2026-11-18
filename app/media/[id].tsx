@@ -92,8 +92,8 @@ export default function MediaDetail() {
     setScore(state.data?.rating ? String(state.data.rating.score) : '');
     setReview(state.data?.rating?.review || '');
     setVisibility((state.data?.rating?.visibility as Visibility) || 'public');
-    setMessage('');
-  }, [state.data, id, userId]);
+  }, [state.data?.rating, id, userId]);
+  useEffect(() => { setMessage(''); }, [id, userId]);
   async function invalidate() {
     await Promise.all([
       cache.invalidateQueries({ queryKey: ['media-state', id, userId] }),
