@@ -2,9 +2,9 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { tokens as t } from '../design/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-export function Screen({children}:React.PropsWithChildren) {
+export function Screen({children,maxWidth=560}:React.PropsWithChildren<{maxWidth?:number}>) {
   const insets = useSafeAreaInsets();
-  return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.screen,{paddingTop:Math.max(insets.top+24,48),paddingBottom:Math.max(insets.bottom+24,32)}]}><View style={styles.content}>{children}</View></ScrollView>;
+  return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.screen,{paddingTop:Math.max(insets.top+24,48),paddingBottom:Math.max(insets.bottom+24,32)}]}><View style={[styles.content,{maxWidth}]}>{children}</View></ScrollView>;
 }
 export function Button({label,onPress,disabled=false}:{label:string;onPress:()=>void;disabled?:boolean}) {
   return <Pressable accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={[styles.button,disabled && {opacity:0.5}]}><Text style={styles.buttonText}>{label}</Text></Pressable>;
