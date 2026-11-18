@@ -1,5 +1,6 @@
 import React from 'react';
 import { MotionPressable } from './motion';
+import { Icon, type IconName } from './icons';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../design/tokens';
@@ -9,12 +10,12 @@ export const SIDEBAR_BREAKPOINT = 768;
 export const SIDEBAR_WIDTH = 232;
 
 export const NAV_ITEMS = [
-  { name: 'index', title: 'Início', icon: '◉' },
-  { name: 'discover', title: 'Descobrir', icon: '◎' },
-  { name: 'create', title: 'Criar', icon: '＋' },
-  { name: 'saved', title: 'Salvos', icon: '▤' },
-  { name: 'profile', title: 'Perfil', icon: '○' },
-] as const;
+  { name: 'index', title: 'Início', icon: 'home' },
+  { name: 'discover', title: 'Descobrir', icon: 'compass' },
+  { name: 'create', title: 'Criar', icon: 'plus' },
+  { name: 'saved', title: 'Salvos', icon: 'bookmark' },
+  { name: 'profile', title: 'Perfil', icon: 'user' },
+] as const satisfies ReadonlyArray<{ name: string; title: string; icon: IconName }>;
 
 /** Subconjunto estrutural das props que o Tabs do expo-router entrega ao tabBar customizado. */
 export type TabBarProps = {
@@ -57,8 +58,8 @@ function NavItem(props: TabBarProps & { item: (typeof NAV_ITEMS)[number]; layout
         pressed && { opacity: 0.7 },
       ]}
     >
-      <Text style={{ color: focused ? tokens.colors.primary : tokens.colors.muted, fontSize: side ? 20 : 24, lineHeight: side ? 24 : 28 }}>{props.item.icon}</Text>
-      <Text style={{ color: focused ? tokens.colors.primary : tokens.colors.muted, fontSize: side ? 16 : 11, fontWeight: focused ? '700' : '400' }}>{props.item.title}</Text>
+      <Icon name={props.item.icon} size={side ? 22 : 24} color={focused ? tokens.colors.accentStrong : tokens.colors.muted} strokeWidth={focused ? 2.4 : 2} />
+      <Text style={{ color: focused ? tokens.colors.accentStrong : tokens.colors.muted, fontSize: side ? 16 : 11, fontWeight: focused ? '700' : '400' }}>{props.item.title}</Text>
     </MotionPressable>
   );
 }
@@ -95,4 +96,4 @@ export function BottomBar(props: TabBarProps) {
 export function ResponsiveTabBar(props: TabBarProps) {
   const { width } = useWindowDimensions();
   return width >= SIDEBAR_BREAKPOINT ? <SideBar {...props} /> : <BottomBar {...props} />;
-      }
+  }
