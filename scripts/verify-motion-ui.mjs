@@ -20,7 +20,8 @@ try {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setRequestInterception(true);
-  page.on('request', req => req.url().startsWith('http://127.0.0.1:8815/') ? req.continue() : req.abort());
+  const allowRemote = !!process.env.ALLOW_REMOTE_IMAGES;
+  page.on('request', req => (allowRemote || req.url().startsWith('http://127.0.0.1:8815/')) ? req.continue() : req.abort());
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
   await page.setViewport({ width: 390, height: 844 });
   await page.goto('http://127.0.0.1:8815/', { waitUntil: 'networkidle0' });
@@ -106,7 +107,7 @@ try {
     const frames = [], start = performance.now();
     await new Promise(resolve => {
       const tick = () => {
-        const cards = [...document.querySelectorAll('[aria-label^="Demonstração:"]')].filter(e => !e.closest('[inert]')).map(e => { const s = getComputedStyle(e.parentElement); return { opacity: Number(s.opacity), transform: s.transform }; });
+        const cards = [...document.querySelectorAll('[aria-label^="Curadoria local:"]')].filter(e => !e.closest('[inert]')).map(e => { const s = getComputedStyle(e.parentElement); return { opacity: Number(s.opacity), transform: s.transform }; });
         frames.push({ ms: Math.round(performance.now() - start), cards });
         performance.now() - start < 650 ? requestAnimationFrame(tick) : resolve();
       }; requestAnimationFrame(tick);
