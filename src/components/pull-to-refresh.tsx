@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, PanResponder, Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { pullOffset, shouldStartPull, PULL_THRESHOLD } from '../domain/pager.mjs';
+import { pullOffset, shouldStartPull, PULL_THRESHOLD, PULL_HOLD_OFFSET } from '../domain/pager.mjs';
 
 /**
  * "Puxar para atualizar" na WEB (no nativo, a Screen usa o RefreshControl
- * padrao). Arrastar para baixo com a lista no topo revela o indicador e
- * dispara onRefresh ao soltar alem do limiar; o indicador fica visivel
- * enquanto a atualizacao esta em andamento.
+ * padrao). Arrastar para baixo com a lista no topo revela o indicador do
+ * gesto; ao soltar alem do limiar o conteudo recolhe e o carregamento aparece
+ * na linha "Atualizando…" abaixo das abas (pedido do Marco em 18/11/2026).
  */
 export function useWebPullToRefresh(refreshing: boolean, onRefresh?: () => void) {
   const enabled = Platform.OS === 'web' && !!onRefresh;
@@ -33,7 +33,7 @@ export function useWebPullToRefresh(refreshing: boolean, onRefresh?: () => void)
       onPanResponderRelease: () => {
         if (state.current.value >= PULL_THRESHOLD) {
           state.current.holding = true;
-          settle(PULL_THRESHOLD * 0.75);
+          settle(PULL_HOLD_OFFSET);
           state.current.onRefresh?.();
         } else {
           settle(0);
