@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { resolveSwipeTarget, rubberBand, pullOffset, shouldStartPull, PULL_THRESHOLD, PULL_MAX } = await import('../src/domain/pager.mjs');
+const { resolveSwipeTarget, rubberBand, pullOffset, shouldStartPull, PULL_THRESHOLD, PULL_MAX, PULL_HOLD_OFFSET } = await import('../src/domain/pager.mjs');
 
 test('arraste para a esquerda alem do limiar avanca para a proxima pagina', () => {
   assert.equal(resolveSwipeTarget(0, -100, 2, 390), 1);
@@ -56,4 +56,8 @@ test('o gesto de puxar exige lista no topo e vertical dominante', () => {
 
 test('o limiar de atualizacao e positivo e menor que o curso maximo', () => {
   assert.ok(PULL_THRESHOLD > 0 && PULL_THRESHOLD < PULL_MAX);
+});
+
+test('ao soltar alem do limiar o conteudo recolhe: a bolinha de carregar fica na linha "Atualizando…"', () => {
+  assert.equal(PULL_HOLD_OFFSET, 0);
 });
