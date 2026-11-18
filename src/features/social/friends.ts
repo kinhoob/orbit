@@ -6,12 +6,13 @@ export type FriendshipStatus = 'pending' | 'accepted' | 'rejected';
 export type Friendship = { id: string; requester_id: string; addressee_id: string; status: FriendshipStatus };
 export type Relation =
   | { kind: 'none' }
+  | { kind: 'rejected'; friendship: Friendship }
   | { kind: 'outgoing'; friendship: Friendship }
   | { kind: 'incoming'; friendship: Friendship }
   | { kind: 'friends'; friendship: Friendship };
 
 export async function searchProfiles(term: string, userId: string): Promise<ProfileSummary[]> {
-  const clean = term.trim().replace(/[%_\\]/g, '');
+  const clean = term.trim().replace(/[^\p{L}\p{N} _-]/gu, '').replace(/_/g, '');
   if (!clean) return [];
   const { data, error } = await requireSupabase()
     .from('profiles')
@@ -52,15 +53,15 @@ export async function sendRequest(userId: string, otherId: string): Promise<void
   }
 }
 
-export async function respondToRequest(friendshipId: string, accept: boolean): Promise<void> {
+export async function respondToRequest(friendshipId: string, accept: boolean, userId: string): Promise<void> {
   const { error } = await requireSupabase()
     .from('friendships')
     .update({ status: accept ? 'accepted' : 'rejected' })
-    .eq('id', friendshipId);
+    .eq('id', friendshipId).eq('addressee_id', userId).eq('status', 'pending').select('id').single();
   if (error) throw error;
 }
 
-export async function deleteFriendship(friendshipId: string): Promise<void> {
-  const { error } = await requireSupabase().from('friendships').delete().eq('id', friendshipId);
+export async function deleteFriendship(friendshipId: string, userId: string): Promise<void> {
+  const { error } = await requireSupabase().from('friendships').delete().eq('id', friendshipId).or(`requester_id.eq.${userId},addressee_id.eq.${userId}`).select('id').single();
   if (error) throw error;
-}
+    }
