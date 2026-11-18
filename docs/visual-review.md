@@ -53,6 +53,23 @@ Quando o Supabase não está configurado, a tela Descobrir passa a oferecer busc
 - Álbuns (6): conferidos no MusicBrainz, release IDs em cada item de src/features/home/curated-data.mjs (ex.: Kind of Blue — https://musicbrainz.org/release/e32a3f0b-1c19-3170-bb1c-650893774744; Random Access Memories — /f6758afb-ecff-410e-8979-b131cfa3c6d3; OK Computer — /6a09041b-0f79-3278-88d9-0552dd28d37f; Clube da Esquina — /556ebda7-7ad3-4b21-b672-73722e486a00; Getz/Gilberto — /1cb544a7-f1d6-4159-9661-8645cbaf257c; Construção — /4ad7a356-d1d8-4367-8b33-dbb31c29517f).
 - Filmes, séries, animes, jogos e livros (16): título, criador e ano são fatos amplamente publicados, conferidos em fontes editoriais públicas (páginas oficiais de estúdio/editora e Wikipédia) durante a curadoria; séries e animes agora também cobertos pela busca pública TVmaze descrita acima.
 
+## Explorar com duas timelines (pedido do Marco em 18/11/2026)
+
+- A tela Explorar (antiga Descobrir) ganhou duas timelines no estilo das abas do X, visíveis com login:
+  - **Descobrir**: avaliações públicas de todas as pessoas, ordenadas pelas MAIS CURTIDAS (empate: mais recente). O ranking é por avaliação; as pessoas aparecem como autoras das avaliações em destaque, sem ranking de usuário e sem seguidores.
+  - **Amigos**: apenas avaliações de amigos (amizade bidirecional aceita, visibilidade pública ou "amigos"), das mais recentes para as mais antigas.
+- Curtidas: nova tabela `public.rating_likes` na migration `202611180002_rating_likes.sql` (REVISIONADA EM CÓDIGO, NÃO APLICADA a nenhum banco). Uma curtida por pessoa por avaliação; RLS permite ver/curtir apenas avaliações já visíveis pela regra existente (pública, de amigo ou própria; nunca de bloqueado) e curtir só avaliação de outra pessoa; descurtir remove só a própria curtida.
+- A busca de obras continua no topo da tela; ao buscar, os resultados substituem a timeline.
+- Sem números, curtidas ou relações inventadas na UI: estados vazios têm texto próprio; sem login as timelines não aparecem.
+
+## Importação de catálogo CC0 (fundação)
+
+- Pipeline em `scripts/catalog-import/`: `fetch-sample.mjs` (busca uma amostra real pequena nas APIs públicas), `normalize.mjs` (normalização pura), `generate-seed.mjs` (gera `supabase/seed_catalog_cc0.sql`).
+- Amostra REAL versionada em `scripts/catalog-import/sample/`: 6 obras do Wikidata (filmes, séries e animes, dados CC0 — https://www.wikidata.org/wiki/Wikidata:Licensing) e 5 álbuns do MusicBrainz (dados centrais CC0 — https://musicbrainz.org/doc/MusicBrainz_Database/Download). É uma demonstração do pipeline, NÃO o catálogo completo.
+- A seed usa `insert ... on conflict (external_source, external_id) do update`: repetir a importação atualiza as mesmas obras sem duplicar (dedup pela chave fonte+id, que já é unique no schema). `cover_url` fica null: capas continuam ilustradas até haver fonte de arte licenciada.
+- Migration `202611180001_media_items_creator.sql` (aditiva, NÃO APLICADA): coluna `creator` em `media_items` para diretor/artista/autor; a busca do catálogo já lê e exibe o criador.
+- Importação completa (dumps oficiais → subconjunto → seed) e a aplicação da seed no banco são passos separados, a cargo do Marco. Nada foi escrito em banco nesta rodada.
+
 ## Fontes e direitos (verificado em 18/11/2026)
 
 - Metadados das obras (título, criador, ano) são fatos e foram conferidos em fontes públicas (MusicBrainz para álbuns; demais obras em fontes editoriais públicas).
@@ -78,3 +95,7 @@ Quando o Supabase não está configurado, a tela Descobrir passa a oferecer busc
 ## Bloco de encerramento
 
 Antes de editar, README.md, docs/architecture.md e o código existente foram relidos. O trabalho está em branch própria, sem merge nem publicação automática, sem `.env` ou credenciais.
+
+## Rodada 6b — reforco de privacidade nas curtidas (somente revisao de migration)
+- A policy de leitura de rating_likes agora tambem esconde curtidas cujo CURTIDOR esta bloqueado em qualquer direcao (is_blocked bidirecional), alem da visibilidade da avaliacao. Assim, a identidade/atividade de uma pessoa bloqueada nao aparece nem via avaliacao publica de terceiros. Contagens de curtidas passam a refletir apenas curtidores visiveis para cada usuario.
+- Segue NAO APLICADA a nenhum banco; validacao ao vivo de RLS pendente como sempre.
