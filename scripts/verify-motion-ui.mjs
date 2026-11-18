@@ -66,10 +66,11 @@ try {
   await page.mouse.down();
   await new Promise(r => setTimeout(r, 110));
   const pressed = await tab.evaluate(e => getComputedStyle(e).transform);
-  assert.notEqual(pressed, 'none');
+  assert.ok(Number(pressed.match(/matrix\(([^,]+)/)?.[1]) < 1, 'Press feedback must actually scale down');
   await page.screenshot({ path: path.join(out, 'pressed-mobile.png') });
   await page.mouse.up();
-  await new Promise(r => setTimeout(r, 180));
+  await new Promise(r => setTimeout(r, 220));
+  assert.equal(await tab.evaluate(e => getComputedStyle(e).transform), 'matrix(1, 0, 0, 1, 0, 0)');
   // Secondary screen and browser back also animate and remain usable.
   await navigate('Perfil');
   const authLink = await page.evaluateHandle(() => [...document.querySelectorAll('a[href="/auth"]')].find(e => !e.closest('[inert]'))); await authLink.click();
@@ -96,6 +97,23 @@ try {
     await new Promise(r => setTimeout(r, 1500));
     await recorder.stop();
   }
+  // Filter entrances are sampled independently of the enclosing screen animation.
+  const cardFrames = await page.evaluate(async () => {
+    const click = title => [...document.querySelectorAll('[role=button]')].find(e => e.textContent === title && !e.closest('[inert]')).click();
+    click('Livros');
+    await new Promise(r => setTimeout(r, 500));
+    click('Tudo');
+    const frames = [], start = performance.now();
+    await new Promise(resolve => {
+      const tick = () => {
+        const cards = [...document.querySelectorAll('[aria-label^="Demonstração:"]')].filter(e => !e.closest('[inert]')).map(e => { const s = getComputedStyle(e.parentElement); return { opacity: Number(s.opacity), transform: s.transform }; });
+        frames.push({ ms: Math.round(performance.now() - start), cards });
+        performance.now() - start < 650 ? requestAnimationFrame(tick) : resolve();
+      }; requestAnimationFrame(tick);
+    }); return frames;
+  });
+  assert.ok(cardFrames.some(f => f.cards.some(c => c.opacity < 1)), 'Card entrance missing');
+  assert.ok(cardFrames.at(-1).cards.every(c => c.opacity === 1));
   await page.setViewport({ width: 1440, height: 1000 });
   await navigate('Descobrir', true); await navigate('Início', true);
 
@@ -118,6 +136,6 @@ try {
   await page.focus('[role=tab][aria-label="Início"]'); await page.keyboard.press('Enter');
   await page.waitForFunction(() => document.querySelector('[role=tab][aria-label="Início"]').getAttribute('aria-selected') === 'true');
   assert.deepEqual(errors, []);
-  fs.writeFileSync(path.join(out, 'samples.json'), JSON.stringify({ status: 'passed', samples, pressed, rest, errors }, null, 2));
+  fs.writeFileSync(path.join(out, 'samples.json'), JSON.stringify({ status: 'passed', samples, cardFrames, pressed, rest, errors }, null, 2));
   console.log(JSON.stringify({ status: 'passed', checks: ['5 tabs + repeat focus', 'time-sampled transitions', 'pointer press', 'state preservation', 'auth route + back', 'filters', '390/1440 no overflow', 'live reduced-motion toggle', 'mid-transition reduction', 'keyboard activation'], evidence: out }));
 } finally { await browser.close(); await new Promise(r => server.close(r)); }
