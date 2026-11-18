@@ -63,10 +63,7 @@ function MuralTile({ item }: { item: CuratedItem }) {
           style={{ width: '100%', aspectRatio: item.coverAspectRatio, backgroundColor: tokens.colors.secondary }}
         />
       ) : (
-        <View style={{ width: '100%', aspectRatio: item.coverAspectRatio, backgroundColor: (categoryTone[item.category] ?? categoryTone.series)!.bg, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 16 }}>
-          <Icon name={categoryIcons[item.category] ?? 'image'} size={34} color={(categoryTone[item.category] ?? categoryTone.series)!.fg} />
-          <Text style={{ color: (categoryTone[item.category] ?? categoryTone.series)!.caption, fontSize: 11, letterSpacing: 1.5, fontWeight: '700', textAlign: 'center' }}>{categoryLabel(item.category).toUpperCase()}</Text>
-        </View>
+        <IllustratedCover category={item.category} aspectRatio={item.coverAspectRatio} />
       )}
       <View style={{ padding: 14, gap: 4 }}>
         <Text style={{ fontSize: 15, fontWeight: '600', color: tokens.colors.text }}>{item.title}</Text>
@@ -74,6 +71,16 @@ function MuralTile({ item }: { item: CuratedItem }) {
           {item.creator} · {categoryLabel(item.category)}{item.releaseYear ? ` · ${item.releaseYear}` : ''}
         </Text>
       </View>
+    </View>
+  );
+}
+
+export function IllustratedCover({ category, aspectRatio }: { category: string; aspectRatio: number }) {
+  const tone = categoryTone[category] ?? categoryTone.series!;
+  return (
+    <View style={{ width: '100%', aspectRatio, backgroundColor: tone.bg, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 16 }}>
+      <Icon name={categoryIcons[category] ?? 'image'} size={34} color={tone.fg} />
+      <Text style={{ color: tone.caption, fontSize: 11, letterSpacing: 1.5, fontWeight: '700', textAlign: 'center' }}>{categoryLabel(category).toUpperCase()}</Text>
     </View>
   );
 }
