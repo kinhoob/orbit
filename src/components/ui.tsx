@@ -1,19 +1,20 @@
 import React from 'react';
 import { MotionPressable, ScreenMotion } from './motion';
 import { useWebPullToRefresh } from './pull-to-refresh';
-import { ActivityIndicator, Animated, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Icon } from './icons';
 import { tokens as t } from '../design/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-export function Screen({children,maxWidth=560,onRefresh,refreshing=false}:React.PropsWithChildren<{maxWidth?:number;onRefresh?:()=>void;refreshing?:boolean}>) {
+export function Screen({children,maxWidth=560,onRefresh,refreshing=false,scrollRef}:React.PropsWithChildren<{maxWidth?:number;onRefresh?:()=>void;refreshing?:boolean;scrollRef?:React.RefObject<React.ComponentRef<typeof ScrollView>|null>}>) {
   const insets = useSafeAreaInsets();
   // Nativo: RefreshControl padrao. Web: gesto de puxar proprio (o RefreshControl
   // do react-native-web e um stub sem gesto).
   const pull = useWebPullToRefresh(refreshing,onRefresh);
-  const scroll=<ScrollView keyboardShouldPersistTaps="handled" onScroll={pull.enabled?pull.onScroll:undefined} scrollEventThrottle={pull.enabled?16:undefined} contentContainerStyle={[styles.screen,{paddingTop:Math.max(insets.top+24,48),paddingBottom:Math.max(insets.bottom+24,32)}]} refreshControl={!pull.enabled&&onRefresh?<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accentStrong} colors={[t.colors.accentStrong]} progressBackgroundColor={t.colors.surface}/>:undefined}><ScreenMotion testID="screen-motion" style={[styles.content,{maxWidth}]}>{children}</ScreenMotion></ScrollView>;
+  const scroll=<ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" onScroll={pull.enabled?pull.onScroll:undefined} scrollEventThrottle={pull.enabled?16:undefined} contentContainerStyle={[styles.screen,{paddingTop:Math.max(insets.top+24,48),paddingBottom:Math.max(insets.bottom+24,32)}]} refreshControl={!pull.enabled&&onRefresh?<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accentStrong} colors={[t.colors.accentStrong]} progressBackgroundColor={t.colors.surface}/>:undefined}><ScreenMotion testID="screen-motion" style={[styles.content,{maxWidth}]}>{children}</ScreenMotion></ScrollView>;
   if(!pull.enabled) return scroll;
   return <View style={styles.pullRoot} {...pull.panHandlers}>
     <Animated.View pointerEvents="none" style={[styles.pullIndicator,{opacity:pull.pull.interpolate({inputRange:[0,24,48],outputRange:[0,0.35,1],extrapolate:'clamp'})}]}>
-      <View style={styles.pullSpinner}><ActivityIndicator color={t.colors.accentStrong}/></View>
+      <View style={styles.pullSpinner}><Icon name="arrow-down" size={18} color={t.colors.accentStrong}/></View>
     </Animated.View>
     <Animated.View style={[styles.pullContent,{transform:[{translateY:pull.pull}]}]}>{scroll}</Animated.View>
   </View>;
