@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LoadingState } from '../../src/components/loading';
 import { Feedback } from '../../src/components/feedback';
 import { inReadingOrder } from '../../src/domain/feed-order.mjs';
+import { activeNewerCount } from '../../src/domain/timelines.mjs';
 
 type TimelineId = 'descobrir'|'amigos';
 const TIMELINE_ORDER: TimelineId[] = ['descobrir','amigos'];
@@ -112,7 +113,7 @@ function DiscoverSession() {
   // 19/11/2026): fica fixo no topo do feed mesmo com a lista rolada, mostra o
   // aviso da timeline ativa e o toque carrega as novidades e volta ao topo.
   const bubbleTop=insets.top+76;
-  const newerActive=timeline==='descobrir'?(newerDiscover.data||0):(newerFriends.data||0);
+  const newerActive=activeNewerCount(timeline,newerDiscover.data,newerFriends.data);
   const openNewerActive=()=>{void openNewer(timeline==='descobrir'?discoverQuery:friendsQuery,timeline);};
   // Sem titulo grande nem busca: o Explorar abre direto no feed (abas no topo,
   // publicacoes em sequencia), seguindo a referencia do X enviada pelo Marco.
