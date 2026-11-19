@@ -111,4 +111,4 @@ function HomeSession({ account }: { account: string }) {
       <Link href="/(tabs)/discover" style={styles.link}>Explorar o catálogo real →</Link>
     </Screen>
   );
-                                                                             }
+}
