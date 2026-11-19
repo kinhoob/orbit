@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen,styles } from '../../src/components/ui';
 import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/feed';
 import { Pager } from '../../src/components/pager';
-import { SwipeScreen } from '../../src/components/screen-swipe';
 import { listDiscoverTimeline, listFriendsTimeline, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
 import { toggleTimelineLike } from '../../src/features/feed/like-mutation';
 import { supabase } from '../../src/lib/supabase';
@@ -119,8 +118,7 @@ function DiscoverSession() {
   // publicacoes em sequencia), seguindo a referencia do X enviada pelo Marco.
   // Arraste lateral: o pager troca Descobrir <-> Amigos e, nas bordas, entrega
   // o gesto à troca de telas (Inicio à direita, Busca à esquerda).
-  return <SwipeScreen route="discover">
-    <View style={{flex:1}}>
+  return <View style={{flex:1}}>
       <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}>
         {!supabase?<Text style={styles.body}>O Explorar precisa da conexão com o Supabase para mostrar as timelines.</Text>
           :!session?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>
@@ -139,6 +137,5 @@ function DiscoverSession() {
           </>}
       </Screen>
       <NewPostsBubble visible={newerActive>0} onPress={openNewerActive} top={bubbleTop}/>
-    </View>
-  </SwipeScreen>;
+    </View>;
 }
