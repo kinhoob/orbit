@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../features/auth/provider';
 import { countUnreadNotifications } from '../features/social/notifications';
 import { unreadBadgeLabel } from '../domain/notifications.mjs';
-import { tokens } from '../design/tokens';
+import { tokens, font} from '../design/tokens';
 import { useAccountSettings } from '../features/account/settings';
 
 /**
@@ -28,10 +28,9 @@ export function NotificationBadge() {
     <View
       accessibilityElementsHidden
       importantForAccessibility="no"
-      style={{ position: 'absolute', top: -4, right: -10, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: tokens.colors.accentStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}
+      style={{ position: 'absolute', top: -4, right: -10, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: tokens.colors.gold, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}
     >
-      <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFFFFF' }}>{label}</Text>
+      <Text style={{ fontSize: 10, fontFamily: font.bold, color: tokens.colors.dark }}>{label}</Text>
     </View>
   );
 }
-
