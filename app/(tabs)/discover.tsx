@@ -1,12 +1,9 @@
 import React, { useCallback,useEffect,useRef,useState } from 'react';
-import { ActivityIndicator,ScrollView,Text,TextInput,View } from 'react-native';
+import { ActivityIndicator,ScrollView,Text,View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { Screen,styles,Button } from '../../src/components/ui';
-import { Categories,CatalogGrid } from '../../src/components/catalog';
+import { Screen,styles } from '../../src/components/ui';
 import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/feed';
 import { Pager } from '../../src/components/pager';
-import { searchMedia, MediaItem } from '../../src/features/catalog/data';
-import { searchPublicCatalog, publicProviderCredit, publicCoverageLabel } from '../../src/features/catalog/public-search';
 import { listDiscoverTimeline, listFriendsTimeline, setRatingLike, withLike, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
@@ -15,26 +12,15 @@ import { tokens as t } from '../../src/design/tokens';
 type TimelineId = 'descobrir'|'amigos';
 const TIMELINE_ORDER: TimelineId[] = ['descobrir','amigos'];
 
+// Explorar = so o feed (arquitetura aprovada pelo Marco em 18/11/2026): abas
+// Descobrir/Amigos e publicacoes em sequencia. A busca mora na aba Busca.
 export default function Discover() {
-  const [search,setSearch]=useState('');const [term,setTerm]=useState('');const [category,setCategory]=useState('');
   const [timeline,setTimeline]=useState<TimelineId>('descobrir');
   const [likedOverride,setLikedOverride]=useState<Record<string,FeedReview>>({});
   const [refreshing,setRefreshing]=useState(false);
   const scrollRef=useRef<React.ComponentRef<typeof ScrollView>>(null);
   const {session}=useAuth();
-  useEffect(()=>{const timer=setTimeout(()=>setTerm(search),300);return()=>clearTimeout(timer);},[search]);
-  const searching=term.trim().length>=2;
-  const query=useQuery({queryKey:['catalog',session?.user.id,term,category],queryFn:()=>searchMedia(term,category),enabled:!!supabase});
-  const publicQuery=useQuery({
-    queryKey:['public-catalog',term,category],
-    queryFn:async()=>{
-      const items=await searchPublicCatalog(term,category);
-      return items.map((item):MediaItem=>({id:item.id,title:item.title,category:item.category,description:`${item.creator?item.creator+' · ':''}Fonte: ${item.source}`,cover_url:null,release_year:item.releaseYear,source_url:item.sourceUrl}));
-    },
-    enabled:!supabase&&searching,
-    staleTime:10*60*1000,
-  });
-  const timelinesOn=!!supabase&&!!session&&!searching;
+  const timelinesOn=!!supabase&&!!session;
   const discoverQuery=useQuery({
     queryKey:['timeline','descobrir',session?.user.id],
     queryFn:()=>listDiscoverTimeline(session!.user.id),
@@ -95,28 +81,24 @@ export default function Discover() {
     return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
-  // Sem titulo grande: o Explorar abre direto na busca e no feed (abas no topo,
+  // Sem titulo grande nem busca: o Explorar abre direto no feed (abas no topo,
   // publicacoes em sequencia), seguindo a referencia do X enviada pelo Marco.
-  return <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}><TextInput accessibilityLabel="Buscar obras" placeholder="Busque séries, animes, livros…" style={styles.input} value={search} onChangeText={setSearch}/><Categories value={category} onChange={setCategory}/>
-    {searching||!supabase||!session?<>
-      {!supabase?<>
-        <Text style={{...styles.body,color:'#5b6b70',fontSize:13}}>Busca pública ao vivo: {publicCoverageLabel()} · Fontes: {publicProviderCredit()} · Capas ilustradas, sem arte oficial</Text>
-        {publicQuery.isPending?<Text style={styles.body}>Buscando em fontes públicas…</Text>:publicQuery.isError?<Text style={styles.body}>Busca pública indisponível agora.</Text>:publicQuery.data?.length?<CatalogGrid items={publicQuery.data}/>:searching?<Text style={styles.body}>Nenhum resultado público para essa busca.</Text>:null}
-      </>:query.isPending?<Text style={styles.body}>Buscando descobertas…</Text>:query.isError?<><Text style={styles.error}>Não foi possível carregar o catálogo.</Text><Button label="Tentar novamente" onPress={()=>{void query.refetch();}}/></>:query.data?.length?<CatalogGrid items={query.data}/>:searching?<Text style={styles.body}>Nenhuma obra encontrada. O catálogo ainda pode estar vazio ou não há resultados para sua busca.</Text>:null}
-      {!session&&supabase?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>:null}
-    </>:<>
-      <TimelineTabs value={timeline} onChange={setTimeline}/>
-      {updating?<View style={{alignItems:'center'}}><ActivityIndicator size="small" color={t.colors.accentStrong}/></View>:null}
-      <Pager index={TIMELINE_ORDER.indexOf(timeline)} onIndexChange={(i)=>setTimeline(TIMELINE_ORDER[i]||'descobrir')} accessibilityLabel="Timelines do Explorar">
-        <View style={{position:'relative'}}>
-          <NewPostsBubble visible={(newerDiscover.data||0)>0} onPress={()=>openNewer(discoverQuery)}/>
-          {renderTimeline(discoverQuery,'Ainda não há avaliações públicas. As mais curtidas aparecem aqui.')}
-        </View>
-        <View style={{position:'relative'}}>
-          <NewPostsBubble visible={(newerFriends.data||0)>0} onPress={()=>openNewer(friendsQuery)}/>
-          {renderTimeline(friendsQuery,'Quando seus amigos avaliarem obras, as avaliações aparecem aqui, das mais recentes.')}
-        </View>
-      </Pager>
-    </>}
+  return <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}>
+    {!supabase?<Text style={styles.body}>O Explorar precisa da conexão com o Supabase para mostrar as timelines.</Text>
+      :!session?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>
+      :<>
+        <TimelineTabs value={timeline} onChange={setTimeline}/>
+        {updating?<View style={{alignItems:'center'}}><ActivityIndicator size="small" color={t.colors.accentStrong}/></View>:null}
+        <Pager index={TIMELINE_ORDER.indexOf(timeline)} onIndexChange={(i)=>setTimeline(TIMELINE_ORDER[i]||'descobrir')} accessibilityLabel="Timelines do Explorar">
+          <View style={{position:'relative'}}>
+            <NewPostsBubble visible={(newerDiscover.data||0)>0} onPress={()=>openNewer(discoverQuery)}/>
+            {renderTimeline(discoverQuery,'Ainda não há avaliações públicas. As mais curtidas aparecem aqui.')}
+          </View>
+          <View style={{position:'relative'}}>
+            <NewPostsBubble visible={(newerFriends.data||0)>0} onPress={()=>openNewer(friendsQuery)}/>
+            {renderTimeline(friendsQuery,'Quando seus amigos avaliarem obras, as avaliações aparecem aqui, das mais recentes.')}
+          </View>
+        </Pager>
+      </>}
   </Screen>;
 }
