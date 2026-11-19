@@ -11,7 +11,7 @@ import { searchPublicCatalog, publicProviderCredit } from '../catalog/public-sea
 import { searchProfiles } from '../social/friends';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/provider';
-import { tokens as t } from '../../design/tokens';
+import { tokens as t, font} from '../../design/tokens';
 
 export function SearchScreen({ intent = 'browse' }: { intent?: 'browse' | 'review' }) {
   const [search, setSearch] = useState('');
@@ -34,7 +34,7 @@ export function SearchScreen({ intent = 'browse' }: { intent?: 'browse' | 'revie
     <Text style={[styles.title, { fontSize: 29, lineHeight: 35 }]}>{intent === 'review' ? 'Qual obra você quer avaliar?' : 'Encontre sua próxima conexão.'}</Text>
     {intent === 'review' && <Text style={styles.body}>1. Escolha uma obra · 2. Dê sua nota e escreva sua opinião</Text>}
     {intent === 'browse' && <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 8 }}>
-      {(['works', 'people'] as const).map(tab => <MotionPressable key={tab} accessibilityRole="tab" accessibilityState={{ selected: mode === tab }} onPress={() => setMode(tab)} style={{ flex: 1, padding: 13, alignItems: 'center', borderRadius: 12, backgroundColor: mode === tab ? t.colors.accent : t.colors.secondary }}><Text style={{ color: t.colors.text, fontWeight: mode === tab ? '700' : '400' }}>{tab === 'works' ? 'Obras' : 'Pessoas'}</Text></MotionPressable>)}
+      {(['works', 'people'] as const).map(tab => <MotionPressable key={tab} accessibilityRole="tab" accessibilityState={{ selected: mode === tab }} onPress={() => setMode(tab)} style={{ flex: 1, padding: 13, alignItems: 'center', borderRadius: 999, backgroundColor: mode === tab ? t.colors.primary : t.colors.secondary }}><Text style={{ color: mode === tab ? t.colors.onDark : t.colors.text, fontFamily: mode === tab ? font.bold : font.regular }}>{tab === 'works' ? 'Obras' : 'Pessoas'}</Text></MotionPressable>)}
     </View>}
     <TextInput accessibilityLabel={works ? 'Buscar obras' : 'Buscar pessoas'} placeholder={works ? 'Título da obra…' : 'Nome ou username…'} style={styles.input} value={search} onChangeText={setSearch} autoCorrect={false} returnKeyType="search" maxLength={150} />
     {works ? <>
@@ -50,7 +50,7 @@ export function SearchScreen({ intent = 'browse' }: { intent?: 'browse' | 'revie
       : !searching ? <Text style={styles.body}>Busque por nome ou username, com pelo menos duas letras.</Text>
       : people.isPending || term !== search ? <LoadingState kind="feed" />
       : people.isError ? <><Text style={styles.error}>Não foi possível buscar pessoas.</Text><Button label="Tentar novamente" onPress={() => { void people.refetch(); }} /></>
-      : people.data?.length ? <View style={{ gap: 12 }}>{people.data.map(person => <Link key={person.id} href={{ pathname: '/people/[id]', params: { id: person.id } }} asChild><MotionPressable accessibilityRole="link" style={[styles.card, { flexDirection: 'row', alignItems: 'center', padding: 16 }]}><View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.colors.accent, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: t.colors.accentStrong, fontWeight: '700' }}>{(person.display_name || person.username || '?').charAt(0).toUpperCase()}</Text></View><View style={{ flex: 1, gap: 4 }}><Text style={{ color: t.colors.text, fontWeight: '600' }}>{person.display_name || person.username}</Text><Text style={{ color: t.colors.muted }}>@{person.username || 'sem username'}</Text></View><Text style={{ color: t.colors.accentStrong }}>→</Text></MotionPressable></Link>)}</View>
+      : people.data?.length ? <View style={{ gap: 12 }}>{people.data.map(person => <Link key={person.id} href={{ pathname: '/people/[id]', params: { id: person.id } }} asChild><MotionPressable accessibilityRole="link" style={[styles.card, { flexDirection: 'row', alignItems: 'center', padding: 16 }]}><View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.colors.accent, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: t.colors.accentStrong, fontFamily: font.bold }}>{(person.display_name || person.username || '?').charAt(0).toUpperCase()}</Text></View><View style={{ flex: 1, gap: 4 }}><Text style={{ color: t.colors.text, fontFamily: font.semibold }}>{person.display_name || person.username}</Text><Text style={{ color: t.colors.muted }}>@{person.username || 'sem username'}</Text></View><Text style={{ color: t.colors.accentStrong }}>→</Text></MotionPressable></Link>)}</View>
       : <Text style={styles.body}>Nenhuma pessoa encontrada.</Text>}
   </Screen>;
 }
