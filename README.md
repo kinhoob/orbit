@@ -33,6 +33,10 @@ As telas consultam o Supabase; não há pessoas, avaliações ou catálogo fict�
 
 ## Supabase
 
+### Fluidez e navegação
+
+As abas móveis têm rótulos e indicador animado. Criar abre diretamente a escolha da obra; Busca separa Obras e Pessoas, com perfis individuais. Skeletons preservam espaço durante o carregamento; curtidas e salvos têm feedback animado, com respeito a reduzir movimento. As preferências opcionais do primeiro acesso organizam apenas a curadoria local e ficam no dispositivo. Ver `docs/ux-polish.md` para testes manuais e limites.
+
 ### Correções de descoberta
 
 Os filtros públicos agora separam séries e animes. Os cards da curadoria abrem detalhes locais e encaminham para a obra real quando há uma correspondência no catálogo. Curtidas usam o cache da conta e voltam a consultar o servidor após a alteração.

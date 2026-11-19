@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../src/components/ui';
 import { useAuth } from '../src/features/auth/provider';
@@ -38,7 +38,8 @@ export default function Friends() {
   const { session, loading } = useAuth();
   const userId = session?.user.id;
   const cache = useQueryClient();
-  const [term, setTerm] = useState('');
+  const params = useLocalSearchParams<{ search?: string }>();
+  const [term, setTerm] = useState(typeof params.search === 'string' ? params.search : '');
   const [message, setMessage] = useState('');
 
   const friendships = useQuery({
@@ -257,3 +258,4 @@ const social = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600', color: t.colors.text },
   username: { fontSize: 14, color: t.colors.muted },
 });
+

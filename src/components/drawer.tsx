@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, Platform, Text, View } from 'react-native';
+import { Animated, BackHandler, Easing, PanResponder, Platform, Text, View } from 'react-native';
+import { useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,6 +45,13 @@ export function ProfileEdgeDrawer() {
   const closeRef = useRef(closeDrawer);
   openRef.current = openDrawer;
   closeRef.current = closeDrawer;
+  useEffect(() => {
+    if (!open) return;
+    const back = BackHandler.addEventListener('hardwareBackPress', () => { closeRef.current(); return true; });
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') closeRef.current(); };
+    if (Platform.OS === 'web') window.addEventListener('keydown', escape);
+    return () => { back.remove(); if (Platform.OS === 'web') window.removeEventListener('keydown', escape); };
+  }, [open]);
 
   // Gesto de abrir: so na faixa da borda esquerda (overlay exclusivo dela).
   const edgeResponder = useMemo(() => PanResponder.create({
@@ -167,3 +175,4 @@ export function ProfileEdgeDrawer() {
     </View>
   );
 }
+

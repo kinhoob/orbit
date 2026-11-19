@@ -8,6 +8,11 @@ import { useAuth } from '../../src/features/auth/provider';
 import { requireSupabase, supabase } from '../../src/lib/supabase';
 import { parseScore } from '../../src/domain/rating.mjs';
 import { tokens as t } from '../../src/design/tokens';
+import { LoadingState } from '../../src/components/loading';
+import { Feedback, StatePulse } from '../../src/components/feedback';
+import { MotionPressable } from '../../src/components/motion';
+import { Icon } from '../../src/components/icons';
+import { toggleSavedItem } from '../../src/features/catalog/save-mutation';
 
 const VISIBILITY = [
   { id: 'public', label: 'Pública' },
@@ -65,6 +70,7 @@ export default function MediaDetail() {
   const [visibility, setVisibility] = useState<Visibility>('public');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [failed, setFailed] = useState(false);
   const media = useQuery({
     queryKey: ['media', id, userId],
     enabled: !!supabase && !!id,
@@ -92,7 +98,7 @@ export default function MediaDetail() {
     setScore(state.data?.rating ? String(state.data.rating.score) : '');
     setReview(state.data?.rating?.review || '');
     setVisibility((state.data?.rating?.visibility as Visibility) || 'public');
-  }, [state.data?.rating, id, userId]);
+  }, [state.data?.rating?.score, state.data?.rating?.review, state.data?.rating?.visibility, id, userId]);
   useEffect(() => { setMessage(''); }, [id, userId]);
   async function invalidate() {
     await Promise.all([
@@ -104,15 +110,12 @@ export default function MediaDetail() {
     if (!userId || !id) return;
     setBusy(true);
     setMessage('');
+    setFailed(false);
     try {
-      const client = requireSupabase();
-      const result = state.data?.saved
-        ? await client.from('saved_items').delete().eq('user_id', userId).eq('media_item_id', id)
-        : await client.from('saved_items').upsert({ user_id: userId, media_item_id: id }, { onConflict: 'user_id,media_item_id', ignoreDuplicates: true });
-      if (result.error) throw result.error;
-      await invalidate();
-      setMessage(state.data?.saved ? 'Obra removida dos salvos.' : 'Obra salva na sua biblioteca.');
+      const saved = await toggleSavedItem(cache, userId, id);
+      if (saved !== null) setMessage(saved ? 'Obra salva na sua biblioteca.' : 'Obra removida dos salvos.');
     } catch {
+      setFailed(true);
       setMessage('Não foi possível atualizar os salvos. Tente novamente.');
     } finally {
       setBusy(false);
@@ -122,19 +125,23 @@ export default function MediaDetail() {
     if (!userId || !id) return;
     const parsed = parseScore(score);
     if (parsed === null) {
+      setFailed(true);
       setMessage('Informe uma nota de 0 a 10, com no máximo uma casa decimal.');
       return;
     }
     setBusy(true);
     setMessage('');
+    setFailed(false);
     try {
       const { error } = await requireSupabase()
         .from('ratings')
         .upsert({ user_id: userId, media_item_id: id, score: parsed, review: review.trim(), visibility }, { onConflict: 'user_id,media_item_id' });
       if (error) throw error;
       await invalidate();
+      await cache.invalidateQueries({ predicate: query => query.queryKey[0] === 'timeline' && query.queryKey[2] === userId });
       setMessage('Sua avaliação foi salva.');
     } catch {
+      setFailed(true);
       setMessage('Não foi possível salvar a avaliação. Tente novamente.');
     } finally {
       setBusy(false);
@@ -154,10 +161,7 @@ export default function MediaDetail() {
           <Text style={styles.body}>O catálogo ainda não foi conectado. Assim que a conexão com o ORBIT for configurada, os detalhes das obras aparecem aqui.</Text>
         </View>
       ) : media.isPending ? (
-        <View style={detail.stateCard} accessibilityRole="progressbar" accessibilityLabel="Carregando obra">
-          <Text style={styles.eyebrow}>CARREGANDO</Text>
-          <Text style={styles.body}>Buscando os detalhes desta obra…</Text>
-        </View>
+        <LoadingState kind="detail" />
       ) : media.isError ? (
         <View style={detail.stateCard}>
           <Text style={styles.eyebrow}>ERRO</Text>
@@ -203,7 +207,10 @@ export default function MediaDetail() {
             </View>
           ) : (
             <>
-              <Button label={state.data?.saved ? '✓ Salvo na biblioteca — remover' : 'Salvar na biblioteca'} disabled={busy} onPress={() => void toggleSave()} />
+              <MotionPressable accessibilityRole="button" accessibilityLabel={state.data?.saved ? 'Remover dos salvos' : 'Salvar na biblioteca'} accessibilityState={{ selected: !!state.data?.saved, disabled: busy, busy }} disabled={busy} onPress={() => void toggleSave()} style={[styles.buttonOutline, { flexDirection: 'row', justifyContent: 'center', gap: 10, opacity: busy ? 0.6 : 1 }]}>
+                <StatePulse active={!!state.data?.saved}><Icon name="bookmark" size={21} color={state.data?.saved ? t.colors.success : t.colors.text} /></StatePulse>
+                <Text style={[styles.buttonOutlineText, state.data?.saved && { color: t.colors.success }]}>{state.data?.saved ? 'Salvo na biblioteca' : 'Salvar na biblioteca'}</Text>
+              </MotionPressable>
               <View style={styles.card}>
                 <Text style={[styles.title, { fontSize: 25, lineHeight: 30 }]}>Sua avaliação</Text>
                 <Text style={styles.body}>Nota de 0 a 10</Text>
@@ -236,11 +243,7 @@ export default function MediaDetail() {
           )}
         </>
       )}
-      {!!message && (
-        <Text accessibilityRole="alert" style={styles.body}>
-          {message}
-        </Text>
-      )}
+      <Feedback message={message} error={failed} />
     </Screen>
   );
 }
@@ -289,3 +292,4 @@ const detail = StyleSheet.create({
   segmentText: { fontSize: 15, fontWeight: '600', color: t.colors.text },
   segmentTextActive: { color: '#FFFFFF' },
 });
+

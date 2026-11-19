@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { MotionPressable, CardEntrance } from './motion';
+import { StatePulse } from './feedback';
 import { Icon } from './icons';
 import { tokens } from '../design/tokens';
 import { relativeTime, type FeedReview } from '../features/feed/timelines';
@@ -33,7 +34,7 @@ export function ReviewCard({ review, onToggleLike }: { review: FeedReview; onTog
         onPress={() => onToggleLike(review)}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 }}
       >
-        <Icon name="heart" size={16} color={review.liked_by_me ? tokens.colors.accentStrong : tokens.colors.muted} />
+        <StatePulse active={review.liked_by_me}><Icon name="heart" size={18} color={review.liked_by_me ? tokens.colors.accentStrong : tokens.colors.muted} /></StatePulse>
         <Text style={{ color: review.liked_by_me ? tokens.colors.accentStrong : tokens.colors.muted, fontSize: 13 }}>{review.like_count}</Text>
       </MotionPressable>
     </View>
@@ -98,3 +99,4 @@ export function TimelineTabs({ value, onChange }: { value: 'descobrir' | 'amigos
     </View>
   );
 }
+
