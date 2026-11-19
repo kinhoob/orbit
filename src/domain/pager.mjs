@@ -41,6 +41,17 @@ export function shouldStartPull(atTop, dy, dx) {
 }
 
 /**
+ * Um pager aninhado (as timelines do Explorar) entrega o gesto horizontal a
+ * troca de telas quando ja esta na borda na direcao do arraste: na primeira
+ * pagina, arrastar para a direita e gesto da tela (volta para a Inicio); na
+ * ultima, arrastar para a esquerda vai para a Busca.
+ */
+export function pagerYieldsAtEdge(index, pageCount, dx) {
+  if (!Number.isInteger(index) || !Number.isInteger(pageCount) || pageCount < 1 || !Number.isFinite(dx) || dx === 0) return false;
+  return (index === 0 && dx > 0) || (index === pageCount - 1 && dx < 0);
+}
+
+/**
  * O pager so assume o gesto quando ele comeca FORA da faixa da borda
  * esquerda (reservada a gaveta do Perfil) e o movimento horizontal domina.
  * Gesto iniciado na borda pertence a gaveta: um nunca dispara o outro.

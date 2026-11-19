@@ -3,6 +3,7 @@ import { Text,View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery,useQueryClient } from '@tanstack/react-query';
 import { Screen,styles,Button } from '../../src/components/ui';
+import { ScreenActiveContext } from '../../src/components/screen-active';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
 import { listNotifications, markAllNotificationsRead, notificationsTableMissing, type OrbitNotification } from '../../src/features/social/notifications';
@@ -46,20 +47,24 @@ export default function Notifications() {
     queryFn: () => listNotifications(session!.user.id),
     enabled: !!session && !!supabase,
   });
-  // Abrir o sino marca tudo como lido e zera o contador da barra.
+  // Abrir o sino marca tudo como lido e zera o contador da barra. O pager de
+  // telas monta a vizinha durante o arraste: so marca como lido com a tela
+  // de fato ATIVA, nunca por ter aparecido de relance num arraste cancelado.
+  const screenActive = React.useContext(ScreenActiveContext);
   const hasUnread = (query.data || []).some((item) => !item.read_at);
   useEffect(() => {
-    if (!session || !hasUnread) return;
+    if (!screenActive || !session || !hasUnread) return;
     void markAllNotificationsRead(session.user.id).then(() => {
       void cache.invalidateQueries({ queryKey: ['notifications-unread', session.user.id] });
       void cache.invalidateQueries({ queryKey: ['notifications', session.user.id] });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, hasUnread]);
+  }, [screenActive, session?.user.id, hasUnread]);
   const open = (item: OrbitNotification) => {
     if (item.type === 'rating_like') router.push('/(tabs)/discover');
     else router.push('/friends');
   };
+  // A troca de telas por arraste mora no pager de telas do layout.
   return <Screen>
     <Text style={styles.eyebrow}>SINO</Text>
     <Text style={{...styles.title, fontSize: 29, lineHeight: 35}}>Notificações.</Text>
@@ -82,4 +87,4 @@ export default function Notifications() {
       <View>{query.data.map((item) => <NotificationRow key={item.id} item={item} onPress={() => open(item)} />)}</View>
     ) : null}
   </Screen>;
-}
+                                }

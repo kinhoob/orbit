@@ -56,10 +56,12 @@ export function TimelineList({ reviews, onToggleLike }: { reviews: FeedReview[];
 
 /** Balao flutuante "Novas publicacoes" (referencia: X). So aparece quando ha
  * avaliacoes novas de verdade; tocar carrega as novidades e volta ao topo. */
-export function NewPostsBubble({ visible, onPress }: { visible: boolean; onPress: () => void }) {
+export function NewPostsBubble({ visible, onPress, top = 10 }: { visible: boolean; onPress: () => void; top?: number }) {
   if (!visible) return null;
+  // Flutuante como no X: renderizado fora da rolagem, fica fixo no topo do
+  // feed mesmo com a lista rolada (pedido do Marco em 19/11/2026).
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', top: 10, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
+    <View pointerEvents="box-none" style={{ position: 'absolute', top, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
       <MotionPressable
         accessibilityRole="button"
         accessibilityLabel="Ver novas publicações"
@@ -99,4 +101,3 @@ export function TimelineTabs({ value, onChange }: { value: 'descobrir' | 'amigos
     </View>
   );
 }
-

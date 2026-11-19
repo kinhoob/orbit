@@ -43,6 +43,19 @@ export function advanceWatermark(current, snapshotNewest) {
   return snapshotNewest > current ? snapshotNewest : current;
 }
 
+/** Contagem do balao "Novas publicacoes": so avaliacoes mais novas que a
+ * marca d'agua (mesmo criterio do gt(created_at, since) das consultas;
+ * curtidas e reordenacoes nao contam, porque nao mudam created_at). */
+export function countNewer(reviews, since) {
+  if (!since) return 0;
+  return (reviews || []).filter((r) => r && typeof r.created_at === 'string' && r.created_at > since).length;
+}
+
+/** O balao flutuante mostra o aviso da timeline ATIVA (estilo X). */
+export function activeNewerCount(timeline, discoverCount, friendsCount) {
+  return timeline === 'amigos' ? (friendsCount || 0) : (discoverCount || 0);
+}
+
 /** Tempo relativo curto em pt-BR para o cartao da timeline. */
 export function relativeTime(iso, now = new Date()) {
   const diff = Math.max(0, now.getTime() - new Date(iso).getTime());

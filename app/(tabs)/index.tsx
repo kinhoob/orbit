@@ -98,6 +98,8 @@ function HomeSession({ account }: { account: string }) {
       <WeekCalendar selectedIso={selectedDay.iso} onSelect={setSelectedIso} pickIsos={pickIsos} />
     </View>
   );
+  // A troca de telas por arraste lateral (pedido do Marco em 19/11/2026)
+  // mora no pager de telas do layout: esta tela monta uma vez e desliza.
   return (
     <Screen maxWidth={1120} header={header} headerTint={hero ? headerTint[hero.category] : undefined}>
       <Text style={styles.eyebrow}>ORBIT / SUA SEMANA</Text>
@@ -111,4 +113,4 @@ function HomeSession({ account }: { account: string }) {
       <Link href="/(tabs)/discover" style={styles.link}>Explorar o catálogo real →</Link>
     </Screen>
   );
-}
+                                                                                                  }
