@@ -26,7 +26,7 @@ function PersonRow({ profile, children }: React.PropsWithChildren<{ profile: Pro
         <Text style={social.avatarText}>{(profile.display_name || profile.username || '?').trim().charAt(0).toUpperCase()}</Text>
       </View>
       <View style={social.rowText}>
-        <Text style={social.name}>{profile.display_name || 'Sem nome'}</Text>
+        <Link href={{ pathname: '/people/[id]', params: { id: profile.id } }} style={social.name}>{profile.display_name || 'Sem nome'} →</Link>
         {!!profile.username && <Text style={social.username}>@{profile.username}</Text>}
       </View>
       <View style={social.rowActions}>{children}</View>

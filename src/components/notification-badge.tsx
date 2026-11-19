@@ -6,6 +6,7 @@ import { useAuth } from '../features/auth/provider';
 import { countUnreadNotifications } from '../features/social/notifications';
 import { unreadBadgeLabel } from '../domain/notifications.mjs';
 import { tokens } from '../design/tokens';
+import { useAccountSettings } from '../features/account/settings';
 
 /**
  * Contador do sino: so aparece com notificacoes reais nao lidas no banco.
@@ -14,14 +15,15 @@ import { tokens } from '../design/tokens';
  */
 export function NotificationBadge() {
   const { session } = useAuth();
+  const preferences = useAccountSettings();
   const { data } = useQuery({
     queryKey: ['notifications-unread', session?.user.id],
     queryFn: () => countUnreadNotifications(session!.user.id),
-    enabled: !!session && !!supabase,
+    enabled: !!session && !!supabase && preferences.data?.show_notification_badge !== false,
     refetchInterval: 60 * 1000,
   });
   const label = unreadBadgeLabel(data || 0);
-  if (!label) return null;
+  if (!label || preferences.data?.show_notification_badge === false) return null;
   return (
     <View
       accessibilityElementsHidden
@@ -32,3 +34,4 @@ export function NotificationBadge() {
     </View>
   );
 }
+

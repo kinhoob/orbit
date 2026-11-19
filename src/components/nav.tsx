@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MotionPressable, useReducedMotion } from './motion';
 import { Icon, type IconName } from './icons';
 import { NotificationBadge } from './notification-badge';
-import { Animated, Platform, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { AccountMenu } from './account-menu';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../design/tokens';
 
@@ -91,8 +92,9 @@ export function SideBar(props: TabBarProps) {
       accessibilityLabel="Navegação principal"
       style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: SIDEBAR_WIDTH, backgroundColor: tokens.colors.surface, borderRightWidth: 1, borderRightColor: tokens.colors.border, paddingTop: Math.max(insets.top + 12, 32), paddingBottom: 24, gap: 4 }}
     >
-      <Text style={{ fontSize: 20, fontWeight: '700', letterSpacing: 6, color: tokens.colors.primary, paddingHorizontal: 32, paddingBottom: 28 }}>ORBIT</Text>
-      {SIDE_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="side" />)}
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}><Text style={{ fontSize: 20, fontWeight: '700', letterSpacing: 6, color: tokens.colors.primary, paddingHorizontal: 32, paddingBottom: 16 }}>ORBIT</Text>
+      {NAV_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="side" />)}
+      <AccountMenu /></ScrollView>
     </View>
   );
 }
