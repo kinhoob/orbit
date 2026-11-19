@@ -39,3 +39,13 @@ export const PULL_HOLD_OFFSET = 0;
 export function shouldStartPull(atTop, dy, dx) {
   return Boolean(atTop) && dy > 10 && dy > Math.abs(dx) * 1.2;
 }
+
+/**
+ * O pager so assume o gesto quando ele comeca FORA da faixa da borda
+ * esquerda (reservada a gaveta do Perfil) e o movimento horizontal domina.
+ * Gesto iniciado na borda pertence a gaveta: um nunca dispara o outro.
+ */
+export function shouldStartPager(x0, dx, dy, edgeZone = 0) {
+  if (!Number.isFinite(x0) || !Number.isFinite(dx) || !Number.isFinite(dy)) return false;
+  return x0 > edgeZone && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.4;
+}
