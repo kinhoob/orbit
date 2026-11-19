@@ -1,7 +1,7 @@
 // Testes do calendario semanal e das indicacoes por dia da tela Inicio.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { weekDays, startOfWeek, picksForDay, isoDate } from '../src/domain/week.mjs';
+import { weekDays, weekDaysSunday, startOfWeek, picksForDay, isoDate } from '../src/domain/week.mjs';
 import { curatedMuralItems } from '../src/features/home/curated-data.mjs';
 
 test('a semana tem 7 dias consecutivos comecando na segunda-feira', () => {
@@ -46,4 +46,24 @@ test('dias diferentes da semana mostram indicacoes diferentes', () => {
 
 test('curadoria vazia nao quebra o calendario', () => {
   assert.deepEqual(picksForDay([], new Date(2026, 10, 18)), []);
+});
+
+test('semana domingo a sabado: quinta 19/11/2026 mostra 15 a 21', () => {
+  const days = weekDaysSunday(new Date(2026, 10, 19)); // quinta, 19/11/2026
+  assert.equal(days.length, 7);
+  assert.deepEqual(days.map((d) => d.iso), ['2026-11-15', '2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21']);
+  assert.deepEqual(days.map((d) => d.weekday), ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']);
+  assert.deepEqual(days.map((d) => d.isToday), [false, false, false, false, true, false, false]);
+});
+
+test('semana domingo a sabado: no domingo 22/11 a semana comeca nele mesmo', () => {
+  const days = weekDaysSunday(new Date(2026, 10, 22)); // domingo, 22/11/2026
+  assert.equal(days[0].iso, '2026-11-22');
+  assert.equal(days[6].iso, '2026-11-28');
+});
+
+test('semana domingo a sabado: virada de mes', () => {
+  const days = weekDaysSunday(new Date(2026, 11, 2)); // quarta, 02/12/2026
+  assert.equal(days[0].iso, '2026-11-29');
+  assert.equal(days[6].iso, '2026-12-05');
 });
