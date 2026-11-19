@@ -258,3 +258,4 @@ const social = StyleSheet.create({
   name: { fontSize: 16, fontFamily: font.semibold, color: t.colors.text },
   username: { fontSize: 14, color: t.colors.muted },
 });
+
