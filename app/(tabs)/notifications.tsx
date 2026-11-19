@@ -3,6 +3,7 @@ import { Text,View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery,useQueryClient } from '@tanstack/react-query';
 import { Screen,styles,Button } from '../../src/components/ui';
+import { SwipeScreen } from '../../src/components/screen-swipe';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
 import { listNotifications, markAllNotificationsRead, notificationsTableMissing, type OrbitNotification } from '../../src/features/social/notifications';
@@ -60,7 +61,10 @@ export default function Notifications() {
     if (item.type === 'rating_like') router.push('/(tabs)/discover');
     else router.push('/friends');
   };
-  return <Screen>
+  // O Sino participa da troca de telas por arraste lateral (pedido do Marco
+  // em 19/11/2026): arrastar para a direita desliza de volta para a Busca.
+  return <SwipeScreen route="notifications">
+  <Screen>
     <Text style={styles.eyebrow}>SINO</Text>
     <Text style={{...styles.title, fontSize: 29, lineHeight: 35}}>Notificações.</Text>
     {loading || !supabase ? null : !session ? <Text style={styles.body}>Entre para ver suas notificações.</Text> : null}
@@ -81,5 +85,6 @@ export default function Notifications() {
     {!!session && query.data && !notificationsTableMissing() && query.data.length > 0 ? (
       <View>{query.data.map((item) => <NotificationRow key={item.id} item={item} onPress={() => open(item)} />)}</View>
     ) : null}
-  </Screen>;
-}
+  </Screen>
+  </SwipeScreen>;
+                                }
