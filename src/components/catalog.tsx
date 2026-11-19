@@ -22,3 +22,4 @@ export function MediaCard({item}:{item:MediaItem}) {
   return <Link href={{pathname:'/media/[id]',params:{id:item.id}}} asChild><MotionPressable accessibilityRole="button" accessibilityLabel={`Abrir ${item.title}`} style={cardStyle}>{body}</MotionPressable></Link>;
 }
 export function CatalogGrid({items}:{items:MediaItem[]}) {return <View style={{flexDirection:'row',flexWrap:'wrap',gap:12}}>{items.map((item,index)=><CardEntrance key={item.id} index={index} style={{width:'48%'}}><MediaCard item={item}/></CardEntrance>)}</View>;}
+
