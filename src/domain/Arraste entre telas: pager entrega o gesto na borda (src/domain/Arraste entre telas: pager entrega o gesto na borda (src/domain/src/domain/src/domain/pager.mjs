@@ -59,22 +59,4 @@ export function pagerYieldsAtEdge(index, pageCount, dx) {
 export function shouldStartPager(x0, dx, dy, edgeZone = 0) {
   if (!Number.isFinite(x0) || !Number.isFinite(dx) || !Number.isFinite(dy)) return false;
   return x0 > edgeZone && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.4;
-}// Nucleo puro do pager horizontal das timelines do Explorar (testavel em Node).
-// O componente animado fica em src/components/pager.tsx.
-
-/**
- * Decide a pagina alvo de um gesto horizontal.
-  * deltaX < 0 = arrastar para a esquerda (proxima pagina);
-   * deltaX > 0 = arrastar para a direita (pagina anterior).
-    * Arraste curto demais mantem a pagina atual; nas bordas nao ha para onde ir.
-     */
-     export function resolveSwipeTarget(index, deltaX, pageCount, width, thresholdRatio = 0.22) {
-       if (!Number.isFinite(deltaX) || !Number.isInteger(pageCount) || pageCount < 2) return index;
-         const threshold = Math.max(40, Math.min((width || 0) * thresholdRatio, 140));
-           if (deltaX <= -threshold) return Math.min(index + 1, pageCount - 1);
-             if (deltaX >= threshold) return Math.max(index - 1, 0);
-               return index;
-               }
-
-               /** Resistencia nas bordas do arraste: alem dos limites o deslocamento rende menos. */
-               export 
+}
