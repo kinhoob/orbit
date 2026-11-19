@@ -41,3 +41,14 @@ export function swipeTargetRoute(routeName, dx, width) {
   const target = resolveSwipeTarget(i, dx, SWIPE_SCREENS.length, width);
   return target === i ? null : SWIPE_SCREENS[target];
 }
+
+/**
+ * Tela vizinha na direção do gesto, sem limiar: é ela que aparece ao lado e
+ * acompanha o dedo durante todo o arraste (como no pager Descobrir/Amigos).
+ */
+export function swipeNeighborRoute(routeName, dx) {
+  const i = swipeIndex(routeName);
+  if (i < 0 || !Number.isFinite(dx) || dx === 0) return null;
+  const j = dx < 0 ? i + 1 : i - 1;
+  return j >= 0 && j < SWIPE_SCREENS.length ? SWIPE_SCREENS[j] : null;
+}
