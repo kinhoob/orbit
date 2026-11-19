@@ -6,7 +6,7 @@ import { requireSupabase } from '../lib/supabase';
 import { useAuth } from '../features/auth/provider';
 import { styles, Button } from './ui';
 import { LoadingState } from './loading';
-import { tokens as t } from '../design/tokens';
+import { tokens as t, font} from '../design/tokens';
 
 type TimelineRating = { id: string; score: number; review: string; visibility: string; created_at: string; likes?: { count: number }[]; media: { id: string; title: string; category: string } | null };
 export function ProfileTimeline({ profileId }: { profileId: string }) {
@@ -28,8 +28,8 @@ export function ProfileTimeline({ profileId }: { profileId: string }) {
       : query.data.pages.flat().map(rating => <View key={rating.id} style={{ borderLeftWidth: 2, borderLeftColor: t.colors.border, paddingLeft: 18, gap: 8 }}>
         <Text style={{ color: t.colors.muted, fontSize: 12 }}>{new Date(rating.created_at).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}</Text>
         <View style={[styles.card, { gap: 10 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}><Text style={{ color: t.colors.accentStrong, fontWeight: '700', fontSize: 21 }}>{String(rating.score).replace('.', ',')}/10</Text><Text style={{ color: t.colors.muted }}>{rating.visibility === 'private' ? 'Privada' : rating.visibility === 'friends' ? 'Amigos' : 'Pública'}</Text></View>
-          {rating.media ? <Link href={{ pathname: '/media/[id]', params: { id: rating.media.id } }} style={[styles.link, { fontWeight: '700' }]}>{rating.media.title} →</Link> : <Text style={styles.body}>Obra indisponível</Text>}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}><Text style={{ color: t.colors.accentStrong, fontFamily: font.bold, fontSize: 21 }}>{String(rating.score).replace('.', ',')}/10</Text><Text style={{ color: t.colors.muted }}>{rating.visibility === 'private' ? 'Privada' : rating.visibility === 'friends' ? 'Amigos' : 'Pública'}</Text></View>
+          {rating.media ? <Link href={{ pathname: '/media/[id]', params: { id: rating.media.id } }} style={[styles.link, { fontFamily: font.bold }]}>{rating.media.title} →</Link> : <Text style={styles.body}>Obra indisponível</Text>}
           {!!rating.review && <Text style={styles.body}>{rating.review}</Text>}
           {rating.likes && <Text style={styles.body}>{rating.likes[0]?.count || 0} curtidas</Text>}
           {session?.user.id === profileId && rating.media && <Link href={{ pathname: '/media/[id]', params: { id: rating.media.id } }} style={styles.link}>Editar avaliação</Link>}
@@ -37,4 +37,4 @@ export function ProfileTimeline({ profileId }: { profileId: string }) {
       </View>)}
     {query.hasNextPage && <Button label={query.isFetchingNextPage ? 'Carregando…' : 'Ver avaliações anteriores'} disabled={query.isFetchingNextPage} onPress={() => { void query.fetchNextPage(); }} />}
   </View>;
-}
+          }
