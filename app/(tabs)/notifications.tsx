@@ -82,4 +82,4 @@ export default function Notifications() {
       <View>{query.data.map((item) => <NotificationRow key={item.id} item={item} onPress={() => open(item)} />)}</View>
     ) : null}
   </Screen>;
-        }
+}
