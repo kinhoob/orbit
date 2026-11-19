@@ -1,0 +1,42 @@
+[
+  {
+    "external_id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+    "title": "Abbey Road",
+    "creator": "The Beatles",
+    "category": "album",
+    "release_year": 1969,
+    "source_url": "https://musicbrainz.org/release-group/9162580e-5df4-32de-80cc-f45a8d8a9b1d"
+  },
+  {
+    "external_id": "3a7817b5-22cb-32c3-a31b-2c8309fbf92e",
+    "title": "Thriller",
+    "creator": "Michael Jackson",
+    "category": "album",
+    "release_year": 1983,
+    "source_url": "https://musicbrainz.org/release-group/3a7817b5-22cb-32c3-a31b-2c8309fbf92e"
+  },
+  {
+    "external_id": "b1392450-e666-3926-a536-22c65f834433",
+    "title": "OK Computer",
+    "creator": "Radiohead",
+    "category": "album",
+    "release_year": 1997,
+    "source_url": "https://musicbrainz.org/release-group/b1392450-e666-3926-a536-22c65f834433"
+  },
+  {
+    "external_id": "416bb5e5-c7d1-3977-8fd7-7c9daf6c2be6",
+    "title": "Rumours",
+    "creator": "Fleetwood Mac",
+    "category": "album",
+    "release_year": 1977,
+    "source_url": "https://musicbrainz.org/release-group/416bb5e5-c7d1-3977-8fd7-7c9daf6c2be6"
+  },
+  {
+    "external_id": "8e8a594f-2175-38c7-a871-abb68ec363e7",
+    "title": "Kind of Blue",
+    "creator": "Miles Davis",
+    "category": "album",
+    "release_year": 1959,
+    "source_url": "https://musicbrainz.org/release-group/8e8a594f-2175-38c7-a871-abb68ec363e7"
+  }
+]

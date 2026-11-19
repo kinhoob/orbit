@@ -16,7 +16,9 @@ Para somente instalar e verificar: `.\iniciar-orbit.ps1 -SomenteVerificar`. Depo
 
 ## Implementação atual
 
-- Navegação: Início, Descobrir, Criar, Salvos e Perfil.
+- Navegação: barra de baixo com Início, Explorar, Criar, Busca e Sino; Perfil, Salvos e Amizades na gaveta que abre pelo arraste da borda esquerda ou pelo avatar no topo (no desktop, coluna lateral com Perfil).
+- Mural da Início com curadoria local de obras reais (metadados reais; todas as capas ilustradas localmente, sem imagem protegida); ver docs/visual-review.md.
+- Descobrir sem Supabase: busca pública ao vivo de séries/animes (TVmaze, CC BY-SA) e livros (Open Library), com atribuição na tela.
 - Cadastro, login, confirmação por link, recuperação de senha e persistência de sessão.
 - Busca no catálogo com filtro por categoria e estados de carregamento, erro e vazio.
 - Detalhes da obra, avaliação de 0 a 10, opinião e visibilidade pública, amigos ou privada.
@@ -24,6 +26,7 @@ Para somente instalar e verificar: `.\iniciar-orbit.ps1 -SomenteVerificar`. Depo
 - Edição de nome, username e biografia; logout com limpeza do cache.
 - Tokens neutros com alternativas em azul-claro e amarelo suave.
 - Migration com perfis, bloqueios, amizades, catálogo, avaliações, salvos e coleções, incluindo RLS.
+- Migrations em revisão (não aplicadas): curtidas em avaliações, criador nas obras e notificações do Sino (pedido de amizade, amizade aceita e curtida, criadas por gatilhos; o app mostra estado honesto enquanto a tabela não existe, sem contador inventado).
 - Sete testes de regras: compatibilidade, notas e credenciais.
 
 As telas consultam o Supabase; não há pessoas, avaliações ou catálogo fictícios. Sem conexão, mostram estados informativos. Mural social, amizades pela interface, coleções pela interface, Daily, XP, loja, conquistas e moderação **ainda não estão implementados**. A estrutura do banco não representa uma interface concluída.
@@ -54,7 +57,7 @@ Autenticação, migrations e RLS precisam de validação com um projeto Supabase
 
 | Pasta | Responsabilidade |
 | --- | --- |
-| app/(tabs)/ | Cinco áreas principais |
+| app/(tabs)/ | Áreas principais da barra de baixo |
 | app/auth/ | Formulários e callback |
 | app/media/ | Detalhes e avaliação de obras |
 | src/components/ | Componentes reutilizáveis |

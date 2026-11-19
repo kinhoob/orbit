@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../../src/components/ui';
@@ -7,42 +7,285 @@ import { categories, type MediaItem } from '../../src/features/catalog/data';
 import { useAuth } from '../../src/features/auth/provider';
 import { requireSupabase, supabase } from '../../src/lib/supabase';
 import { parseScore } from '../../src/domain/rating.mjs';
+import { tokens as t } from '../../src/design/tokens';
+
+const VISIBILITY = [
+  { id: 'public', label: 'Pública' },
+  { id: 'friends', label: 'Amigos' },
+  { id: 'private', label: 'Privada' },
+] as const;
+type Visibility = (typeof VISIBILITY)[number]['id'];
+
+function CoverArt({ item }: { item: MediaItem }) {
+  if (item.cover_url) {
+    return (
+      <View style={detail.coverFrame}>
+        <Image source={{ uri: item.cover_url }} accessibilityLabel={`Capa de ${item.title}`} style={detail.cover} resizeMode="cover" />
+      </View>
+    );
+  }
+  return (
+    <View style={[detail.coverFrame, detail.coverFallback]} accessibilityLabel={`Obra sem capa: ${item.title}`}>
+      <Text style={detail.coverInitial}>{item.title.trim().charAt(0).toUpperCase() || '?'}</Text>
+    </View>
+  );
+}
+
+function VisibilityPicker({ value, onChange, disabled }: { value: Visibility; onChange: (next: Visibility) => void; disabled: boolean }) {
+  return (
+    <View accessibilityRole="radiogroup" accessibilityLabel="Visibilidade da avaliação" style={detail.segmented}>
+      {VISIBILITY.map((option) => {
+        const active = value === option.id;
+        return (
+          <Pressable
+            key={option.id}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active, disabled }}
+            {...({ 'aria-checked': active } as object)}
+            disabled={disabled}
+            onPress={() => onChange(option.id)}
+            style={[detail.segment, active && detail.segmentActive, disabled && { opacity: 0.5 }]}
+          >
+            <Text style={[detail.segmentText, active && detail.segmentTextActive]}>{option.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function MediaDetail() {
-  const params=useLocalSearchParams<{id:string}>();const id=Array.isArray(params.id)?params.id[0]:params.id;
-  const {session}=useAuth();const userId=session?.user.id;const cache=useQueryClient();
-  const [score,setScore]=useState('');const [review,setReview]=useState('');const [visibility,setVisibility]=useState('public');
-  const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');
-  const media=useQuery({queryKey:['media',id,userId],enabled:!!supabase&&!!id,queryFn:async()=>{
-    const {data,error}=await requireSupabase().from('media_items').select('*').eq('id',id!).maybeSingle();if(error)throw error;return data as MediaItem|null;
-  }});
-  const state=useQuery({queryKey:['media-state',id,userId],enabled:!!userId&&!!id,queryFn:async()=>{
-    const client=requireSupabase();const [saved,rating]=await Promise.all([
-      client.from('saved_items').select('media_item_id').eq('user_id',userId!).eq('media_item_id',id!).maybeSingle(),
-      client.from('ratings').select('score,review,visibility').eq('user_id',userId!).eq('media_item_id',id!).maybeSingle(),
-    ]);if(saved.error)throw saved.error;if(rating.error)throw rating.error;return {saved:!!saved.data,rating:rating.data};
-  }});
-  useEffect(()=>{setScore(state.data?.rating ? String(state.data.rating.score) : '');setReview(state.data?.rating?.review || '');setVisibility(state.data?.rating?.visibility || 'public');setMessage('');},[state.data,id,userId]);
-  async function invalidate(){await Promise.all([cache.invalidateQueries({queryKey:['media-state',id,userId]}),cache.invalidateQueries({queryKey:['saved',userId]})]);}
-  async function toggleSave(){if(!userId||!id)return;setBusy(true);setMessage('');try{
-    const client=requireSupabase();const result=state.data?.saved?await client.from('saved_items').delete().eq('user_id',userId).eq('media_item_id',id):await client.from('saved_items').upsert({user_id:userId,media_item_id:id},{onConflict:'user_id,media_item_id',ignoreDuplicates:true});
-    if(result.error)throw result.error;await invalidate();setMessage(state.data?.saved?'Obra removida dos salvos.':'Obra salva na sua biblioteca.');
-  }catch{setMessage('Não foi possível atualizar os salvos. Tente novamente.');}finally{setBusy(false);}}
-  async function saveRating(){if(!userId||!id)return;const parsed=parseScore(score);if(parsed===null){setMessage('Informe uma nota de 0 a 10, com no máximo uma casa decimal.');return;}setBusy(true);setMessage('');try{
-    const {error}=await requireSupabase().from('ratings').upsert({user_id:userId,media_item_id:id,score:parsed,review:review.trim(),visibility},{onConflict:'user_id,media_item_id'});if(error)throw error;await invalidate();setMessage('Sua avaliação foi salva.');
-  }catch{setMessage('Não foi possível salvar a avaliação. Tente novamente.');}finally{setBusy(false);}}
-  return <Screen><Link href="/(tabs)/discover" style={styles.link}>← Descobrir</Link>
-    {!supabase?<Text style={styles.body}>O catálogo ainda não foi conectado.</Text>:media.isPending?<Text style={styles.body}>Carregando obra…</Text>:media.isError?<><Text style={styles.error}>Não foi possível abrir esta obra.</Text><Button label="Tentar novamente" onPress={()=>{void media.refetch();}}/></>:!media.data?<Text style={styles.body}>Esta obra não foi encontrada.</Text>:<>
-      <Text style={styles.eyebrow}>{categories.find(c=>c.id===media.data?.category)?.label || 'OUTROS'}</Text><Text style={styles.title}>{media.data.title}</Text>
-      {media.data.cover_url&&<Image source={{uri:media.data.cover_url}} accessibilityLabel={`Capa de ${media.data.title}`} style={{width:'100%',height:320,borderRadius:18}} resizeMode="contain"/>}
-      <Text style={styles.body}>{media.data.description || 'Esta obra ainda não tem uma descrição.'}</Text>
-      {!session?<Link href="/auth" style={styles.link}>Entre para salvar e avaliar →</Link>:state.isPending?<Text style={styles.body}>Carregando sua avaliação…</Text>:state.isError?<><Text style={styles.error}>Não foi possível carregar sua biblioteca.</Text><Button label="Tentar novamente" onPress={()=>{void state.refetch();}}/></>:<>
-        <Button label={state.data?.saved?'Remover dos salvos':'Salvar na biblioteca'} disabled={busy} onPress={()=>{void toggleSave();}}/>
-        <View style={styles.card}><Text style={[styles.title,{fontSize:25,lineHeight:30}]}>Sua experiência</Text><Text style={styles.body}>Nota de 0 a 10</Text><TextInput style={styles.input} accessibilityLabel="Nota de 0 a 10" keyboardType="decimal-pad" value={score} onChangeText={setScore} maxLength={4} editable={!busy}/><Text style={styles.body}>O que você achou?</Text><TextInput style={[styles.input,{minHeight:130,textAlignVertical:'top'}]} accessibilityLabel="Sua opinião" multiline value={review} onChangeText={setReview} maxLength={10000} editable={!busy}/>
-        <Text style={styles.body}>Visibilidade: {visibility==='public'?'pública':visibility==='friends'?'amigos':'privada'}</Text>
-        {(['public','friends','private'] as const).map(option=><Button key={option} label={`${visibility===option?'✓ ':''}${option==='public'?'Pública':option==='friends'?'Somente amigos':'Privada'}`} disabled={busy} onPress={()=>setVisibility(option)}/>)}
-        <Button label={busy?'Salvando…':'Salvar avaliação'} disabled={busy} onPress={()=>{void saveRating();}}/></View>
-      </>}
-    </>}{!!message&&<Text accessibilityRole="alert" style={styles.body}>{message}</Text>}
-  </Screen>;
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const { session } = useAuth();
+  const userId = session?.user.id;
+  const cache = useQueryClient();
+  const [score, setScore] = useState('');
+  const [review, setReview] = useState('');
+  const [visibility, setVisibility] = useState<Visibility>('public');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const media = useQuery({
+    queryKey: ['media', id, userId],
+    enabled: !!supabase && !!id,
+    queryFn: async () => {
+      const { data, error } = await requireSupabase().from('media_items').select('*').eq('id', id!).maybeSingle();
+      if (error) throw error;
+      return data as MediaItem | null;
+    },
+  });
+  const state = useQuery({
+    queryKey: ['media-state', id, userId],
+    enabled: !!userId && !!id,
+    queryFn: async () => {
+      const client = requireSupabase();
+      const [saved, rating] = await Promise.all([
+        client.from('saved_items').select('media_item_id').eq('user_id', userId!).eq('media_item_id', id!).maybeSingle(),
+        client.from('ratings').select('score,review,visibility').eq('user_id', userId!).eq('media_item_id', id!).maybeSingle(),
+      ]);
+      if (saved.error) throw saved.error;
+      if (rating.error) throw rating.error;
+      return { saved: !!saved.data, rating: rating.data };
+    },
+  });
+  useEffect(() => {
+    setScore(state.data?.rating ? String(state.data.rating.score) : '');
+    setReview(state.data?.rating?.review || '');
+    setVisibility((state.data?.rating?.visibility as Visibility) || 'public');
+  }, [state.data?.rating, id, userId]);
+  useEffect(() => { setMessage(''); }, [id, userId]);
+  async function invalidate() {
+    await Promise.all([
+      cache.invalidateQueries({ queryKey: ['media-state', id, userId] }),
+      cache.invalidateQueries({ queryKey: ['saved', userId] }),
+    ]);
+  }
+  async function toggleSave() {
+    if (!userId || !id) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const client = requireSupabase();
+      const result = state.data?.saved
+        ? await client.from('saved_items').delete().eq('user_id', userId).eq('media_item_id', id)
+        : await client.from('saved_items').upsert({ user_id: userId, media_item_id: id }, { onConflict: 'user_id,media_item_id', ignoreDuplicates: true });
+      if (result.error) throw result.error;
+      await invalidate();
+      setMessage(state.data?.saved ? 'Obra removida dos salvos.' : 'Obra salva na sua biblioteca.');
+    } catch {
+      setMessage('Não foi possível atualizar os salvos. Tente novamente.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function saveRating() {
+    if (!userId || !id) return;
+    const parsed = parseScore(score);
+    if (parsed === null) {
+      setMessage('Informe uma nota de 0 a 10, com no máximo uma casa decimal.');
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    try {
+      const { error } = await requireSupabase()
+        .from('ratings')
+        .upsert({ user_id: userId, media_item_id: id, score: parsed, review: review.trim(), visibility }, { onConflict: 'user_id,media_item_id' });
+      if (error) throw error;
+      await invalidate();
+      setMessage('Sua avaliação foi salva.');
+    } catch {
+      setMessage('Não foi possível salvar a avaliação. Tente novamente.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const categoryLabel = categories.find((c) => c.id === media.data?.category)?.label || 'Outros';
+
+  return (
+    <Screen>
+      <Link href="/(tabs)/discover" style={styles.link}>
+        ← Descobrir
+      </Link>
+      {!supabase ? (
+        <View style={detail.stateCard}>
+          <Text style={styles.eyebrow}>CATÁLOGO</Text>
+          <Text style={styles.body}>O catálogo ainda não foi conectado. Assim que a conexão com o ORBIT for configurada, os detalhes das obras aparecem aqui.</Text>
+        </View>
+      ) : media.isPending ? (
+        <View style={detail.stateCard} accessibilityRole="progressbar" accessibilityLabel="Carregando obra">
+          <Text style={styles.eyebrow}>CARREGANDO</Text>
+          <Text style={styles.body}>Buscando os detalhes desta obra…</Text>
+        </View>
+      ) : media.isError ? (
+        <View style={detail.stateCard}>
+          <Text style={styles.eyebrow}>ERRO</Text>
+          <Text style={styles.error}>Não foi possível abrir esta obra. Verifique sua conexão e tente novamente.</Text>
+          <Button label="Tentar novamente" onPress={() => void media.refetch()} />
+        </View>
+      ) : !media.data ? (
+        <View style={detail.stateCard}>
+          <Text style={styles.eyebrow}>NÃO ENCONTRADA</Text>
+          <Text style={styles.body}>Esta obra não foi encontrada. Ela pode ter sido removida do catálogo.</Text>
+          <Link href="/(tabs)/discover" style={styles.link}>
+            Voltar para Descobrir →
+          </Link>
+        </View>
+      ) : (
+        <>
+          <View style={detail.hero}>
+            <CoverArt item={media.data} />
+            <View style={detail.heroText}>
+              <View style={detail.metaRow}>
+                <Text style={detail.chip}>{categoryLabel.toUpperCase()}</Text>
+                {!!media.data.release_year && <Text style={detail.year}>{media.data.release_year}</Text>}
+              </View>
+              <Text style={styles.title}>{media.data.title}</Text>
+              {!!state.data?.rating && (
+                <Text style={detail.myScore} accessibilityLabel={`Sua nota atual: ${state.data.rating.score} de 10`}>
+                  Sua nota: {state.data.rating.score}/10
+                </Text>
+              )}
+            </View>
+          </View>
+          <Text style={styles.body}>{media.data.description || 'Esta obra ainda não tem uma descrição.'}</Text>
+          {!session ? (
+            <Link href="/auth" style={styles.link}>
+              Entre para salvar e avaliar →
+            </Link>
+          ) : state.isPending ? (
+            <Text style={styles.body}>Carregando sua avaliação…</Text>
+          ) : state.isError ? (
+            <View style={detail.stateCard}>
+              <Text style={styles.error}>Não foi possível carregar sua biblioteca.</Text>
+              <Button label="Tentar novamente" onPress={() => void state.refetch()} />
+            </View>
+          ) : (
+            <>
+              <Button label={state.data?.saved ? '✓ Salvo na biblioteca — remover' : 'Salvar na biblioteca'} disabled={busy} onPress={() => void toggleSave()} />
+              <View style={styles.card}>
+                <Text style={[styles.title, { fontSize: 25, lineHeight: 30 }]}>Sua avaliação</Text>
+                <Text style={styles.body}>Nota de 0 a 10</Text>
+                <TextInput
+                  style={styles.input}
+                  accessibilityLabel="Nota de 0 a 10"
+                  keyboardType="decimal-pad"
+                  placeholder="Ex.: 8,5"
+                  value={score}
+                  onChangeText={setScore}
+                  maxLength={4}
+                  editable={!busy}
+                />
+                <Text style={styles.body}>O que você achou?</Text>
+                <TextInput
+                  style={[styles.input, { minHeight: 130, textAlignVertical: 'top' }]}
+                  accessibilityLabel="Sua opinião"
+                  multiline
+                  placeholder="Conte em poucas linhas…"
+                  value={review}
+                  onChangeText={setReview}
+                  maxLength={10000}
+                  editable={!busy}
+                />
+                <Text style={styles.body}>Quem pode ver</Text>
+                <VisibilityPicker value={visibility} onChange={setVisibility} disabled={busy} />
+                <Button label={busy ? 'Salvando…' : 'Salvar avaliação'} disabled={busy} onPress={() => void saveRating()} />
+              </View>
+            </>
+          )}
+        </>
+      )}
+      {!!message && (
+        <Text accessibilityRole="alert" style={styles.body}>
+          {message}
+        </Text>
+      )}
+    </Screen>
+  );
 }
+
+const detail = StyleSheet.create({
+  hero: { gap: t.spacing.md },
+  heroText: { gap: t.spacing.sm },
+  coverFrame: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: t.radius,
+    overflow: 'hidden',
+    backgroundColor: t.colors.secondary,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+  },
+  cover: { width: '100%', height: '100%' },
+  coverFallback: { alignItems: 'center', justifyContent: 'center' },
+  coverInitial: { fontSize: 64, fontWeight: '700', color: t.colors.muted },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm },
+  chip: {
+    fontSize: 13,
+    letterSpacing: 3,
+    fontWeight: '700',
+    color: t.colors.primary,
+    backgroundColor: t.colors.accent,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  year: { fontSize: 15, fontWeight: '600', color: t.colors.muted },
+  myScore: { fontSize: 16, fontWeight: '700', color: t.colors.success },
+  stateCard: { padding: 24, borderRadius: t.radius, backgroundColor: t.colors.surface, gap: 14 },
+  segmented: { flexDirection: 'row', gap: t.spacing.xs },
+  segment: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
+    alignItems: 'center',
+  },
+  segmentActive: { backgroundColor: t.colors.primary, borderColor: t.colors.primary },
+  segmentText: { fontSize: 15, fontWeight: '600', color: t.colors.text },
+  segmentTextActive: { color: '#FFFFFF' },
+});
