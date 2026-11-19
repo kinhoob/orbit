@@ -36,9 +36,9 @@ export function Interests({ account, onChange }: { account: string; onChange: (c
   return <View style={styles.card}>
     <Text style={[styles.title, { fontSize: 23, lineHeight: 28 }]}>O que faz parte do seu universo?</Text>
     <Text style={styles.body}>Escolha seus interesses para organizar as indicações locais. Sua seleção fica salva neste dispositivo.</Text>
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{categories.map(category => <MotionPressable key={category.id} accessibilityRole="checkbox" accessibilityState={{ checked: selected.includes(category.id), disabled: busy }} disabled={busy} onPress={() => setSelected(current => current.includes(category.id) ? current.filter(id => id !== category.id) : [...current, category.id])} style={{ backgroundColor: selected.includes(category.id) ? t.colors.accent : t.colors.secondary, padding: 12, borderRadius: 16 }}><Text style={{ color: t.colors.text }}>{selected.includes(category.id) ? '✓ ' : ''}{category.label}</Text></MotionPressable>)}</View>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{categories.map(category => <MotionPressable key={category.id} accessibilityRole="checkbox" accessibilityState={{ checked: selected.includes(category.id), disabled: busy }} disabled={busy} onPress={() => setSelected(current => current.includes(category.id) ? current.filter(id => id !== category.id) : [...current, category.id])} style={{ backgroundColor: selected.includes(category.id) ? t.colors.gold : t.colors.secondary, padding: 12, borderRadius: 999 }}><Text style={{ color: t.colors.text }}>{selected.includes(category.id) ? '✓ ' : ''}{category.label}</Text></MotionPressable>)}</View>
     <Button label={busy ? 'Guardando…' : 'Explorar meu universo'} disabled={busy} onPress={() => { void save(selected); }} />
     <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => { void save([]); }}><Text style={styles.link}>Prefiro explorar tudo</Text></MotionPressable>
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
   </View>;
-}
+      }
