@@ -1,15 +1,14 @@
 // Núcleo puro da troca de telas por arraste horizontal (pedido do Marco em
-// 19/11/2026): Início, Explorar, Busca e Sino deslizam para o lado com o dedo,
-// no mesmo espírito da troca Descobrir <-> Amigos dentro do Explorar.
-// O Criar fica fora do arraste: é o formulário de avaliação, não uma tela de
-// leitura, e o gesto horizontal atrapalharia os controles do formulário.
+// 19/11/2026): todas as telas da barra de baixo — Início, Explorar, Criar,
+// Busca e Sino — deslizam para o lado com o dedo, no mesmo espírito da troca
+// Descobrir <-> Amigos dentro do Explorar.
 // O componente animado fica em src/components/screen-swipe.tsx.
 
 import { resolveSwipeTarget, shouldStartPager } from './pager.mjs';
 import { EDGE_ZONE_PX } from './drawer.mjs';
 
-/** Telas do arraste lateral, na mesma ordem da barra de baixo (sem o Criar). */
-export const SWIPE_SCREENS = ['index', 'discover', 'search', 'notifications'];
+/** Telas do arraste lateral, na mesma ordem da barra de baixo (com o Criar). */
+export const SWIPE_SCREENS = ['index', 'discover', 'create', 'search', 'notifications'];
 
 /** Posição da tela no arraste, ou -1 para telas fora dele (Criar, Perfil…). */
 export function swipeIndex(routeName) {
@@ -27,8 +26,11 @@ export function hasSwipeNeighbor(routeName, dx) {
  * O arraste de troca de tela só começa fora da faixa da borda esquerda (que
  * pertence à gaveta do Perfil), com movimento horizontal dominante e uma tela
  * vizinha na direção do gesto: um gesto nunca dispara duas navegações.
+ * Com o teclado aberto (digitação no Criar/Busca), o arraste fica suspenso
+ * para não roubar a interação com os campos de texto.
  */
-export function shouldStartScreenSwipe(routeName, x0, dx, dy, edgeZone = EDGE_ZONE_PX) {
+export function shouldStartScreenSwipe(routeName, x0, dx, dy, edgeZone = EDGE_ZONE_PX, keyboardOpen = false) {
+  if (keyboardOpen) return false;
   return shouldStartPager(x0, dx, dy, edgeZone) && hasSwipeNeighbor(routeName, dx);
 }
 
