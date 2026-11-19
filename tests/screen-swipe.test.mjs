@@ -4,21 +4,22 @@ import assert from 'node:assert/strict';
 const { SWIPE_SCREENS, swipeIndex, hasSwipeNeighbor, shouldStartScreenSwipe, swipeTargetRoute } = await import('../src/domain/screen-swipe.mjs');
 const { pagerYieldsAtEdge } = await import('../src/domain/pager.mjs');
 
-test('a ordem do arraste segue a barra de baixo, sem o Criar', () => {
-  assert.deepEqual(SWIPE_SCREENS, ['index', 'discover', 'search', 'notifications']);
-  assert.equal(swipeIndex('create'), -1);
-  assert.equal(swipeIndex('profile'), -1);
+test('a ordem do arraste segue a barra de baixo, com o Criar', () => {
+  assert.deepEqual(SWIPE_SCREENS, ['index', 'discover', 'create', 'search', 'notifications']);
+  assert.equal(swipeIndex('profile'), -1); // Perfil fica na gaveta, fora do arraste
 });
 
 test('arrastar para a esquerda alem do limiar avanca para a proxima tela', () => {
   assert.equal(swipeTargetRoute('index', -100, 390), 'discover');
-  assert.equal(swipeTargetRoute('discover', -100, 390), 'search');
+  assert.equal(swipeTargetRoute('discover', -100, 390), 'create');
+  assert.equal(swipeTargetRoute('create', -100, 390), 'search');
   assert.equal(swipeTargetRoute('search', -100, 390), 'notifications');
 });
 
 test('arrastar para a direita alem do limiar volta para a tela anterior', () => {
   assert.equal(swipeTargetRoute('notifications', 100, 390), 'search');
-  assert.equal(swipeTargetRoute('search', 100, 390), 'discover');
+  assert.equal(swipeTargetRoute('search', 100, 390), 'create');
+  assert.equal(swipeTargetRoute('create', 100, 390), 'discover');
   assert.equal(swipeTargetRoute('discover', 100, 390), 'index');
 });
 
@@ -29,8 +30,15 @@ test('nas pontas nao ha para onde ir e arraste curto mantem a tela', () => {
 });
 
 test('telas fora do arraste nunca navegam pelo gesto', () => {
-  assert.equal(swipeTargetRoute('create', -200, 390), null);
-  assert.equal(hasSwipeNeighbor('create', -100), false);
+  assert.equal(swipeTargetRoute('profile', -200, 390), null);
+  assert.equal(swipeTargetRoute('saved', -200, 390), null);
+  assert.equal(hasSwipeNeighbor('profile', -100), false);
+});
+
+test('com o teclado aberto o arraste nao comeca (protege a digitacao)', () => {
+  assert.equal(shouldStartScreenSwipe('create', 100, -40, 0, 28, true), false);
+  assert.equal(shouldStartScreenSwipe('create', 100, -40, 0, 28, false), true);
+  assert.equal(shouldStartScreenSwipe('search', 100, -40, 0, 28, true), false);
 });
 
 test('o gesto so comeca com horizontal dominante, fora da borda da gaveta e com vizinha', () => {
