@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, Platform, type LayoutChangeEvent, type ViewProps } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Keyboard, PanResponder, Platform, type LayoutChangeEvent, type ViewProps } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useReducedMotion } from './motion';
 import { rubberBand } from '../domain/pager.mjs';
+import { webPoint } from '../domain/web-gesture.mjs';
 import { shouldStartScreenSwipe, swipeTargetRoute } from '../domain/screen-swipe.mjs';
 
 const nativeDriver = Platform.OS !== 'web';
@@ -11,7 +12,7 @@ const nativeDriver = Platform.OS !== 'web';
 let pendingEntry: -1 | 0 | 1 = 0;
 
 type SwipeScreenProps = React.PropsWithChildren<{
-  /** Nome da rota da aba ('index', 'discover', 'search', 'notifications'). */
+  /** Nome da rota da aba ('index', 'discover', 'create', 'search', 'notifications'). */
   route: string;
 }> & Omit<ViewProps, 'children' | 'onLayout'>;
 
@@ -28,10 +29,18 @@ export function SwipeScreen({ route, children, style, ...props }: SwipeScreenPro
   const reduced = useReducedMotion();
   const [width, setWidth] = useState(0);
   const slide = useRef(new Animated.Value(0)).current;
-  const state = useRef({ route, width, reduced, dragging: false });
+  const state = useRef({ route, width, reduced, dragging: false, keyboardOpen: false });
   state.current.route = route;
   state.current.width = width;
   state.current.reduced = reduced;
+
+  // Teclado aberto = usuário digitando (Criar, Busca): o arraste fica
+  // suspenso para não roubar a interação com os campos de texto.
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => { state.current.keyboardOpen = true; });
+    const hide = Keyboard.addListener('keyboardDidHide', () => { state.current.keyboardOpen = false; });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const animateTo = (toValue: number, duration = 220, done?: () => void) => {
     slide.stopAnimation();
@@ -75,23 +84,48 @@ export function SwipeScreen({ route, children, style, ...props }: SwipeScreenPro
     });
   };
 
+  // Web: o PanResponder do react-native-web perde o estado do gesto (x0/dx)
+  // quando outro respondedor foi consultado antes; por isso o arraste na web
+  // mede o gesto pelo evento bruto, com origem gravada no touchstart. No
+  // nativo o gestureState do PanResponder e confiavel e segue sendo usado.
+  const touchOrigin = useRef<{ x: number; y: number } | null>(null);
+  const webGesture = (e: { nativeEvent: unknown }) => {
+    if (Platform.OS !== 'web' || !touchOrigin.current) return null;
+    const p = webPoint(e.nativeEvent);
+    if (!p) return null;
+    return { startX: touchOrigin.current.x, dx: p.x - touchOrigin.current.x, dy: p.y - touchOrigin.current.y };
+  };
+
   const responder = useMemo(() => PanResponder.create({
     // Filhos (listas verticais, carrosséis, o pager das timelines) são
     // consultados antes; este gesto só assume o que sobrar na horizontal.
-    onMoveShouldSetPanResponder: (_e, g) =>
-      state.current.width > 0 && shouldStartScreenSwipe(state.current.route, g.x0, g.dx, g.dy),
-    onPanResponderGrant: () => { state.current.dragging = true; slide.stopAnimation(); },
-    onPanResponderMove: (_e, g) => {
-      const w = state.current.width;
-      slide.setValue(rubberBand(g.dx, -w, w));
+    onMoveShouldSetPanResponder: (e, g) => {
+      const w = webGesture(e);
+      const startX = w ? w.startX : g.x0;
+      const dx = w ? w.dx : g.dx;
+      const dy = w ? w.dy : g.dy;
+      return state.current.width > 0 && !state.current.keyboardOpen
+        && shouldStartScreenSwipe(state.current.route, startX, dx, dy);
     },
-    onPanResponderRelease: (_e, g) => finish(g.dx),
-    onPanResponderTerminate: (_e, g) => finish(g.dx),
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: () => { state.current.dragging = true; slide.stopAnimation(); },
+    onPanResponderMove: (e, g) => {
+      const w = webGesture(e);
+      slide.setValue(rubberBand(w ? w.dx : g.dx, -state.current.width, state.current.width));
+    },
+    onPanResponderRelease: (e, g) => finish(webGesture(e)?.dx ?? g.dx),
+    onPanResponderTerminate: (e, g) => finish(webGesture(e)?.dx ?? g.dx),
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
 
   return (
-    <Animated.View {...props} {...responder.panHandlers} onLayout={onLayout} style={[{ flex: 1, transform: [{ translateX: slide }] }, style]}>
+    <Animated.View
+      {...props}
+      {...responder.panHandlers}
+      onLayout={onLayout}
+      onTouchStart={(e) => { if (Platform.OS === 'web') { const p = webPoint(e.nativeEvent); if (p) touchOrigin.current = p; } }}
+      style={[{ flex: 1, transform: [{ translateX: slide }] }, Platform.OS === 'web' ? ({ touchAction: 'pan-y' } as never) : null, style]}
+    >
       {children}
     </Animated.View>
   );
