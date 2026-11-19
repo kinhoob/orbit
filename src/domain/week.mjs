@@ -21,10 +21,14 @@ export function startOfWeek(date) {
   return d;
 }
 
-/** Os 7 dias da semana da data de referencia, com marcacao do dia atual. */
-export function weekDays(reference = new Date()) {
-  const todayIso = isoDate(reference);
-  const start = startOfWeek(reference);
+/** Domingo (00:00 local) da semana que contem a data. */
+export function startOfWeekSunday(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function buildWeek(start, todayIso) {
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
@@ -37,6 +41,16 @@ export function weekDays(reference = new Date()) {
       isToday: isoDate(date) === todayIso,
     };
   });
+}
+
+/** Os 7 dias da semana da data de referencia (segunda a domingo), com marcacao do dia atual. */
+export function weekDays(reference = new Date()) {
+  return buildWeek(startOfWeek(reference), isoDate(reference));
+}
+
+/** Os 7 dias da semana da data de referencia, domingo a sabado (formato da identidade de 19/11/2026). */
+export function weekDaysSunday(reference = new Date()) {
+  return buildWeek(startOfWeekSunday(reference), isoDate(reference));
 }
 
 /** Dia do ano (1-366), usado para variar as indicacoes de cada dia. */
