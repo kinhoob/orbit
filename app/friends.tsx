@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../src/components/ui';
 import { useAuth } from '../src/features/auth/provider';
 import { supabase } from '../src/lib/supabase';
-import { tokens as t } from '../src/design/tokens';
+import { tokens as t, font} from '../src/design/tokens';
 import {
   deleteFriendship,
   fetchFriendships,
@@ -250,12 +250,11 @@ const social = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 18, fontWeight: '700', color: t.colors.primary },
-  name: { fontSize: 16, fontWeight: '600', color: t.colors.text },
+  avatarText: { fontSize: 18, fontFamily: font.bold, color: t.colors.primary },
+  name: { fontSize: 16, fontFamily: font.semibold, color: t.colors.text },
   username: { fontSize: 14, color: t.colors.muted },
 });
-
