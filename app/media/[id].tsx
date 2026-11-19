@@ -299,3 +299,4 @@ const detail = StyleSheet.create({
   segmentText: { fontSize: 15, fontFamily: font.semibold, color: t.colors.text },
   segmentTextActive: { color: t.colors.onDark },
 });
+
