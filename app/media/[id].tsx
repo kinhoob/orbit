@@ -7,12 +7,13 @@ import { categories, type MediaItem } from '../../src/features/catalog/data';
 import { useAuth } from '../../src/features/auth/provider';
 import { requireSupabase, supabase } from '../../src/lib/supabase';
 import { parseScore } from '../../src/domain/rating.mjs';
-import { tokens as t } from '../../src/design/tokens';
+import { tokens as t, font} from '../../src/design/tokens';
 import { LoadingState } from '../../src/components/loading';
 import { Feedback, StatePulse } from '../../src/components/feedback';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
 import { toggleSavedItem } from '../../src/features/catalog/save-mutation';
+import { IllustratedCover } from '../../src/components/mural';
 import { useAccountSettings } from '../../src/features/account/settings';
 
 const VISIBILITY = [
@@ -32,7 +33,7 @@ function CoverArt({ item }: { item: MediaItem }) {
   }
   return (
     <View style={[detail.coverFrame, detail.coverFallback]} accessibilityLabel={`Obra sem capa: ${item.title}`}>
-      <Text style={detail.coverInitial}>{item.title.trim().charAt(0).toUpperCase() || '?'}</Text>
+      <IllustratedCover category={item.category} aspectRatio={16 / 9} />
     </View>
   );
 }
@@ -265,39 +266,36 @@ const detail = StyleSheet.create({
     borderRadius: t.radius,
     overflow: 'hidden',
     backgroundColor: t.colors.secondary,
-    borderWidth: 1,
-    borderColor: t.colors.border,
   },
   cover: { width: '100%', height: '100%' },
   coverFallback: { alignItems: 'center', justifyContent: 'center' },
-  coverInitial: { fontSize: 64, fontWeight: '700', color: t.colors.muted },
+  coverInitial: { fontSize: 64, fontFamily: font.bold, color: t.colors.muted },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm },
   chip: {
     fontSize: 13,
     letterSpacing: 3,
-    fontWeight: '700',
+    fontFamily: font.bold,
     color: t.colors.primary,
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.gold,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     overflow: 'hidden',
   },
-  year: { fontSize: 15, fontWeight: '600', color: t.colors.muted },
-  myScore: { fontSize: 16, fontWeight: '700', color: t.colors.success },
+  year: { fontSize: 15, fontFamily: font.semibold, color: t.colors.muted },
+  myScore: { fontSize: 16, fontFamily: font.bold, color: t.colors.success },
   stateCard: { padding: 24, borderRadius: t.radius, backgroundColor: t.colors.surface, gap: 14 },
-  segmented: { flexDirection: 'row', gap: t.spacing.xs },
+  segmented: { flexDirection: 'row', gap: 4, backgroundColor: t.colors.secondary, borderRadius: 999, padding: 4 },
   segment: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: t.colors.border,
     backgroundColor: t.colors.surface,
     alignItems: 'center',
   },
   segmentActive: { backgroundColor: t.colors.primary, borderColor: t.colors.primary },
-  segmentText: { fontSize: 15, fontWeight: '600', color: t.colors.text },
-  segmentTextActive: { color: '#FFFFFF' },
+  segmentText: { fontSize: 15, fontFamily: font.semibold, color: t.colors.text },
+  segmentTextActive: { color: t.colors.onDark },
 });
-
