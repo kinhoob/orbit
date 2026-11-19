@@ -31,4 +31,4 @@ export function AccountMenu({ onNavigate, dark = false }: { onNavigate?: (href: 
       {!!error && <Text accessibilityRole="alert" style={{ color: t.colors.error, padding: 12, fontFamily: font.regular }}>{error}</Text>}
     </View>
   </View>;
-    }
+}
