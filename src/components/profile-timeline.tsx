@@ -37,4 +37,4 @@ export function ProfileTimeline({ profileId }: { profileId: string }) {
       </View>)}
     {query.hasNextPage && <Button label={query.isFetchingNextPage ? 'Carregando…' : 'Ver avaliações anteriores'} disabled={query.isFetchingNextPage} onPress={() => { void query.fetchNextPage(); }} />}
   </View>;
-          }
+}
