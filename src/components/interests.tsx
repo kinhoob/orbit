@@ -41,4 +41,4 @@ export function Interests({ account, onChange }: { account: string; onChange: (c
     <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => { void save([]); }}><Text style={styles.link}>Prefiro explorar tudo</Text></MotionPressable>
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
   </View>;
-      }
+}
