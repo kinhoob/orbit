@@ -1,1 +1,17 @@
-{"expo":{"name":"ORBIT","slug":"orbit","scheme":"orbit","version":"0.1.0","orientation":"portrait","userInterfaceStyle":"light","plugins":["expo-router"],"web":{"bundler":"metro"}}}
+{
+  "expo": {
+    "name": "ORBIT",
+    "slug": "orbit",
+    "scheme": "orbit",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
