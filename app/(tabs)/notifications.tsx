@@ -10,7 +10,7 @@ import { notificationText } from '../../src/domain/notifications.mjs';
 import { relativeTime } from '../../src/domain/timelines.mjs';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
-import { tokens as t } from '../../src/design/tokens';
+import { tokens as t, font} from '../../src/design/tokens';
 
 function NotificationRow({ item, onPress }: { item: OrbitNotification; onPress: () => void }) {
   const actorName = item.actor?.display_name || item.actor?.username || '';
@@ -20,13 +20,13 @@ function NotificationRow({ item, onPress }: { item: OrbitNotification; onPress: 
       accessibilityRole="button"
       accessibilityLabel={notificationText(item.type, actorName)}
       onPress={onPress}
-      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: t.colors.border }, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10, borderRadius: 20, backgroundColor: t.colors.surface, boxShadow: '0 4px 16px rgba(23,20,15,0.06)', elevation: 1 }, pressed && { opacity: 0.7 }]}
     >
-      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: t.colors.accentStrong }}>{(actorName || '?').trim().charAt(0).toUpperCase()}</Text>
+      <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: t.colors.gold, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 16, fontFamily: font.bold, color: t.colors.accentStrong }}>{(actorName || '?').trim().charAt(0).toUpperCase()}</Text>
       </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ fontSize: 15, fontWeight: unread ? '700' : '500', color: t.colors.text }}>{notificationText(item.type, actorName)}</Text>
+        <Text style={{ fontSize: 15, fontFamily: unread ? font.bold : font.medium, color: t.colors.text }}>{notificationText(item.type, actorName)}</Text>
         <Text style={{ fontSize: 12, color: t.colors.muted }}>{relativeTime(item.created_at)}</Text>
       </View>
       {unread ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.accentStrong }} /> : null}

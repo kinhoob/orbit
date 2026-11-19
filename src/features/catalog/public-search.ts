@@ -54,7 +54,8 @@ export async function searchPublicCatalog(search: string, category?: string, fet
   if (wantTv) jobs.push(searchTvmaze(term, fetchImpl));
   if (wantBooks) jobs.push(searchOpenLibrary(term, fetchImpl));
   const settled = await Promise.allSettled(jobs);
-  return settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : [])).slice(0, 40);
+  return settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
+    .filter((item) => !category || item.category === category).slice(0, 40);
 }
 
 type TvmazeShow = {
@@ -114,3 +115,4 @@ async function searchTmdb(term: string, apiKey: string, fetchImpl: FetchLike): P
     sourceUrl: `https://www.themoviedb.org/movie/${movie.id}`,
   })).filter((item) => item.title.length > 0);
 }
+

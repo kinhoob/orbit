@@ -43,7 +43,11 @@ test('filtro de categoria consulta só o provedor correspondente', async () => {
   const called = [];
   const spy = async (url) => { called.push(url); return fetchOk(url); };
   const seriesOnly = await searchPublicCatalog('dark', 'series', spy);
-  assert.ok(seriesOnly.every((i) => i.category === 'series' || i.category === 'anime'));
+  assert.ok(seriesOnly.length > 0);
+  assert.ok(seriesOnly.every((i) => i.category === 'series'));
+  const animeOnly = await searchPublicCatalog('bebop', 'anime', spy);
+  assert.ok(animeOnly.length > 0);
+  assert.ok(animeOnly.every((i) => i.category === 'anime'));
   assert.ok(called.every((u) => u.startsWith('https://api.tvmaze.com')));
   called.length = 0;
   const booksOnly = await searchPublicCatalog('dom', 'book', spy);
@@ -70,3 +74,4 @@ test('adaptador TMDB permanece desativado mesmo com chave e flag', async () => {
   delete process.env.EXPO_PUBLIC_TMDB_API_KEY;
   delete process.env.EXPO_PUBLIC_TMDB_COMMERCIAL_AGREED;
 });
+

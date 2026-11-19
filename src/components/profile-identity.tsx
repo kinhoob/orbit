@@ -1,0 +1,8 @@
+import React from 'react';
+import { Image, Text, View } from 'react-native';
+import { palettes, font} from '../design/tokens';
+type Identity = { display_name?: string | null; username?: string | null; avatar_url?: string | null; profile_theme?: string; avatar_frame?: string; profile_badge?: string };
+export function ProfileIdentity({ profile }: { profile: Identity }) {
+  const colors = palettes[profile.profile_theme as keyof typeof palettes] || palettes.neutral;
+  return <View style={{ padding: 18, borderRadius: 18, backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center', gap: 16 }}><View style={{ width: 72, height: 72, borderRadius: 36, borderWidth: profile.avatar_frame === 'double' ? 6 : profile.avatar_frame === 'line' ? 3 : 0, borderColor: colors.primary, backgroundColor: colors.accent, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>{profile.avatar_url ? <Image source={{ uri: profile.avatar_url }} style={{ width: '100%', height: '100%' }} /> : <Text style={{ fontSize: 28, color: colors.primary }}>{(profile.display_name || profile.username || '?').charAt(0).toUpperCase()}</Text>}</View><View style={{ flex: 1, gap: 5 }}><Text style={{ fontSize: 24, fontFamily: font.bold, color: colors.primary }}>{profile.display_name || profile.username || 'Perfil'}</Text>{!!profile.username && <Text style={{ color: colors.primary }}>@{profile.username}</Text>}{profile.profile_badge && profile.profile_badge !== 'none' && <Text style={{ color: colors.primary, fontFamily: font.semibold }}>✦ {profile.profile_badge === 'explorer' ? 'Explorador' : 'Colecionador'}</Text>}</View></View>;
+}

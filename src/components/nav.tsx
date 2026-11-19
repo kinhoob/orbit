@@ -1,10 +1,11 @@
 import React from 'react';
 import { MotionPressable } from './motion';
 import { Icon, type IconName } from './icons';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { AccountMenu } from './account-menu';
 import { NotificationBadge } from './notification-badge';
-import { Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { tokens } from '../design/tokens';
+import { font, tokens } from '../design/tokens';
 
 /** Largura a partir da qual a navegação vira lateral (desktop/tablet). */
 export const SIDEBAR_BREAKPOINT = 768;
@@ -14,6 +15,8 @@ export const SIDEBAR_WIDTH = 232;
  * Barra de baixo do celular (arquitetura aprovada pelo Marco em 18/11/2026):
  * Início, Explorar, Criar, Busca e Sino, só ícones. O Perfil sai da barra e
  * abre pela gaveta lateral (arraste da borda esquerda ou toque no avatar).
+ * Desde 19/11/2026 a barra é a pílula escura flutuante da nova identidade,
+ * com o ícone ativo em círculo creme (referência aprovada pelo Marco).
  */
 export const NAV_ITEMS = [
   { name: 'index', title: 'Início', icon: 'home' },
@@ -56,6 +59,8 @@ type NavEntry = { name: string; title: string; icon: IconName };
 function NavItem(props: TabBarProps & { item: NavEntry; layout: 'side' | 'bottom' }) {
   const { focused, onPress, onLongPress } = useNavItem(props, props.item.name);
   const side = props.layout === 'side';
+  const activeColor = side ? tokens.colors.onDark : tokens.colors.dark;
+  const idleColor = tokens.colors.onDarkMuted;
   return (
     <MotionPressable
       accessibilityRole="tab"
@@ -66,47 +71,60 @@ function NavItem(props: TabBarProps & { item: NavEntry; layout: 'side' | 'bottom
       onLongPress={onLongPress}
       style={({ pressed }) => [
         side
-          ? { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, marginHorizontal: 12 }
-          : { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 6 },
-        side && focused && { backgroundColor: tokens.colors.secondary },
+          ? { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 18, borderRadius: 999, marginHorizontal: 12 }
+          : { flex: 1, alignItems: 'center', justifyContent: 'center' },
+        side && focused && { backgroundColor: tokens.colors.darkSoft },
         pressed && { opacity: 0.7 },
       ]}
     >
-      <View style={{ position: 'relative' }}>
-        <Icon name={props.item.icon} size={side ? 22 : 24} color={focused ? tokens.colors.accentStrong : tokens.colors.muted} strokeWidth={focused ? 2.4 : 2} />
-        {props.item.name === 'notifications' && <NotificationBadge />}
-      </View>
-      {side && <Text style={{ fontSize: 15, fontWeight: '600', color: focused ? tokens.colors.accentStrong : tokens.colors.muted }}>{props.item.title}</Text>}
-      {!side && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: focused ? tokens.colors.accentStrong : 'transparent' }} />}
+      {side ? (
+        <>
+          <View style={{ position: 'relative' }}>
+            <Icon name={props.item.icon} size={22} color={focused ? activeColor : idleColor} strokeWidth={focused ? 2.4 : 2} />
+            {props.item.name === 'notifications' && <NotificationBadge />}
+          </View>
+          <Text style={{ fontSize: 15, fontFamily: focused ? font.bold : font.medium, color: focused ? activeColor : idleColor }}>{props.item.title}</Text>
+        </>
+      ) : (
+        <View style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: focused ? tokens.colors.onDark : 'transparent' }}>
+          <View style={{ position: 'relative' }}>
+            <Icon name={props.item.icon} size={24} color={focused ? tokens.colors.dark : idleColor} strokeWidth={focused ? 2.3 : 2} />
+            {props.item.name === 'notifications' && <NotificationBadge />}
+          </View>
+        </View>
+      )}
     </MotionPressable>
   );
 }
 
-/** Navegação lateral para desktop/tablet. */
+/** Navegação lateral para desktop/tablet, na mesma linguagem escura. */
 export function SideBar(props: TabBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View
       accessibilityRole="navigation"
       accessibilityLabel="Navegação principal"
-      style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: SIDEBAR_WIDTH, backgroundColor: tokens.colors.surface, borderRightWidth: 1, borderRightColor: tokens.colors.border, paddingTop: Math.max(insets.top + 12, 32), paddingBottom: 24, gap: 4 }}
+      style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: SIDEBAR_WIDTH, backgroundColor: tokens.colors.dark, borderRightWidth: 1, borderRightColor: tokens.colors.darkSoft, paddingTop: Math.max(insets.top + 12, 32), paddingBottom: 24, gap: 4 }}
     >
-      <Text style={{ fontSize: 20, fontWeight: '700', letterSpacing: 6, color: tokens.colors.primary, paddingHorizontal: 32, paddingBottom: 28 }}>ORBIT</Text>
-      {SIDE_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="side" />)}
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}><Text style={{ fontSize: 20, fontFamily: font.extrabold, letterSpacing: 6, color: tokens.colors.onDark, paddingHorizontal: 32, paddingBottom: 16 }}>ORBIT</Text>
+      {NAV_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="side" />)}
+      <AccountMenu dark /></ScrollView>
     </View>
   );
 }
 
-/** Barra inferior para celular. */
+/** Pílula flutuante escura para celular (identidade aprovada em 19/11/2026). */
 export function BottomBar(props: TabBarProps) {
   const insets = useSafeAreaInsets();
   return (
-    <View
-      accessibilityRole="navigation"
-      accessibilityLabel="Navegação principal"
-      style={{ flexDirection: 'row', backgroundColor: tokens.colors.surface, borderTopWidth: 1, borderTopColor: tokens.colors.border, paddingBottom: Math.max(insets.bottom, 10), paddingTop: 6 }}
-    >
-      {NAV_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="bottom" />)}
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 22, paddingBottom: Math.max(insets.bottom + 8, 18) }}>
+      <View
+        accessibilityRole="navigation"
+        accessibilityLabel="Navegação principal"
+        style={{ flexDirection: 'row', alignItems: 'center', height: 66, borderRadius: 999, backgroundColor: tokens.colors.dark, boxShadow: '0 14px 30px rgba(23,20,15,0.35)', elevation: 8 }}
+      >
+        {NAV_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="bottom" />)}
+      </View>
     </View>
   );
 }
@@ -114,4 +132,4 @@ export function BottomBar(props: TabBarProps) {
 export function ResponsiveTabBar(props: TabBarProps) {
   const { width } = useWindowDimensions();
   return width >= SIDEBAR_BREAKPOINT ? <SideBar {...props} /> : <BottomBar {...props} />;
-      }
+}

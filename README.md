@@ -33,6 +33,20 @@ As telas consultam o Supabase; não há pessoas, avaliações ou catálogo fict�
 
 ## Supabase
 
+### Menu pessoal e perfil
+
+O menu inclui Perfil, Biblioteca, Coleções, Amigos, Histórico, Conquistas, Personalização, Configurações e Ajuda. O perfil agora lista avaliações por data, com paginação. Biblioteca e Coleções usam as tabelas existentes. Histórico, XP, preferências e cosméticos exigem a migration `202611190002_account_universe.sql`, aplicada depois das anteriores. Consulte `docs/account-universe.md` para limites e testes SQL. Nenhum banco remoto foi modificado nesta entrega.
+
+### Fluidez e navegação
+
+As abas móveis têm rótulos e indicador animado. Criar abre diretamente a escolha da obra; Busca separa Obras e Pessoas, com perfis individuais. Skeletons preservam espaço durante o carregamento; curtidas e salvos têm feedback animado, com respeito a reduzir movimento. As preferências opcionais do primeiro acesso organizam apenas a curadoria local e ficam no dispositivo. Ver `docs/ux-polish.md` para testes manuais e limites.
+
+### Correções de descoberta
+
+Os filtros públicos agora separam séries e animes. Os cards da curadoria abrem detalhes locais e encaminham para a obra real quando há uma correspondência no catálogo. Curtidas usam o cache da conta e voltam a consultar o servidor após a alteração.
+
+O ranking global do Explorar depende da migration `supabase/migrations/202611190001_discover_ranking.sql`, aplicada depois das migrations anteriores. Validação e limites estão em `docs/discovery-fixes.md`. Não foi aplicado nenhum SQL a um projeto remoto nesta alteração.
+
 Copie `.env.example` para `.env` se ainda não existir. O inicializador também faz essa cópia sem sobrescrever arquivos existentes. Preencha:
 
 ```dotenv
@@ -68,3 +82,4 @@ Autenticação, migrations e RLS precisam de validação com um projeto Supabase
 | tests/ | Testes com Node |
 
 Próxima entrega: validar a base instalada e o Supabase, depois implementar mural, amizades e notificações. Daily, compatibilidade protegida e XP seguro seguem o plano em `docs/architecture.md`.
+

@@ -1,18 +1,18 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, Platform, Text, View } from 'react-native';
+import { Animated, BackHandler, Easing, PanResponder, Platform, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { ScrollView } from 'react-native';
+import { AccountMenu } from './account-menu';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { MotionPressable, useReducedMotion } from './motion';
-import { Icon, type IconName } from './icons';
-import { tokens } from '../design/tokens';
+import { Icon } from './icons';
+import { tokens, font} from '../design/tokens';
 import { useAuth } from '../features/auth/provider';
-import { requireSupabase } from '../lib/supabase';
 import { DRAWER_WIDTH_PX, EDGE_ZONE_PX, drawerCloseOffset, drawerOpenOffset, shouldCloseDrawer, shouldOpenDrawer } from '../domain/drawer.mjs';
 
 const nativeDriver = Platform.OS !== 'web';
 
-type DrawerItem = { icon: IconName; label: string; href: string };
 
 /**
  * Gaveta do Perfil (aprovada pelo Marco em 18/11/2026, referencia X): abre
@@ -24,7 +24,6 @@ type DrawerItem = { icon: IconName; label: string; href: string };
 export function ProfileEdgeDrawer() {
   const { session } = useAuth();
   const router = useRouter();
-  const cache = useQueryClient();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
   const [open, setOpen] = useState(false);
@@ -44,6 +43,13 @@ export function ProfileEdgeDrawer() {
   const closeRef = useRef(closeDrawer);
   openRef.current = openDrawer;
   closeRef.current = closeDrawer;
+  useEffect(() => {
+    if (!open) return;
+    const back = BackHandler.addEventListener('hardwareBackPress', () => { closeRef.current(); return true; });
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') closeRef.current(); };
+    if (Platform.OS === 'web') window.addEventListener('keydown', escape);
+    return () => { back.remove(); if (Platform.OS === 'web') window.removeEventListener('keydown', escape); };
+  }, [open]);
 
   // Gesto de abrir: so na faixa da borda esquerda (overlay exclusivo dela).
   const edgeResponder = useMemo(() => PanResponder.create({
@@ -64,22 +70,6 @@ export function ProfileEdgeDrawer() {
   }), []);
 
   const go = (href: string) => { closeDrawer(); router.push(href as never); };
-  const signOut = async () => {
-    closeDrawer();
-    try {
-      const { error } = await requireSupabase().auth.signOut();
-      if (!error) cache.clear();
-    } catch { /* o Perfil tambem oferece sair com mensagem de erro */ }
-  };
-
-  const items: DrawerItem[] = session
-    ? [
-        { icon: 'user', label: 'Perfil', href: '/(tabs)/profile' },
-        { icon: 'bookmark', label: 'Salvos', href: '/(tabs)/profile' },
-        { icon: 'heart', label: 'Amigos', href: '/friends' },
-      ]
-    : [{ icon: 'user', label: 'Entrar ou criar conta', href: '/auth' }];
-
   const initial = (session?.user.email || '?').trim().charAt(0).toUpperCase();
 
   return (
@@ -89,11 +79,11 @@ export function ProfileEdgeDrawer() {
         accessibilityRole="button"
         accessibilityLabel="Abrir menu do perfil"
         onPress={openDrawer}
-        style={{ position: 'absolute', top: insets.top + 10, left: 16, width: 34, height: 34, borderRadius: 17, backgroundColor: tokens.colors.accent, alignItems: 'center', justifyContent: 'center', zIndex: 31 }}
+        style={{ position: 'absolute', top: insets.top + 14, left: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: tokens.colors.darkSoft, borderWidth: 1.5, borderColor: tokens.colors.onDarkMuted, alignItems: 'center', justifyContent: 'center', zIndex: 31 }}
       >
         {session
-          ? <Text style={{ fontSize: 15, fontWeight: '700', color: tokens.colors.accentStrong }}>{initial}</Text>
-          : <Icon name="user" size={18} color={tokens.colors.accentStrong} />}
+          ? <Text style={{ fontSize: 17, fontFamily: font.bold, color: tokens.colors.onDark }}>{initial}</Text>
+          : <Icon name="user" size={20} color={tokens.colors.onDark} />}
       </MotionPressable>
 
       {/* Faixa da borda esquerda: gesto de abrir a gaveta. O pager nao responde aqui. */}
@@ -124,46 +114,14 @@ export function ProfileEdgeDrawer() {
           position: 'absolute', top: 0, bottom: 0, left: 0, width: DRAWER_WIDTH_PX, zIndex: 34,
           // Na web, o arraste da gaveta nao pode virar selecao de texto.
           ...(Platform.OS === 'web' ? { userSelect: 'none' as never } : {}),
-          backgroundColor: tokens.colors.surface, borderRightWidth: 1, borderRightColor: tokens.colors.border,
+          backgroundColor: tokens.colors.background, borderRightWidth: 1, borderRightColor: tokens.colors.border,
           paddingTop: Math.max(insets.top + 16, 40), paddingBottom: Math.max(insets.bottom + 16, 24), paddingHorizontal: 18, gap: 4,
           transform: [{ translateX: slide }],
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: tokens.colors.border, marginBottom: 10 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: tokens.colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-            {session
-              ? <Text style={{ fontSize: 18, fontWeight: '700', color: tokens.colors.accentStrong }}>{initial}</Text>
-              : <Icon name="user" size={22} color={tokens.colors.accentStrong} />}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: tokens.colors.text }}>{session ? 'Sua conta' : 'ORBIT'}</Text>
-            {!!session?.user.email && <Text style={{ fontSize: 12, color: tokens.colors.muted }} numberOfLines={1}>{session.user.email}</Text>}
-          </View>
-        </View>
-        {items.map((item) => (
-          <MotionPressable
-            key={item.label}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-            onPress={() => go(item.href)}
-            style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 8, borderRadius: 12 }, pressed && { opacity: 0.7 }]}
-          >
-            <Icon name={item.icon} size={22} color={tokens.colors.text} />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: tokens.colors.text }}>{item.label}</Text>
-          </MotionPressable>
-        ))}
-        {!!session && (
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel="Sair da conta"
-            onPress={() => { void signOut(); }}
-            style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 8, borderRadius: 12, marginTop: 8 }, pressed && { opacity: 0.7 }]}
-          >
-            <Icon name="arrow-down" size={22} color={tokens.colors.muted} />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: tokens.colors.muted }}>Sair</Text>
-          </MotionPressable>
-        )}
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}><AccountMenu onNavigate={go} /></ScrollView>
       </Animated.View>
     </View>
   );
 }
+

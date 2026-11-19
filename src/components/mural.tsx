@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { CardEntrance } from './motion';
+import { CardEntrance, MotionPressable } from './motion';
+import { Link } from 'expo-router';
 import { Icon, type IconName } from './icons';
 import { Image, Text, View, useWindowDimensions } from 'react-native';
 import { categories } from '../features/catalog/data';
 import { CURATED_MURAL_LABEL, type CuratedItem } from '../features/home/curated-data.mjs';
-import { tokens } from '../design/tokens';
+import { tokens, font} from '../design/tokens';
 
 const COLUMN_BREAKPOINTS = { three: 640, four: 1024 } as const;
 const GAP = tokens.spacing.sm;
@@ -17,13 +18,13 @@ const categoryIcons: Record<string, IconName> = {
 
 /** Tom da capa ilustrada por categoria, usando os tokens existentes. */
 const categoryTone: Record<string, { bg: string; fg: string; caption: string }> = {
-  film: { bg: tokens.colors.primary, fg: tokens.colors.surface, caption: '#C9D2D6' },
-  series: { bg: tokens.colors.secondary, fg: tokens.colors.accentStrong, caption: tokens.colors.muted },
-  anime: { bg: tokens.colors.accentStrong, fg: tokens.colors.surface, caption: '#CDE3E4' },
-  music: { bg: tokens.colors.secondary, fg: tokens.colors.accentStrong, caption: tokens.colors.muted },
-  album: { bg: tokens.colors.accent, fg: tokens.colors.accentStrong, caption: tokens.colors.muted },
-  book: { bg: tokens.colors.primary, fg: tokens.colors.surface, caption: '#C9D2D6' },
-  game: { bg: tokens.colors.accentStrong, fg: tokens.colors.surface, caption: '#CDE3E4' },
+  film: { bg: '#4A3628', fg: tokens.colors.onDark, caption: 'rgba(244,239,231,0.65)' },
+  series: { bg: '#2E4A3F', fg: tokens.colors.onDark, caption: 'rgba(244,239,231,0.65)' },
+  anime: { bg: '#4E3550', fg: tokens.colors.onDark, caption: 'rgba(244,239,231,0.65)' },
+  music: { bg: '#1D3560', fg: tokens.colors.onDark, caption: 'rgba(244,239,231,0.65)' },
+  album: { bg: '#1D3560', fg: tokens.colors.onDark, caption: 'rgba(244,239,231,0.65)' },
+  book: { bg: '#4A3B2C', fg: tokens.colors.onDark, caption: 'rgba(244,239,231,0.65)' },
+  game: { bg: '#2F3E5C', fg: tokens.colors.onDark, caption: 'rgba(244,239,231,0.65)' },
 };
 
 function columnCount(width: number): number {
@@ -51,9 +52,10 @@ function splitIntoColumns(items: CuratedItem[], columns: number): CuratedItem[][
 function MuralTile({ item }: { item: CuratedItem }) {
   const [failed, setFailed] = useState(false);
   return (
-    <View
+    <Link href={{ pathname: '/curated/[id]', params: { id: item.id } }} asChild><MotionPressable
+      accessibilityRole="link"
       accessibilityLabel={`${CURATED_MURAL_LABEL}: ${item.title}, ${item.creator}, ${categoryLabel(item.category)}`}
-      style={{ width: '100%', backgroundColor: tokens.colors.surface, borderRadius: tokens.radius, overflow: 'hidden', borderWidth: 1, borderColor: tokens.colors.border }}
+      style={{ width: '100%', backgroundColor: tokens.colors.surface, borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 16px rgba(23,20,15,0.06)', elevation: 1 }}
     >
       {item.coverUrl && !failed ? (
         <Image
@@ -66,12 +68,12 @@ function MuralTile({ item }: { item: CuratedItem }) {
         <IllustratedCover category={item.category} aspectRatio={item.coverAspectRatio} />
       )}
       <View style={{ padding: 14, gap: 4 }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', color: tokens.colors.text }}>{item.title}</Text>
+        <Text style={{ fontSize: 15, fontFamily: font.semibold, color: tokens.colors.text }}>{item.title}</Text>
         <Text style={{ color: tokens.colors.muted, fontSize: 12 }}>
           {item.creator} · {categoryLabel(item.category)}{item.releaseYear ? ` · ${item.releaseYear}` : ''}
         </Text>
       </View>
-    </View>
+    </MotionPressable></Link>
   );
 }
 
@@ -80,7 +82,7 @@ export function IllustratedCover({ category, aspectRatio }: { category: string; 
   return (
     <View style={{ width: '100%', aspectRatio, backgroundColor: tone.bg, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 16 }}>
       <Icon name={categoryIcons[category] ?? 'image'} size={34} color={tone.fg} />
-      <Text style={{ color: tone.caption, fontSize: 11, letterSpacing: 1.5, fontWeight: '700', textAlign: 'center' }}>{categoryLabel(category).toUpperCase()}</Text>
+      <Text style={{ color: tone.caption, fontSize: 11, letterSpacing: 1.5, fontFamily: font.bold, textAlign: 'center' }}>{categoryLabel(category).toUpperCase()}</Text>
     </View>
   );
 }
@@ -105,10 +107,11 @@ export function MuralWall({ items }: { items: CuratedItem[] }) {
 export function CuratedBadge() {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      <View style={{ backgroundColor: tokens.colors.accent, borderRadius: 24, paddingHorizontal: 12, paddingVertical: 6 }}>
-        <Text style={{ color: tokens.colors.text, fontSize: 12, fontWeight: '700', letterSpacing: 1 }}>{CURATED_MURAL_LABEL.toUpperCase()}</Text>
+      <View style={{ backgroundColor: tokens.colors.gold, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
+        <Text style={{ color: tokens.colors.text, fontSize: 12, fontFamily: font.bold, letterSpacing: 1 }}>{CURATED_MURAL_LABEL.toUpperCase()}</Text>
       </View>
       <Text style={{ color: tokens.colors.muted, fontSize: 13, flexShrink: 1 }}>Obras reais de uma seleção local. Todas as capas são ilustradas, sem arte protegida. Ainda não é o catálogo conectado.</Text>
     </View>
   );
 }
+

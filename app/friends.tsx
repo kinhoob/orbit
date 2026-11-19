@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../src/components/ui';
 import { useAuth } from '../src/features/auth/provider';
 import { supabase } from '../src/lib/supabase';
-import { tokens as t } from '../src/design/tokens';
+import { tokens as t, font} from '../src/design/tokens';
 import {
   deleteFriendship,
   fetchFriendships,
@@ -26,7 +26,7 @@ function PersonRow({ profile, children }: React.PropsWithChildren<{ profile: Pro
         <Text style={social.avatarText}>{(profile.display_name || profile.username || '?').trim().charAt(0).toUpperCase()}</Text>
       </View>
       <View style={social.rowText}>
-        <Text style={social.name}>{profile.display_name || 'Sem nome'}</Text>
+        <Link href={{ pathname: '/people/[id]', params: { id: profile.id } }} style={social.name}>{profile.display_name || 'Sem nome'} →</Link>
         {!!profile.username && <Text style={social.username}>@{profile.username}</Text>}
       </View>
       <View style={social.rowActions}>{children}</View>
@@ -38,7 +38,8 @@ export default function Friends() {
   const { session, loading } = useAuth();
   const userId = session?.user.id;
   const cache = useQueryClient();
-  const [term, setTerm] = useState('');
+  const params = useLocalSearchParams<{ search?: string }>();
+  const [term, setTerm] = useState(typeof params.search === 'string' ? params.search : '');
   const [message, setMessage] = useState('');
 
   const friendships = useQuery({
@@ -249,11 +250,12 @@ const social = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 18, fontWeight: '700', color: t.colors.primary },
-  name: { fontSize: 16, fontWeight: '600', color: t.colors.text },
+  avatarText: { fontSize: 18, fontFamily: font.bold, color: t.colors.primary },
+  name: { fontSize: 16, fontFamily: font.semibold, color: t.colors.text },
   username: { fontSize: 14, color: t.colors.muted },
 });
+
