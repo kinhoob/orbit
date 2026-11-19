@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { MotionPressable, CardEntrance } from './motion';
 import { StatePulse } from './feedback';
 import { Icon } from './icons';
-import { tokens } from '../design/tokens';
+import { tokens, font} from '../design/tokens';
 import { relativeTime, type FeedReview } from '../features/feed/timelines';
 
 const CATEGORY_ICON = { film: 'film', series: 'tv', anime: 'tv', music: 'music', album: 'music', book: 'book', game: 'game', other: 'image' } as const;
@@ -12,16 +12,16 @@ const CATEGORY_ICON = { film: 'film', series: 'tv', anime: 'tv', music: 'music',
 export function ReviewCard({ review, onToggleLike }: { review: FeedReview; onToggleLike: (review: FeedReview) => void }) {
   const initials = (review.author.display_name || review.author.username || '?').trim().slice(0, 2).toUpperCase();
   return (
-    <View style={{ backgroundColor: tokens.colors.surface, borderRadius: 16, borderWidth: 1, borderColor: tokens.colors.border, padding: 14, gap: 8 }}>
+    <View style={{ backgroundColor: tokens.colors.surface, borderRadius: 20, padding: 16, gap: 10, boxShadow: '0 4px 16px rgba(23,20,15,0.06)', elevation: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: tokens.colors.secondary, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontWeight: '700', color: tokens.colors.text }}>{initials}</Text>
+        <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: tokens.colors.gold, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontFamily: font.bold, color: tokens.colors.text }}>{initials}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: '600', color: tokens.colors.text }}>{review.author.display_name || review.author.username}</Text>
+          <Text style={{ fontFamily: font.semibold, color: tokens.colors.text }}>{review.author.display_name || review.author.username}</Text>
           {review.author.username ? <Text style={{ color: tokens.colors.muted, fontSize: 12 }}>@{review.author.username} · {relativeTime(review.created_at)}</Text> : null}
         </View>
-        <Text style={{ fontWeight: '700', color: tokens.colors.accentStrong }}>{String(review.score).replace('.', ',')}/10</Text>
+        <View style={{ backgroundColor: tokens.colors.primary, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 }}><Text style={{ fontFamily: font.bold, fontSize: 13, color: tokens.colors.onDark }}>{String(review.score).replace('.', ',')}</Text></View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Icon name={CATEGORY_ICON[review.media.category as keyof typeof CATEGORY_ICON] || 'image'} size={14} color={tokens.colors.muted} />
@@ -64,10 +64,10 @@ export function NewPostsBubble({ visible, onPress }: { visible: boolean; onPress
         accessibilityRole="button"
         accessibilityLabel="Ver novas publicações"
         onPress={onPress}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: tokens.colors.accentStrong, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.18)', elevation: 3 }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: tokens.colors.primary, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, boxShadow: '0 2px 8px rgba(23,20,15,0.25)', elevation: 3 }}
       >
-        <Icon name="arrow-up" size={14} color="#FFFFFF" />
-        <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 13 }}>Novas publicações</Text>
+        <Icon name="arrow-up" size={14} color={tokens.colors.onDark} />
+        <Text style={{ color: tokens.colors.onDark, fontFamily: font.semibold, fontSize: 13 }}>Novas publicações</Text>
       </MotionPressable>
     </View>
   );
@@ -80,7 +80,7 @@ export function TimelineTabs({ value, onChange }: { value: 'descobrir' | 'amigos
     { id: 'amigos' as const, label: 'Amigos' },
   ];
   return (
-    <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: tokens.colors.border }}>
+    <View style={{ flexDirection: 'row', backgroundColor: tokens.colors.secondary, borderRadius: 999, padding: 4 }}>
       {tabs.map((tab) => {
         const active = value === tab.id;
         return (
@@ -90,13 +90,12 @@ export function TimelineTabs({ value, onChange }: { value: 'descobrir' | 'amigos
             accessibilityState={{ selected: active }}
             accessibilityLabel={`Timeline ${tab.label}`}
             onPress={() => onChange(tab.id)}
-            style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: active ? tokens.colors.accentStrong : 'transparent' }}
+            style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 999, backgroundColor: active ? tokens.colors.primary : 'transparent' }}
           >
-            <Text style={{ fontWeight: active ? '700' : '500', color: active ? tokens.colors.accentStrong : tokens.colors.muted }}>{tab.label}</Text>
+            <Text style={{ fontFamily: active ? font.bold : font.medium, color: active ? tokens.colors.onDark : tokens.colors.muted }}>{tab.label}</Text>
           </MotionPressable>
         );
       })}
     </View>
   );
 }
-
