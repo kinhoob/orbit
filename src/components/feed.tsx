@@ -99,3 +99,4 @@ export function TimelineTabs({ value, onChange }: { value: 'descobrir' | 'amigos
     </View>
   );
 }
+
