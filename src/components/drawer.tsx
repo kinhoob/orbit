@@ -166,4 +166,4 @@ export function ProfileEdgeDrawer() {
       </Animated.View>
     </View>
   );
-          }
+}
