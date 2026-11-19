@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Platform, View, type ViewProps } from 'react-native';
 import { useReducedMotion } from './motion';
-import { resolveSwipeTarget, rubberBand } from '../domain/pager.mjs';
+import { resolveSwipeTarget, rubberBand, shouldStartPager } from '../domain/pager.mjs';
+import { EDGE_ZONE_PX } from '../domain/drawer.mjs';
 
 const nativeDriver = Platform.OS !== 'web';
 
@@ -45,8 +46,11 @@ export function Pager({ index, onIndexChange, children, style, ...props }: Pager
   }, [index, width, reduced]);
 
   const responder = useMemo(() => PanResponder.create({
+    // O gesto so comeca fora da faixa da borda esquerda, que e da gaveta do
+    // Perfil (arquitetura aprovada pelo Marco em 18/11/2026): um gesto nunca
+    // dispara o outro.
     onMoveShouldSetPanResponder: (_e, g) =>
-      state.current.width > 0 && Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
+      state.current.width > 0 && shouldStartPager(g.x0, g.dx, g.dy, EDGE_ZONE_PX),
     onPanResponderGrant: () => { state.current.dragging = true; slide.stopAnimation(); },
     onPanResponderMove: (_e, g) => {
       const { index: i, width: w, pageCount } = state.current;
@@ -72,7 +76,10 @@ export function Pager({ index, onIndexChange, children, style, ...props }: Pager
     <View
       {...props}
       {...responder.panHandlers}
-      style={[{ overflow: 'hidden' }, style]}
+      // Na web, arrastar o pager nao pode virar selecao de texto: a superficie
+      // do gesto usa user-select none (o texto da avaliacao continua selecionavel,
+      // reativado no ReviewCard).
+      style={[{ overflow: 'hidden' }, Platform.OS === 'web' ? ({ userSelect: 'none' } as never) : null, style]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
     >
       {width > 0 ? (
