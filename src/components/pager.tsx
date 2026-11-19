@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Platform, View, type ViewProps } from 'react-native';
 import { useReducedMotion } from './motion';
-import { resolveSwipeTarget, rubberBand, shouldStartPager } from '../domain/pager.mjs';
+import { pagerYieldsAtEdge, resolveSwipeTarget, rubberBand, shouldStartPager } from '../domain/pager.mjs';
 import { EDGE_ZONE_PX } from '../domain/drawer.mjs';
 
 const nativeDriver = Platform.OS !== 'web';
@@ -11,6 +11,11 @@ type PagerProps = React.PropsWithChildren<{
   index: number;
   /** Chamado quando um gesto horizontal pede outra pagina. */
   onIndexChange: (next: number) => void;
+  /**
+   * Nas bordas, entrega o gesto ao pai (troca de telas por arraste): na
+   * primeira pagina um arraste para a direita e da tela, nao do pager.
+   */
+  yieldAtEdges?: boolean;
 }> & Omit<ViewProps, 'children' | 'onLayout'>;
 
 /**
@@ -19,16 +24,17 @@ type PagerProps = React.PropsWithChildren<{
  * limiar troca de pagina. Trocar a aba pelo toque anima o mesmo deslize.
  * Respeita "reduzir movimento": a troca e instantanea, sem deslize.
  */
-export function Pager({ index, onIndexChange, children, style, ...props }: PagerProps) {
+export function Pager({ index, onIndexChange, yieldAtEdges = false, children, style, ...props }: PagerProps) {
   const reduced = useReducedMotion();
   const pages = React.Children.toArray(children);
   const [width, setWidth] = useState(0);
   const slide = useRef(new Animated.Value(0)).current;
-  const state = useRef({ index, width, pageCount: pages.length, reduced, dragging: false });
+  const state = useRef({ index, width, pageCount: pages.length, reduced, dragging: false, yieldAtEdges });
   state.current.index = index;
   state.current.width = width;
   state.current.pageCount = pages.length;
   state.current.reduced = reduced;
+  state.current.yieldAtEdges = yieldAtEdges;
   const onIndexChangeRef = useRef(onIndexChange);
   onIndexChangeRef.current = onIndexChange;
 
@@ -50,7 +56,8 @@ export function Pager({ index, onIndexChange, children, style, ...props }: Pager
     // Perfil (arquitetura aprovada pelo Marco em 18/11/2026): um gesto nunca
     // dispara o outro.
     onMoveShouldSetPanResponder: (_e, g) =>
-      state.current.width > 0 && shouldStartPager(g.x0, g.dx, g.dy, EDGE_ZONE_PX),
+      state.current.width > 0 && shouldStartPager(g.x0, g.dx, g.dy, EDGE_ZONE_PX)
+      && !(state.current.yieldAtEdges && pagerYieldsAtEdge(state.current.index, state.current.pageCount, g.dx)),
     onPanResponderGrant: () => { state.current.dragging = true; slide.stopAnimation(); },
     onPanResponderMove: (_e, g) => {
       const { index: i, width: w, pageCount } = state.current;
