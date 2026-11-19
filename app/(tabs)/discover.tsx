@@ -4,11 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen,styles } from '../../src/components/ui';
 import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/feed';
 import { Pager } from '../../src/components/pager';
+import { SwipeScreen } from '../../src/components/screen-swipe';
 import { listDiscoverTimeline, listFriendsTimeline, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
 import { toggleTimelineLike } from '../../src/features/feed/like-mutation';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { tokens as t } from '../../src/design/tokens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LoadingState } from '../../src/components/loading';
 import { Feedback } from '../../src/components/feedback';
 import { inReadingOrder } from '../../src/domain/feed-order.mjs';
@@ -25,6 +27,7 @@ export default function Discover() {
 
 function DiscoverSession() {
   const cache=useQueryClient();
+  const insets=useSafeAreaInsets();
   const [timeline,setTimeline]=useState<TimelineId>('descobrir');
   const [likeError,setLikeError]=useState('');
   const [refreshing,setRefreshing]=useState(false);
@@ -105,26 +108,36 @@ function DiscoverSession() {
     return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
+  // Balao "Novas publicacoes" flutuante como no X (pedido do Marco em
+  // 19/11/2026): fica fixo no topo do feed mesmo com a lista rolada, mostra o
+  // aviso da timeline ativa e o toque carrega as novidades e volta ao topo.
+  const bubbleTop=insets.top+76;
+  const newerActive=timeline==='descobrir'?(newerDiscover.data||0):(newerFriends.data||0);
+  const openNewerActive=()=>{void openNewer(timeline==='descobrir'?discoverQuery:friendsQuery,timeline);};
   // Sem titulo grande nem busca: o Explorar abre direto no feed (abas no topo,
   // publicacoes em sequencia), seguindo a referencia do X enviada pelo Marco.
-  return <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}>
-    {!supabase?<Text style={styles.body}>O Explorar precisa da conexão com o Supabase para mostrar as timelines.</Text>
-      :!session?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>
-      :<>
-        <TimelineTabs value={timeline} onChange={setTimeline}/>
-        <Feedback message={likeError} error />
-        {updating?<View style={{alignItems:'center'}}><ActivityIndicator size="small" color={t.colors.accentStrong}/></View>:null}
-        <Pager index={TIMELINE_ORDER.indexOf(timeline)} onIndexChange={(i)=>setTimeline(TIMELINE_ORDER[i]||'descobrir')} accessibilityLabel="Timelines do Explorar">
-          <View style={{position:'relative'}}>
-            <NewPostsBubble visible={(newerDiscover.data||0)>0} onPress={()=>{void openNewer(discoverQuery,'descobrir');}}/>
-            {renderTimeline(discoverQuery,'descobrir','Ainda não há avaliações públicas. As mais curtidas aparecem aqui.')}
-          </View>
-          <View style={{position:'relative'}}>
-            <NewPostsBubble visible={(newerFriends.data||0)>0} onPress={()=>{void openNewer(friendsQuery,'amigos');}}/>
-            {renderTimeline(friendsQuery,'amigos','Quando seus amigos avaliarem obras, as avaliações aparecem aqui, das mais recentes.')}
-          </View>
-        </Pager>
-      </>}
-  </Screen>;
+  // Arraste lateral: o pager troca Descobrir <-> Amigos e, nas bordas, entrega
+  // o gesto à troca de telas (Inicio à direita, Busca à esquerda).
+  return <SwipeScreen route="discover">
+    <View style={{flex:1}}>
+      <Screen scrollRef={scrollRef} onRefresh={timelinesOn?onRefresh:undefined} refreshing={refreshing}>
+        {!supabase?<Text style={styles.body}>O Explorar precisa da conexão com o Supabase para mostrar as timelines.</Text>
+          :!session?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>
+          :<>
+            <TimelineTabs value={timeline} onChange={setTimeline}/>
+            <Feedback message={likeError} error />
+            {updating?<View style={{alignItems:'center'}}><ActivityIndicator size="small" color={t.colors.accentStrong}/></View>:null}
+            <Pager index={TIMELINE_ORDER.indexOf(timeline)} onIndexChange={(i)=>setTimeline(TIMELINE_ORDER[i]||'descobrir')} yieldAtEdges accessibilityLabel="Timelines do Explorar">
+              <View style={{position:'relative'}}>
+                {renderTimeline(discoverQuery,'descobrir','Ainda não há avaliações públicas. As mais curtidas aparecem aqui.')}
+              </View>
+              <View style={{position:'relative'}}>
+                {renderTimeline(friendsQuery,'amigos','Quando seus amigos avaliarem obras, as avaliações aparecem aqui, das mais recentes.')}
+              </View>
+            </Pager>
+          </>}
+      </Screen>
+      <NewPostsBubble visible={newerActive>0} onPress={openNewerActive} top={bubbleTop}/>
+    </View>
+  </SwipeScreen>;
 }
-
