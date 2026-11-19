@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MotionPressable, useReducedMotion } from './motion';
 import { Icon } from './icons';
-import { tokens } from '../design/tokens';
+import { tokens, font} from '../design/tokens';
 import { useAuth } from '../features/auth/provider';
 import { DRAWER_WIDTH_PX, EDGE_ZONE_PX, drawerCloseOffset, drawerOpenOffset, shouldCloseDrawer, shouldOpenDrawer } from '../domain/drawer.mjs';
 
@@ -79,11 +79,11 @@ export function ProfileEdgeDrawer() {
         accessibilityRole="button"
         accessibilityLabel="Abrir menu do perfil"
         onPress={openDrawer}
-        style={{ position: 'absolute', top: insets.top + 10, left: 16, width: 34, height: 34, borderRadius: 17, backgroundColor: tokens.colors.accent, alignItems: 'center', justifyContent: 'center', zIndex: 31 }}
+        style={{ position: 'absolute', top: insets.top + 14, left: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: tokens.colors.darkSoft, borderWidth: 1.5, borderColor: tokens.colors.onDarkMuted, alignItems: 'center', justifyContent: 'center', zIndex: 31 }}
       >
         {session
-          ? <Text style={{ fontSize: 15, fontWeight: '700', color: tokens.colors.accentStrong }}>{initial}</Text>
-          : <Icon name="user" size={18} color={tokens.colors.accentStrong} />}
+          ? <Text style={{ fontSize: 17, fontFamily: font.bold, color: tokens.colors.onDark }}>{initial}</Text>
+          : <Icon name="user" size={20} color={tokens.colors.onDark} />}
       </MotionPressable>
 
       {/* Faixa da borda esquerda: gesto de abrir a gaveta. O pager nao responde aqui. */}
@@ -114,7 +114,7 @@ export function ProfileEdgeDrawer() {
           position: 'absolute', top: 0, bottom: 0, left: 0, width: DRAWER_WIDTH_PX, zIndex: 34,
           // Na web, o arraste da gaveta nao pode virar selecao de texto.
           ...(Platform.OS === 'web' ? { userSelect: 'none' as never } : {}),
-          backgroundColor: tokens.colors.surface, borderRightWidth: 1, borderRightColor: tokens.colors.border,
+          backgroundColor: tokens.colors.background, borderRightWidth: 1, borderRightColor: tokens.colors.border,
           paddingTop: Math.max(insets.top + 16, 40), paddingBottom: Math.max(insets.bottom + 16, 24), paddingHorizontal: 18, gap: 4,
           transform: [{ translateX: slide }],
         }}
@@ -124,4 +124,3 @@ export function ProfileEdgeDrawer() {
     </View>
   );
 }
-
