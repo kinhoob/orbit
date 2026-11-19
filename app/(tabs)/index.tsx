@@ -3,7 +3,6 @@ import { Image, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen, styles } from '../../src/components/ui';
-import { SwipeScreen } from '../../src/components/screen-swipe';
 import { Categories } from '../../src/components/catalog';
 import { CuratedBadge, IllustratedCover, MuralWall } from '../../src/components/mural';
 import { WeekCalendar } from '../../src/components/week';
@@ -99,10 +98,9 @@ function HomeSession({ account }: { account: string }) {
       <WeekCalendar selectedIso={selectedDay.iso} onSelect={setSelectedIso} pickIsos={pickIsos} />
     </View>
   );
-  // A Início participa da troca de telas por arraste lateral (pedido do Marco
-  // em 19/11/2026): arrastar para a esquerda desliza para o Explorar.
+  // A troca de telas por arraste lateral (pedido do Marco em 19/11/2026)
+  // mora no pager de telas do layout: esta tela monta uma vez e desliza.
   return (
-    <SwipeScreen route="index">
     <Screen maxWidth={1120} header={header} headerTint={hero ? headerTint[hero.category] : undefined}>
       <Text style={styles.eyebrow}>ORBIT / SUA SEMANA</Text>
       <Text style={styles.title}>Obra do dia.</Text>
@@ -114,6 +112,5 @@ function HomeSession({ account }: { account: string }) {
       <MuralWall items={items} />
       <Link href="/(tabs)/discover" style={styles.link}>Explorar o catálogo real →</Link>
     </Screen>
-    </SwipeScreen>
   );
                                                                                                   }
