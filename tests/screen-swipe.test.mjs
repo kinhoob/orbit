@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { SWIPE_SCREENS, swipeIndex, hasSwipeNeighbor, shouldStartScreenSwipe, swipeTargetRoute } = await import('../src/domain/screen-swipe.mjs');
+const { SWIPE_SCREENS, swipeIndex, hasSwipeNeighbor, shouldStartScreenSwipe, swipeTargetRoute, swipeNeighborRoute } = await import('../src/domain/screen-swipe.mjs');
 const { pagerYieldsAtEdge } = await import('../src/domain/pager.mjs');
 
 test('a ordem do arraste segue a barra de baixo, com o Criar', () => {
@@ -33,6 +33,17 @@ test('telas fora do arraste nunca navegam pelo gesto', () => {
   assert.equal(swipeTargetRoute('profile', -200, 390), null);
   assert.equal(swipeTargetRoute('saved', -200, 390), null);
   assert.equal(hasSwipeNeighbor('profile', -100), false);
+});
+
+test('a vizinha do arraste e a tela adjacente na direcao do gesto', () => {
+  assert.equal(swipeNeighborRoute('index', -1), 'discover');
+  assert.equal(swipeNeighborRoute('index', 1), null); // Início não tem anterior
+  assert.equal(swipeNeighborRoute('create', -1), 'search');
+  assert.equal(swipeNeighborRoute('create', 1), 'discover');
+  assert.equal(swipeNeighborRoute('notifications', 1), 'search');
+  assert.equal(swipeNeighborRoute('notifications', -1), null); // Sino é a última
+  assert.equal(swipeNeighborRoute('profile', -1), null);
+  assert.equal(swipeNeighborRoute('discover', 0), null);
 });
 
 test('com o teclado aberto o arraste nao comeca (protege a digitacao)', () => {
