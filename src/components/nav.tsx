@@ -1,8 +1,8 @@
-import React from 'react';
-import { MotionPressable } from './motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { MotionPressable, useReducedMotion } from './motion';
 import { Icon, type IconName } from './icons';
 import { NotificationBadge } from './notification-badge';
-import { Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Platform, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../design/tokens';
 
@@ -77,7 +77,7 @@ function NavItem(props: TabBarProps & { item: NavEntry; layout: 'side' | 'bottom
         {props.item.name === 'notifications' && <NotificationBadge />}
       </View>
       {side && <Text style={{ fontSize: 15, fontWeight: '600', color: focused ? tokens.colors.accentStrong : tokens.colors.muted }}>{props.item.title}</Text>}
-      {!side && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: focused ? tokens.colors.accentStrong : 'transparent' }} />}
+      {!side && <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ fontSize: 10, fontWeight: focused ? '700' : '500', color: focused ? tokens.colors.accentStrong : tokens.colors.muted }}>{props.item.title}</Text>}
     </MotionPressable>
   );
 }
@@ -100,12 +100,26 @@ export function SideBar(props: TabBarProps) {
 /** Barra inferior para celular. */
 export function BottomBar(props: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const reduced = useReducedMotion();
+  const [width, setWidth] = useState(0);
+  const position = useRef(new Animated.Value(0)).current;
+  const name = props.state.routes[props.state.index]?.name;
+  const selected = NAV_ITEMS.findIndex(item => item.name === name);
+  const target = Math.max(0, selected) * width / NAV_ITEMS.length;
+  useEffect(() => {
+    position.stopAnimation();
+    if (reduced) { position.setValue(target); return; }
+    const animation = Animated.spring(position, { toValue: target, damping: 22, stiffness: 240, mass: 0.8, useNativeDriver: Platform.OS !== 'web', isInteraction: false });
+    animation.start(); return () => animation.stop();
+  }, [target, reduced, position]);
   return (
     <View
+      onLayout={event => setWidth(event.nativeEvent.layout.width)}
       accessibilityRole="navigation"
       accessibilityLabel="Navegação principal"
       style={{ flexDirection: 'row', backgroundColor: tokens.colors.surface, borderTopWidth: 1, borderTopColor: tokens.colors.border, paddingBottom: Math.max(insets.bottom, 10), paddingTop: 6 }}
     >
+      {width > 0 && selected >= 0 && <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, width: width / NAV_ITEMS.length, height: 3, alignItems: 'center', transform: [{ translateX: position }] }}><View style={{ width: 32, height: 3, borderRadius: 2, backgroundColor: tokens.colors.accentStrong }} /></Animated.View>}
       {NAV_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="bottom" />)}
     </View>
   );
@@ -115,3 +129,4 @@ export function ResponsiveTabBar(props: TabBarProps) {
   const { width } = useWindowDimensions();
   return width >= SIDEBAR_BREAKPOINT ? <SideBar {...props} /> : <BottomBar {...props} />;
       }
+

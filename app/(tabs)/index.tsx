@@ -7,8 +7,15 @@ import { CuratedBadge, MuralWall } from '../../src/components/mural';
 import { WeekCalendar } from '../../src/components/week';
 import { curatedMuralItems } from '../../src/features/home/curated-data.mjs';
 import { weekDays, picksForDay } from '../../src/domain/week.mjs';
+import { Interests } from '../../src/components/interests';
+import { useAuth } from '../../src/features/auth/provider';
 
 export default function Home() {
+  const { session } = useAuth();
+  return <HomeSession key={session?.user.id || 'guest'} account={session?.user.id || 'guest'} />;
+}
+function HomeSession({ account }: { account: string }) {
+  const [interests, setInterests] = useState<string[]>([]);
   const [category, setCategory] = useState('');
   const { width } = useWindowDimensions();
   const compact = width < 640;
@@ -21,8 +28,11 @@ export default function Home() {
   const todayIso = days.find((d) => d.isToday)?.iso ?? fallback.iso;
   const [selectedIso, setSelectedIso] = useState(todayIso);
   const selectedDay = days.find((d) => d.iso === selectedIso) ?? fallback;
-  const picks = useMemo(() => picksForDay(curatedMuralItems, selectedDay.date, 6), [selectedDay]);
-  const items = category ? picks.filter((item) => item.category === category) : picks;
+  const items = useMemo(() => {
+    const pool = category ? curatedMuralItems.filter(item => item.category === category)
+      : interests.length ? curatedMuralItems.filter(item => interests.includes(item.category)) : curatedMuralItems;
+    return picksForDay(pool, selectedDay.date, 6);
+  }, [category, interests, selectedDay]);
   return (
     <Screen maxWidth={1120}>
       <Text style={[styles.eyebrow, compact && { fontSize: 12, letterSpacing: 3 }]}>ORBIT / SUA SEMANA</Text>
@@ -31,6 +41,7 @@ export default function Home() {
         {compact ? 'Sugestões da curadoria local para cada dia. Não são datas de lançamento.' : 'Sugestões da curadoria local para cada dia da semana — o que ver, ouvir ou jogar, não datas de lançamento. Toque em um dia do calendário para ver as indicações dele.'}
       </Text>
       <WeekCalendar selectedIso={selectedDay.iso} onSelect={setSelectedIso} />
+      <Interests account={account} onChange={setInterests} />
       <Categories value={category} onChange={setCategory} compact={compact} />
       <CuratedBadge />
       <MuralWall items={items} />
@@ -38,3 +49,4 @@ export default function Home() {
     </Screen>
   );
 }
+
