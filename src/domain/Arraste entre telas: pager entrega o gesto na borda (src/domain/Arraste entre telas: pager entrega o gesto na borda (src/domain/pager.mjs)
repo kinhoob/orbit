@@ -41,6 +41,17 @@ export function shouldStartPull(atTop, dy, dx) {
 }
 
 /**
+ * Um pager aninhado (as timelines do Explorar) entrega o gesto horizontal a
+ * troca de telas quando ja esta na borda na direcao do arraste: na primeira
+ * pagina, arrastar para a direita e gesto da tela (volta para a Inicio); na
+ * ultima, arrastar para a esquerda vai para a Busca.
+ */
+export function pagerYieldsAtEdge(index, pageCount, dx) {
+  if (!Number.isInteger(index) || !Number.isInteger(pageCount) || pageCount < 1 || !Number.isFinite(dx) || dx === 0) return false;
+  return (index === 0 && dx > 0) || (index === pageCount - 1 && dx < 0);
+}
+
+/**
  * O pager so assume o gesto quando ele comeca FORA da faixa da borda
  * esquerda (reservada a gaveta do Perfil) e o movimento horizontal domina.
  * Gesto iniciado na borda pertence a gaveta: um nunca dispara o outro.
@@ -48,4 +59,22 @@ export function shouldStartPull(atTop, dy, dx) {
 export function shouldStartPager(x0, dx, dy, edgeZone = 0) {
   if (!Number.isFinite(x0) || !Number.isFinite(dx) || !Number.isFinite(dy)) return false;
   return x0 > edgeZone && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.4;
-}
+}// Nucleo puro do pager horizontal das timelines do Explorar (testavel em Node).
+// O componente animado fica em src/components/pager.tsx.
+
+/**
+ * Decide a pagina alvo de um gesto horizontal.
+  * deltaX < 0 = arrastar para a esquerda (proxima pagina);
+   * deltaX > 0 = arrastar para a direita (pagina anterior).
+    * Arraste curto demais mantem a pagina atual; nas bordas nao ha para onde ir.
+     */
+     export function resolveSwipeTarget(index, deltaX, pageCount, width, thresholdRatio = 0.22) {
+       if (!Number.isFinite(deltaX) || !Number.isInteger(pageCount) || pageCount < 2) return index;
+         const threshold = Math.max(40, Math.min((width || 0) * thresholdRatio, 140));
+           if (deltaX <= -threshold) return Math.min(index + 1, pageCount - 1);
+             if (deltaX >= threshold) return Math.max(index - 1, 0);
+               return index;
+               }
+
+               /** Resistencia nas bordas do arraste: alem dos limites o deslocamento rende menos. */
+               export 
