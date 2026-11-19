@@ -2,7 +2,7 @@
 // 19/11/2026): todas as telas da barra de baixo — Início, Explorar, Criar,
 // Busca e Sino — deslizam para o lado com o dedo, no mesmo espírito da troca
 // Descobrir <-> Amigos dentro do Explorar.
-// O componente animado fica em src/components/screen-swipe.tsx.
+// O pager animado das telas fica em src/components/screen-pager.tsx.
 
 import { resolveSwipeTarget, shouldStartPager } from './pager.mjs';
 import { EDGE_ZONE_PX } from './drawer.mjs';
