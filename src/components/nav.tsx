@@ -1,6 +1,7 @@
 import React from 'react';
 import { MotionPressable } from './motion';
 import { Icon, type IconName } from './icons';
+import { NotificationBadge } from './notification-badge';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '../design/tokens';
@@ -9,11 +10,23 @@ import { tokens } from '../design/tokens';
 export const SIDEBAR_BREAKPOINT = 768;
 export const SIDEBAR_WIDTH = 232;
 
+/**
+ * Barra de baixo do celular (arquitetura aprovada pelo Marco em 18/11/2026):
+ * Início, Explorar, Criar, Busca e Sino, só ícones. O Perfil sai da barra e
+ * abre pela gaveta lateral (arraste da borda esquerda ou toque no avatar).
+ */
 export const NAV_ITEMS = [
   { name: 'index', title: 'Início', icon: 'home' },
-  { name: 'discover', title: 'Descobrir', icon: 'compass' },
+  { name: 'discover', title: 'Explorar', icon: 'compass' },
   { name: 'create', title: 'Criar', icon: 'plus' },
+  { name: 'search', title: 'Busca', icon: 'search' },
+  { name: 'notifications', title: 'Sino', icon: 'bell' },
+] as const satisfies ReadonlyArray<{ name: string; title: string; icon: IconName }>;
+
+/** No desktop/tablet não há gesto de borda: o Perfil fica no topo da coluna lateral. */
+export const SIDE_ITEMS = [
   { name: 'profile', title: 'Perfil', icon: 'user' },
+  ...NAV_ITEMS,
 ] as const satisfies ReadonlyArray<{ name: string; title: string; icon: IconName }>;
 
 /** Subconjunto estrutural das props que o Tabs do expo-router entrega ao tabBar customizado. */
@@ -38,7 +51,9 @@ function useNavItem(props: TabBarProps, routeName: string) {
   return { focused, onPress, onLongPress };
 }
 
-function NavItem(props: TabBarProps & { item: (typeof NAV_ITEMS)[number]; layout: 'side' | 'bottom' }) {
+type NavEntry = { name: string; title: string; icon: IconName };
+
+function NavItem(props: TabBarProps & { item: NavEntry; layout: 'side' | 'bottom' }) {
   const { focused, onPress, onLongPress } = useNavItem(props, props.item.name);
   const side = props.layout === 'side';
   return (
@@ -57,7 +72,11 @@ function NavItem(props: TabBarProps & { item: (typeof NAV_ITEMS)[number]; layout
         pressed && { opacity: 0.7 },
       ]}
     >
-      <Icon name={props.item.icon} size={side ? 22 : 24} color={focused ? tokens.colors.accentStrong : tokens.colors.muted} strokeWidth={focused ? 2.4 : 2} />
+      <View style={{ position: 'relative' }}>
+        <Icon name={props.item.icon} size={side ? 22 : 24} color={focused ? tokens.colors.accentStrong : tokens.colors.muted} strokeWidth={focused ? 2.4 : 2} />
+        {props.item.name === 'notifications' && <NotificationBadge />}
+      </View>
+      {side && <Text style={{ fontSize: 15, fontWeight: '600', color: focused ? tokens.colors.accentStrong : tokens.colors.muted }}>{props.item.title}</Text>}
       {!side && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: focused ? tokens.colors.accentStrong : 'transparent' }} />}
     </MotionPressable>
   );
@@ -73,7 +92,7 @@ export function SideBar(props: TabBarProps) {
       style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: SIDEBAR_WIDTH, backgroundColor: tokens.colors.surface, borderRightWidth: 1, borderRightColor: tokens.colors.border, paddingTop: Math.max(insets.top + 12, 32), paddingBottom: 24, gap: 4 }}
     >
       <Text style={{ fontSize: 20, fontWeight: '700', letterSpacing: 6, color: tokens.colors.primary, paddingHorizontal: 32, paddingBottom: 28 }}>ORBIT</Text>
-      {NAV_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="side" />)}
+      {SIDE_ITEMS.map((item) => <NavItem key={item.name} {...props} item={item} layout="side" />)}
     </View>
   );
 }
@@ -95,4 +114,4 @@ export function BottomBar(props: TabBarProps) {
 export function ResponsiveTabBar(props: TabBarProps) {
   const { width } = useWindowDimensions();
   return width >= SIDEBAR_BREAKPOINT ? <SideBar {...props} /> : <BottomBar {...props} />;
-      }
+}
