@@ -1,10 +1,11 @@
 import React, { useCallback,useEffect,useRef,useState } from 'react';
 import { ActivityIndicator,ScrollView,Text,View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen,styles } from '../../src/components/ui';
 import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/feed';
 import { Pager } from '../../src/components/pager';
-import { listDiscoverTimeline, listFriendsTimeline, setRatingLike, withLike, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
+import { listDiscoverTimeline, listFriendsTimeline, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
+import { toggleTimelineLike } from '../../src/features/feed/like-mutation';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { tokens as t } from '../../src/design/tokens';
@@ -15,8 +16,14 @@ const TIMELINE_ORDER: TimelineId[] = ['descobrir','amigos'];
 // Explorar = so o feed (arquitetura aprovada pelo Marco em 18/11/2026): abas
 // Descobrir/Amigos e publicacoes em sequencia. A busca mora na aba Busca.
 export default function Discover() {
+  const {session}=useAuth();
+  return <DiscoverSession key={session?.user.id || 'guest'} />;
+}
+
+function DiscoverSession() {
+  const cache=useQueryClient();
   const [timeline,setTimeline]=useState<TimelineId>('descobrir');
-  const [likedOverride,setLikedOverride]=useState<Record<string,FeedReview>>({});
+  const [likeError,setLikeError]=useState('');
   const [refreshing,setRefreshing]=useState(false);
   const scrollRef=useRef<React.ComponentRef<typeof ScrollView>>(null);
   const {session}=useAuth();
@@ -66,18 +73,15 @@ export default function Discover() {
   },[timelinesOn,discoverQuery.refetch,friendsQuery.refetch]);
   const toggleLike=(review:FeedReview)=>{
     if(!session)return;
-    const next=withLike(review,!review.liked_by_me);
-    setLikedOverride((prev)=>({...prev,[review.rating_id]:next}));
-    setRatingLike(review.rating_id,session.user.id,!review.liked_by_me).catch(()=>{
-      setLikedOverride((prev)=>({...prev,[review.rating_id]:review}));
-    });
+    if(review.author.id===session.user.id){setLikeError('Você não pode curtir a própria avaliação.');return;}
+    setLikeError('');
+    void toggleTimelineLike(cache,session.user.id,review).catch(()=>setLikeError('Não foi possível atualizar a curtida. Tente novamente.'));
   };
-  const applyOverrides=(list?:FeedReview[])=>(list||[]).map((r)=>likedOverride[r.rating_id]||r);
   const pageReviews=(q:typeof discoverQuery)=>q.data?.reviews;
   const renderTimeline=(q:typeof discoverQuery,emptyText:string)=>{
     if(q.isPending)return <Text style={styles.body}>Carregando avaliações…</Text>;
     if(q.isError)return <Text style={styles.error}>Não foi possível carregar a timeline.</Text>;
-    const reviews=applyOverrides(pageReviews(q));
+    const reviews=pageReviews(q)||[];
     return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
@@ -88,6 +92,7 @@ export default function Discover() {
       :!session?<Text style={styles.body}>Entre para ver as timelines Descobrir e Amigos.</Text>
       :<>
         <TimelineTabs value={timeline} onChange={setTimeline}/>
+        {!!likeError&&<Text accessibilityRole="alert" style={styles.error}>{likeError}</Text>}
         {updating?<View style={{alignItems:'center'}}><ActivityIndicator size="small" color={t.colors.accentStrong}/></View>:null}
         <Pager index={TIMELINE_ORDER.indexOf(timeline)} onIndexChange={(i)=>setTimeline(TIMELINE_ORDER[i]||'descobrir')} accessibilityLabel="Timelines do Explorar">
           <View style={{position:'relative'}}>
@@ -102,3 +107,4 @@ export default function Discover() {
       </>}
   </Screen>;
 }
+

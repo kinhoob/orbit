@@ -33,6 +33,12 @@ As telas consultam o Supabase; não há pessoas, avaliações ou catálogo fict�
 
 ## Supabase
 
+### Correções de descoberta
+
+Os filtros públicos agora separam séries e animes. Os cards da curadoria abrem detalhes locais e encaminham para a obra real quando há uma correspondência no catálogo. Curtidas usam o cache da conta e voltam a consultar o servidor após a alteração.
+
+O ranking global do Explorar depende da migration `supabase/migrations/202611190001_discover_ranking.sql`, aplicada depois das migrations anteriores. Validação e limites estão em `docs/discovery-fixes.md`. Não foi aplicado nenhum SQL a um projeto remoto nesta alteração.
+
 Copie `.env.example` para `.env` se ainda não existir. O inicializador também faz essa cópia sem sobrescrever arquivos existentes. Preencha:
 
 ```dotenv
@@ -68,3 +74,4 @@ Autenticação, migrations e RLS precisam de validação com um projeto Supabase
 | tests/ | Testes com Node |
 
 Próxima entrega: validar a base instalada e o Supabase, depois implementar mural, amizades e notificações. Daily, compatibilidade protegida e XP seguro seguem o plano em `docs/architecture.md`.
+

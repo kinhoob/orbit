@@ -73,20 +73,12 @@ async function attachLikes(rows: JoinedRow[], userId: string): Promise<FeedRevie
     .filter((r): r is FeedReview => r !== null);
 }
 
-/** Timeline Descobrir: avaliacoes publicas, das mais curtidas.
- * `newest` e a marca d'agua das novidades: vem do snapshot completo buscado
- * (ate 100), NAO da pagina exibida (50) — uma avaliacao nova com poucas
- * curtidas pode ficar fora da pagina sem deixar o balao preso em loop. */
+/** Global ranking happens in PostgreSQL before pagination, under caller RLS.
+ * newest comes from all eligible reviews, independently of the ranked page. */
 export async function listDiscoverTimeline(userId: string): Promise<TimelinePage> {
-  const { data, error } = await requireSupabase()
-    .from('ratings')
-    .select(SELECT)
-    .eq('visibility', 'public')
-    .order('created_at', { ascending: false })
-    .limit(100);
+  const { data, error } = await requireSupabase().rpc('discover_timeline', { p_limit: 50 });
   if (error) throw error;
-  const joined = await attachLikes((data || []) as JoinedRow[], userId);
-  return { reviews: rank(joined).slice(0, 50), newest: newest(joined) };
+  return data as TimelinePage;
 }
 
 /** Timeline Amigos: so amigos aceitos, visibilidade publica ou amigos, recentes. */
@@ -157,3 +149,4 @@ export async function setRatingLike(ratingId: string, userId: string, liked: boo
     if (error) throw error;
   }
 }
+

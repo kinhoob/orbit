@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CardEntrance } from './motion';
+import { CardEntrance, MotionPressable } from './motion';
+import { Link } from 'expo-router';
 import { Icon, type IconName } from './icons';
 import { Image, Text, View, useWindowDimensions } from 'react-native';
 import { categories } from '../features/catalog/data';
@@ -51,7 +52,8 @@ function splitIntoColumns(items: CuratedItem[], columns: number): CuratedItem[][
 function MuralTile({ item }: { item: CuratedItem }) {
   const [failed, setFailed] = useState(false);
   return (
-    <View
+    <Link href={{ pathname: '/curated/[id]', params: { id: item.id } }} asChild><MotionPressable
+      accessibilityRole="link"
       accessibilityLabel={`${CURATED_MURAL_LABEL}: ${item.title}, ${item.creator}, ${categoryLabel(item.category)}`}
       style={{ width: '100%', backgroundColor: tokens.colors.surface, borderRadius: tokens.radius, overflow: 'hidden', borderWidth: 1, borderColor: tokens.colors.border }}
     >
@@ -71,7 +73,7 @@ function MuralTile({ item }: { item: CuratedItem }) {
           {item.creator} · {categoryLabel(item.category)}{item.releaseYear ? ` · ${item.releaseYear}` : ''}
         </Text>
       </View>
-    </View>
+    </MotionPressable></Link>
   );
 }
 
@@ -112,3 +114,4 @@ export function CuratedBadge() {
     </View>
   );
 }
+

@@ -31,7 +31,7 @@ export default function Search() {
     staleTime:10*60*1000,
   });
   const peopleQuery=useQuery({
-    queryKey:['people-search',term],
+    queryKey:['people-search',session?.user.id,term],
     queryFn:()=>searchProfiles(term,session!.user.id),
     enabled:!!supabase&&!!session&&searching,
   });
@@ -63,3 +63,4 @@ export default function Search() {
     </>}
   </Screen>;
 }
+
