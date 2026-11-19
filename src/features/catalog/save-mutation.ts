@@ -36,6 +36,8 @@ export async function toggleSavedItem(cache: QueryClient, userId: string, mediaI
       await Promise.all([
         cache.invalidateQueries({ queryKey: key, exact: true }),
         cache.invalidateQueries({ queryKey: ['saved', userId] }),
+        cache.invalidateQueries({ queryKey: ['library', userId] }),
+        cache.invalidateQueries({ queryKey: ['discovery-history', userId] }),
       ]);
     } finally { locks.delete(lock); }
   }

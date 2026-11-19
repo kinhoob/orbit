@@ -13,6 +13,7 @@ import { Feedback, StatePulse } from '../../src/components/feedback';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
 import { toggleSavedItem } from '../../src/features/catalog/save-mutation';
+import { useAccountSettings } from '../../src/features/account/settings';
 
 const VISIBILITY = [
   { id: 'public', label: 'Pública' },
@@ -65,6 +66,7 @@ export default function MediaDetail() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const cache = useQueryClient();
+  const preferences = useAccountSettings();
   const [score, setScore] = useState('');
   const [review, setReview] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('public');
@@ -97,13 +99,17 @@ export default function MediaDetail() {
   useEffect(() => {
     setScore(state.data?.rating ? String(state.data.rating.score) : '');
     setReview(state.data?.rating?.review || '');
-    setVisibility((state.data?.rating?.visibility as Visibility) || 'public');
-  }, [state.data?.rating?.score, state.data?.rating?.review, state.data?.rating?.visibility, id, userId]);
+    setVisibility((state.data?.rating?.visibility as Visibility) || preferences.data?.default_visibility || 'public');
+  }, [state.data?.rating?.score, state.data?.rating?.review, state.data?.rating?.visibility, preferences.data?.default_visibility, id, userId]);
   useEffect(() => { setMessage(''); }, [id, userId]);
   async function invalidate() {
     await Promise.all([
       cache.invalidateQueries({ queryKey: ['media-state', id, userId] }),
       cache.invalidateQueries({ queryKey: ['saved', userId] }),
+      cache.invalidateQueries({ queryKey: ['library', userId] }),
+      cache.invalidateQueries({ queryKey: ['account-progress', userId] }),
+      cache.invalidateQueries({ queryKey: ['discovery-history', userId] }),
+      cache.invalidateQueries({ queryKey: ['profile-timeline', userId] }),
     ]);
   }
   async function toggleSave() {
@@ -198,8 +204,10 @@ export default function MediaDetail() {
             <Link href="/auth" style={styles.link}>
               Entre para salvar e avaliar →
             </Link>
-          ) : state.isPending ? (
+          ) : state.isPending || (preferences.isPending && !state.data?.rating) ? (
             <Text style={styles.body}>Carregando sua avaliação…</Text>
+          ) : preferences.isError && !state.data?.rating ? (
+            <View style={detail.stateCard}><Text style={styles.error}>Não foi possível carregar sua preferência de privacidade.</Text><Button label="Tentar novamente" onPress={() => { void preferences.refetch(); }} /></View>
           ) : state.isError ? (
             <View style={detail.stateCard}>
               <Text style={styles.error}>Não foi possível carregar sua biblioteca.</Text>

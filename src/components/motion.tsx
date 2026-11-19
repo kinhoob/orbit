@@ -2,11 +2,13 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { AccessibilityInfo, Animated, Easing, Platform, Pressable, type PressableProps, type ViewProps } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { motionSpec } from '../design/motion.mjs';
+import { useAccountSettings } from '../features/account/settings';
 
 const ReducedMotion = createContext(true);
 
 /** Fail closed until the preference is known. Changes apply without restarting. */
 export function MotionProvider({ children }: React.PropsWithChildren) {
+  const preferences = useAccountSettings();
   const [reduced, setReduced] = useState(true);
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.matchMedia) {
@@ -27,7 +29,7 @@ export function MotionProvider({ children }: React.PropsWithChildren) {
     }).catch(() => { /* Keep motion off if the preference cannot be read. */ });
     return () => { alive = false; subscription.remove(); };
   }, []);
-  return <ReducedMotion.Provider value={reduced}>{children}</ReducedMotion.Provider>;
+  return <ReducedMotion.Provider value={reduced || preferences.data?.motion_preference === 'reduce'}>{children}</ReducedMotion.Provider>;
 }
 
 export const useReducedMotion = () => useContext(ReducedMotion);
@@ -87,3 +89,4 @@ export const MotionPressable = React.forwardRef<React.ElementRef<typeof Pressabl
     onPressOut={event => { setPressed(false); animate(1); onPressOut?.(event); }}
     style={[typeof style === 'function' ? style({ pressed }) : style, pressed && !disabled && { opacity: 0.8 }, { transform: [{ scale: reduced ? 1 : scale }] }]} />;
 });
+

@@ -1,19 +1,18 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Animated, BackHandler, Easing, PanResponder, Platform, Text, View } from 'react-native';
 import { useEffect } from 'react';
+import { ScrollView } from 'react-native';
+import { AccountMenu } from './account-menu';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { MotionPressable, useReducedMotion } from './motion';
-import { Icon, type IconName } from './icons';
+import { Icon } from './icons';
 import { tokens } from '../design/tokens';
 import { useAuth } from '../features/auth/provider';
-import { requireSupabase } from '../lib/supabase';
 import { DRAWER_WIDTH_PX, EDGE_ZONE_PX, drawerCloseOffset, drawerOpenOffset, shouldCloseDrawer, shouldOpenDrawer } from '../domain/drawer.mjs';
 
 const nativeDriver = Platform.OS !== 'web';
 
-type DrawerItem = { icon: IconName; label: string; href: string };
 
 /**
  * Gaveta do Perfil (aprovada pelo Marco em 18/11/2026, referencia X): abre
@@ -25,7 +24,6 @@ type DrawerItem = { icon: IconName; label: string; href: string };
 export function ProfileEdgeDrawer() {
   const { session } = useAuth();
   const router = useRouter();
-  const cache = useQueryClient();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
   const [open, setOpen] = useState(false);
@@ -72,22 +70,6 @@ export function ProfileEdgeDrawer() {
   }), []);
 
   const go = (href: string) => { closeDrawer(); router.push(href as never); };
-  const signOut = async () => {
-    closeDrawer();
-    try {
-      const { error } = await requireSupabase().auth.signOut();
-      if (!error) cache.clear();
-    } catch { /* o Perfil tambem oferece sair com mensagem de erro */ }
-  };
-
-  const items: DrawerItem[] = session
-    ? [
-        { icon: 'user', label: 'Perfil', href: '/(tabs)/profile' },
-        { icon: 'bookmark', label: 'Salvos', href: '/(tabs)/profile' },
-        { icon: 'heart', label: 'Amigos', href: '/friends' },
-      ]
-    : [{ icon: 'user', label: 'Entrar ou criar conta', href: '/auth' }];
-
   const initial = (session?.user.email || '?').trim().charAt(0).toUpperCase();
 
   return (
@@ -137,40 +119,7 @@ export function ProfileEdgeDrawer() {
           transform: [{ translateX: slide }],
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: tokens.colors.border, marginBottom: 10 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: tokens.colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-            {session
-              ? <Text style={{ fontSize: 18, fontWeight: '700', color: tokens.colors.accentStrong }}>{initial}</Text>
-              : <Icon name="user" size={22} color={tokens.colors.accentStrong} />}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: tokens.colors.text }}>{session ? 'Sua conta' : 'ORBIT'}</Text>
-            {!!session?.user.email && <Text style={{ fontSize: 12, color: tokens.colors.muted }} numberOfLines={1}>{session.user.email}</Text>}
-          </View>
-        </View>
-        {items.map((item) => (
-          <MotionPressable
-            key={item.label}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-            onPress={() => go(item.href)}
-            style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 8, borderRadius: 12 }, pressed && { opacity: 0.7 }]}
-          >
-            <Icon name={item.icon} size={22} color={tokens.colors.text} />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: tokens.colors.text }}>{item.label}</Text>
-          </MotionPressable>
-        ))}
-        {!!session && (
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel="Sair da conta"
-            onPress={() => { void signOut(); }}
-            style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 8, borderRadius: 12, marginTop: 8 }, pressed && { opacity: 0.7 }]}
-          >
-            <Icon name="arrow-down" size={22} color={tokens.colors.muted} />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: tokens.colors.muted }}>Sair</Text>
-          </MotionPressable>
-        )}
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}><AccountMenu onNavigate={go} /></ScrollView>
       </Animated.View>
     </View>
   );
