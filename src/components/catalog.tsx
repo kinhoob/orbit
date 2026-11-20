@@ -21,7 +21,7 @@ export function MediaCard({item}:{item:MediaItem}) {
     <View style={{padding:12,gap:4}}>
       <Text numberOfLines={2} ellipsizeMode="tail" style={{height:40*fontScale,lineHeight:20,fontSize:15,fontFamily:font.semibold,color:tokens.colors.text}}>{item.title}</Text>
       <Text numberOfLines={1} ellipsizeMode="tail" style={{height:17*fontScale,lineHeight:17,fontSize:12,color:tokens.colors.muted}}>{item.creator || ' '}</Text>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={{height:16*fontScale,lineHeight:16,fontSize:11,color:tokens.colors.muted}}>{categoryLabel}{item.release_year ? ` � ${item.release_year}` : ''}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{height:16*fontScale,lineHeight:16,fontSize:11,color:tokens.colors.muted}}>{categoryLabel}{item.release_year ? ` · ${item.release_year}` : ''}</Text>
     </View>
   </>;
   const cardStyle={width:'100%',backgroundColor:tokens.colors.surface,borderRadius:20,overflow:'hidden',boxShadow:'0 4px 16px rgba(23,20,15,0.06)',elevation:1} as const;
@@ -32,7 +32,7 @@ export function MediaCard({item}:{item:MediaItem}) {
         <View style={{flex:1,justifyContent:'center',padding:24,backgroundColor:'rgba(0,0,0,0.6)'}}>
           <ScrollView accessibilityViewIsModal style={{width:'100%',maxWidth:440,maxHeight:'90%',flexGrow:0,alignSelf:'center',borderRadius:24,backgroundColor:tokens.colors.surface}} contentContainerStyle={{padding:24,gap:16}}>
             <Text accessibilityRole="header" style={{fontSize:24,fontFamily:font.bold,color:tokens.colors.text}}>{item.title}</Text>
-            <Text style={{color:tokens.colors.muted}}>{[item.creator,categories.find(c=>c.id===item.category)?.label,item.release_year].filter(Boolean).join(' � ')}</Text>
+            <Text style={{color:tokens.colors.muted}}>{[item.creator,categories.find(c=>c.id===item.category)?.label,item.release_year].filter(Boolean).join(' · ')}</Text>
             {item.description ? <Text style={{color:tokens.colors.text}}>{item.description}</Text> : null}
             <MotionPressable accessibilityRole="link" onPress={()=>{void Linking.openURL(item.source_url!);}} style={{padding:14,borderRadius:16,backgroundColor:tokens.colors.primary}}><Text style={{textAlign:'center',color:tokens.colors.onDark,fontFamily:font.semibold}}>Abrir fonte</Text></MotionPressable>
             <MotionPressable accessibilityRole="button" onPress={()=>setDetailsOpen(false)} style={{padding:12}}><Text style={{textAlign:'center',color:tokens.colors.text}}>Fechar</Text></MotionPressable>

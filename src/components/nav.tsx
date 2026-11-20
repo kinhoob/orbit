@@ -7,26 +7,26 @@ import { NotificationBadge } from './notification-badge';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { font, tokens } from '../design/tokens';
 
-/** Largura a partir da qual a navega��o vira lateral (desktop/tablet). */
+/** Largura a partir da qual a navegação vira lateral (desktop/tablet). */
 export const SIDEBAR_BREAKPOINT = 768;
 export const SIDEBAR_WIDTH = 232;
 
 /**
  * Barra de baixo do celular (arquitetura aprovada pelo Marco em 18/11/2026):
- * In�cio, Explorar, Criar, Busca e Sino, s� �cones. O Perfil sai da barra e
+ * Início, Explorar, Criar, Busca e Sino, só ícones. O Perfil sai da barra e
  * abre pela gaveta lateral (arraste da borda esquerda ou toque no avatar).
- * Desde 19/11/2026 a barra � a p�lula escura flutuante da nova identidade,
- * com o �cone ativo em c�rculo creme (refer�ncia aprovada pelo Marco).
+ * Desde 19/11/2026 a barra é a pílula escura flutuante da nova identidade,
+ * com o ícone ativo em círculo creme (referência aprovada pelo Marco).
  */
 export const NAV_ITEMS = [
-  { name: 'index', title: 'In�cio', icon: 'home' },
+  { name: 'index', title: 'Início', icon: 'home' },
   { name: 'discover', title: 'Explorar', icon: 'compass' },
   { name: 'create', title: 'Criar', icon: 'plus' },
   { name: 'search', title: 'Busca', icon: 'search' },
   { name: 'notifications', title: 'Sino', icon: 'bell' },
 ] as const satisfies ReadonlyArray<{ name: string; title: string; icon: IconName }>;
 
-/** No desktop/tablet n�o h� gesto de borda: o Perfil fica no topo da coluna lateral. */
+/** No desktop/tablet não há gesto de borda: o Perfil fica no topo da coluna lateral. */
 export const SIDE_ITEMS = [
   { name: 'profile', title: 'Perfil', icon: 'user' },
   ...NAV_ITEMS,
@@ -106,13 +106,13 @@ function NavItem(props: TabBarProps & { item: NavEntry; layout: 'side' | 'bottom
   );
 }
 
-/** Navega��o lateral para desktop/tablet, na mesma linguagem escura. */
+/** Navegação lateral para desktop/tablet, na mesma linguagem escura. */
 export function SideBar(props: TabBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View
       accessibilityRole="navigation"
-      accessibilityLabel="Navega��o principal"
+      accessibilityLabel="Navegação principal"
       style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: SIDEBAR_WIDTH, backgroundColor: tokens.colors.dark, borderRightWidth: 1, borderRightColor: tokens.colors.darkSoft, paddingTop: Math.max(insets.top + 12, 32), paddingBottom: 24, gap: 4 }}
     >
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}><Text style={{ fontSize: 20, fontFamily: font.extrabold, letterSpacing: 6, color: tokens.colors.onDark, paddingHorizontal: 32, paddingBottom: 16 }}>ORBIT</Text>
@@ -122,7 +122,7 @@ export function SideBar(props: TabBarProps) {
   );
 }
 
-/** P�lula flutuante escura para celular (identidade aprovada em 19/11/2026). */
+/** Pílula flutuante escura para celular (identidade aprovada em 19/11/2026). */
 export function BottomBar(props: TabBarProps) {
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
@@ -137,7 +137,7 @@ export function BottomBar(props: TabBarProps) {
     <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 22, paddingBottom: Math.max(insets.bottom + 8, 18) }}>
       <View
         accessibilityRole="navigation"
-        accessibilityLabel="Navega��o principal"
+        accessibilityLabel="Navegação principal"
         onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
         style={{ flexDirection: 'row', alignItems: 'center', height: 66, borderRadius: 999, backgroundColor: tokens.colors.dark, boxShadow: '0 14px 30px rgba(23,20,15,0.35)', elevation: 8 }}
       >
