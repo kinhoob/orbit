@@ -11,7 +11,7 @@ import { tokens } from '../design/tokens';
 
 // Telas da barra de baixo, importadas estaticamente. As rotas continuam nos
 // arquivos de app/(tabs); o pager monta cada tela UMA vez (estado, rolagem e
-// formulários sobrevivem à troca) e desliza a fileira com o dedo.
+// formul�rios sobrevivem � troca) e desliza a fileira com o dedo.
 import IndexScreen from '../../app/(tabs)/index';
 import DiscoverScreen from '../../app/(tabs)/discover';
 import CreateScreen from '../../app/(tabs)/create';
@@ -45,15 +45,15 @@ const hrefFor = (name: string) => (name === 'index' ? '/(tabs)' : `/(tabs)/${nam
 
 /**
  * Troca de telas arrastada para o lado (pedido do Marco em 19/11/2026): as
- * cinco telas da barra de baixo (Início, Explorar, Criar, Busca, Sino) ficam
- * montadas lado a lado numa fileira — cada uma UMA instância real, montada na
- * primeira visita e preservada depois — e a fileira acompanha o dedo. É o
+ * cinco telas da barra de baixo (In�cio, Explorar, Criar, Busca, Sino) ficam
+ * montadas lado a lado numa fileira - cada uma UMA inst�ncia real, montada na
+ * primeira visita e preservada depois - e a fileira acompanha o dedo. � o
  * mesmo comportamento do pager Descobrir <-> Amigos: a tela vizinha entra
- * junto, com a rolagem e os campos que ela já tinha. Soltando além do limiar
+ * junto, com a rolagem e os campos que ela j� tinha. Soltando al�m do limiar
  * a fileira assenta na vizinha e a rota acompanha; soltando antes, volta.
- * A faixa da borda esquerda continua reservada à gaveta do Perfil, o pager
+ * A faixa da borda esquerda continua reservada � gaveta do Perfil, o pager
  * das timelines entrega o gesto nas suas bordas e o teclado aberto suspende
- * o arraste. Respeita "reduzir movimento": troca instantânea, sem deslize.
+ * o arraste. Respeita "reduzir movimento": troca instant�nea, sem deslize.
  */
 export function ScreenPager({ marginLeft = 0 }: { marginLeft?: number }) {
   const router = useRouter();
@@ -71,22 +71,22 @@ export function ScreenPager({ marginLeft = 0 }: { marginLeft?: number }) {
   const overlayName = swipeIndex(routeNameFromPath(pathname)) < 0 && pathname !== '/' ? routeNameFromPath(pathname) : null;
   state.current.overlay = overlayName !== null;
 
-  // Navegação iniciada por este pager (arraste ou toque na barra): o efeito
-  // do pathname não deve animar de novo o que já está acontecendo.
+  // Navega��o iniciada por este pager (arraste ou toque na barra): o efeito
+  // do pathname n�o deve animar de novo o que j� est� acontecendo.
   const navigatingTo = useRef<string | null>(null);
 
-  const animateTo = (toValue: number, duration = 220, done?: () => void) => {
+  const animateTo = (toValue: number, duration = 340, done?: () => void) => {
     slide.stopAnimation();
     if (state.current.reduced) { slide.setValue(toValue); done?.(); return; }
-    Animated.timing(slide, { toValue, duration, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver }).start(() => done?.());
+    Animated.timing(slide, { toValue, duration, easing: Easing.inOut(Easing.sin), useNativeDriver: nativeDriver }).start(({ finished }) => { if (finished) done?.(); });
   };
 
   const visit = (i: number) => {
     setVisited((current) => (current[i] ? current : current.map((v, j) => (j === i ? true : v))));
   };
 
-  // Teclado aberto = usuário digitando (Criar, Busca): o arraste fica
-  // suspenso para não roubar a interação com os campos de texto.
+  // Teclado aberto = usu�rio digitando (Criar, Busca): o arraste fica
+  // suspenso para n�o roubar a intera��o com os campos de texto.
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => { state.current.keyboardOpen = true; });
     const hide = Keyboard.addListener('keyboardDidHide', () => { state.current.keyboardOpen = false; });
@@ -103,11 +103,11 @@ export function ScreenPager({ marginLeft = 0 }: { marginLeft?: number }) {
       navigatingTo.current = name;
       router.navigate(hrefFor(name));
     }
-    if (state.current.width > 0) animateTo(-i * state.current.width, 240);
+    if (state.current.width > 0) animateTo(-i * state.current.width, 480);
   };
 
-  // Mudança de rota por fora do gesto (toque na barra, link, deep link,
-  // voltar): o pager acompanha a URL. Navegações iniciadas aqui são puladas.
+  // Mudan�a de rota por fora do gesto (toque na barra, link, deep link,
+  // voltar): o pager acompanha a URL. Navega��es iniciadas aqui s�o puladas.
   useEffect(() => {
     const name = routeNameFromPath(pathname);
     const i = swipeIndex(name);
@@ -124,14 +124,14 @@ export function ScreenPager({ marginLeft = 0 }: { marginLeft?: number }) {
     state.current.dragging = false;
     const { active: current, width: w } = state.current;
     const target = swipeTargetRoute(SWIPE_SCREENS[current], dx, w);
-    if (!target) { animateTo(-current * w, 220); return; }
+    if (!target) { animateTo(-current * w, 340); return; }
     // A fileira assenta com a vizinha em tela cheia; a rota acompanha no fim.
     const j = swipeIndex(target);
     visit(j);
     setActive(j);
     state.current.active = j;
     navigatingTo.current = target;
-    animateTo(-j * w, 160, () => router.navigate(hrefFor(target)));
+    animateTo(-j * w, 340, () => router.navigate(hrefFor(target)));
   };
 
   // Web: o PanResponder do react-native-web perde o estado do gesto (x0/dx)
@@ -147,8 +147,8 @@ export function ScreenPager({ marginLeft = 0 }: { marginLeft?: number }) {
   };
 
   const responder = useMemo(() => PanResponder.create({
-    // Filhos (listas verticais, carrosséis, o pager das timelines) são
-    // consultados antes; este gesto só assume o que sobrar na horizontal.
+    // Filhos (listas verticais, carross�is, o pager das timelines) s�o
+    // consultados antes; este gesto s� assume o que sobrar na horizontal.
     onMoveShouldSetPanResponder: (e, g) => {
       const w = webGesture(e);
       const startX = w ? w.startX : g.x0;
@@ -165,7 +165,7 @@ export function ScreenPager({ marginLeft = 0 }: { marginLeft?: number }) {
       const { active: current, width: wdt } = state.current;
       slide.setValue(-current * wdt + rubberBand(dx, -wdt, wdt));
       // A vizinha real monta na hora que aparece pela primeira vez, para
-      // acompanhar o dedo já com seu conteúdo — nunca uma cópia.
+      // acompanhar o dedo j� com seu conte�do - nunca uma c�pia.
       const next = swipeNeighborRoute(SWIPE_SCREENS[current], dx);
       if (next) visit(swipeIndex(next));
     },
@@ -175,6 +175,7 @@ export function ScreenPager({ marginLeft = 0 }: { marginLeft?: number }) {
   }), []);
 
   const barProps: TabBarProps = {
+    screenPosition: slide.interpolate({ inputRange: [-Math.max(width, 1) * (SWIPE_SCREENS.length - 1), 0], outputRange: [SWIPE_SCREENS.length - 1, 0], extrapolate: 'clamp' }),
     state: {
       index: overlayName ? BAR_ROUTES.findIndex((r) => r.name === overlayName) : active,
       routes: BAR_ROUTES,
