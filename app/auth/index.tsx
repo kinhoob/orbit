@@ -58,7 +58,20 @@ export default function AuthScreen() {
         router.replace(destination);
         return;
       }
-      if (mode === 'signup') { setConfirmationEmail(email.trim()); return; }
+      if (mode === 'signup') {
+        // Se o projeto não exige confirmação de e-mail, o signUp já devolve uma
+        // sessão ativa. O Marco pediu confirmação antes da escolha de gostos, e
+        // não cabe ao app mudar a configuração do backend: desfaz a sessão local
+        // e explica, em vez de deixar a conta salvar avaliações sem confirmar.
+        if ((result.data as { session?: unknown }).session) {
+          try { await client.auth.signOut(); } catch { /* ignora */ }
+          setFailed(true);
+          setMessage('Sua conta foi criada, mas o projeto ainda não exige confirmação de e-mail. Por segurança, o acesso fica bloqueado até o responsável ativar a confirmação.');
+          return;
+        }
+        setConfirmationEmail(email.trim());
+        return;
+      }
       setMessage('Se houver uma conta com esse e-mail, você receberá o link de recuperação.');
     } catch { setFailed(true); setMessage('Não foi possível concluir. Confira os dados, a conexão e a configuração do Supabase.'); }
     finally { setBusy(false); }
