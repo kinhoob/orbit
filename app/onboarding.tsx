@@ -259,7 +259,7 @@ export default function OnboardingScreen() {
             <StepTransition step={step}><View style={styles.card}>
               <Text style={styles.title}>Seu universo começou.</Text>
               <Text style={styles.body}>Suas {COMPATIBILITY_RATING_TARGET} primeiras avaliações estão guardadas. A compatibilidade aparece quando você e um amigo tiverem {COMPATIBILITY_RATING_TARGET} obras avaliadas em comum.</Text>
-              <Button label="Entrar no meu universo" onPress={() => router.replace('/(tabs)')} />
+              <Button label="Entrar no meu universo" onPress={() => router.replace({ pathname: '/(tabs)/discover', params: { tab: 'amigos' } })} />
             </View></StepTransition>
           )}
         </ScreenMotion>
