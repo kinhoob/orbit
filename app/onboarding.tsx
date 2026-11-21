@@ -21,19 +21,53 @@ type Step = 'choose' | 'rate' | 'done';
 
 const nativeDriver = Platform.OS !== 'web';
 
-// Chip de estilo com resposta elástica ao tocar: a seleção fica visível na
-// hora e o toque parece físico. Movimento reduzido mantém o chip parado.
+// Chip de estilo com resposta elástica e transição de cor ao escolher: o
+// toque contrai o chip inteiro e uma mola devolve com leve overshoot, enquanto
+// o fundo desliza para o dourado. Não anima na montagem (só nas trocas) e
+// movimento reduzido mantém tudo parado, com as cores fixas.
 function GenreChip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
   const reduced = useReducedMotion();
   const scale = useRef(new Animated.Value(1)).current;
+  const tint = useRef(new Animated.Value(active ? 1 : 0)).current;
+  const mounted = useRef(false);
   useEffect(() => {
-    if (reduced) { scale.setValue(1); return; }
-    scale.setValue(0.82);
-    Animated.spring(scale, { toValue: 1, friction: 6, tension: 220, useNativeDriver: nativeDriver }).start();
-  }, [active, reduced, scale]);
+    if (reduced) { scale.setValue(1); tint.setValue(active ? 1 : 0); return; }
+    if (!mounted.current) { mounted.current = true; return; }
+    scale.setValue(0.84);
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, friction: 5, tension: 300, useNativeDriver: nativeDriver }),
+      Animated.timing(tint, { toValue: active ? 1 : 0, duration: 170, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+    ]).start();
+  }, [active, reduced, scale, tint]);
+  const backgroundColor = reduced
+    ? (active ? t.colors.gold : t.colors.secondary)
+    : tint.interpolate({ inputRange: [0, 1], outputRange: [t.colors.secondary, t.colors.gold] });
   return (
-    <MotionPressable accessibilityRole="checkbox" accessibilityState={{ checked: active }} onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Animated.Text style={[styles.chipText, active && styles.chipTextActive, { transform: [{ scale: reduced ? 1 : scale }] }]}>{label}</Animated.Text>
+    <MotionPressable accessibilityRole="checkbox" accessibilityState={{ checked: active }} onPress={onPress}>
+      <Animated.View style={[styles.chip, { backgroundColor, transform: [{ scale: reduced ? 1 : scale }] }]}>
+        <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+      </Animated.View>
+    </MotionPressable>
+  );
+}
+
+// Botão de nota (0 a 10): afunda e volta com mola a cada toque, para a
+// avaliação parecer física. Movimento reduzido mantém o botão parado.
+function ScoreButton({ score, busy, onPress }: { score: number; busy: boolean; onPress: () => void }) {
+  const reduced = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const handle = () => {
+    if (!reduced) {
+      scale.setValue(0.8);
+      Animated.spring(scale, { toValue: 1, friction: 5, tension: 300, useNativeDriver: nativeDriver }).start();
+    }
+    onPress();
+  };
+  return (
+    <MotionPressable accessibilityRole="button" accessibilityLabel={`Nota ${score}`} disabled={busy} onPress={handle}>
+      <Animated.View style={[styles.score, { transform: [{ scale: reduced ? 1 : scale }] }]}>
+        <Text style={styles.scoreText}>{score}</Text>
+      </Animated.View>
     </MotionPressable>
   );
 }
@@ -213,9 +247,7 @@ export default function OnboardingScreen() {
               <Text style={styles.label}>Dê uma nota de 0 a 10</Text>
               <View style={styles.scores}>
                 {Array.from({ length: 11 }, (_, score) => (
-                  <MotionPressable key={score} accessibilityRole="button" accessibilityLabel={`Nota ${score}`} disabled={busy} onPress={() => { void rate(score); }} style={styles.score}>
-                    <Text style={styles.scoreText}>{score}</Text>
-                  </MotionPressable>
+                  <ScoreButton key={score} score={score} busy={busy} onPress={() => { void rate(score); }} />
                 ))}
               </View>
               {!!message && <Text accessibilityRole="alert" style={styles.error}>{message}</Text>}
