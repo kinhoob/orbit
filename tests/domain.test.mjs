@@ -5,6 +5,7 @@ import {emailError, passwordPolicyError, passwordStrength, validateCredentials, 
 import {compatibilityKickoff, COMPATIBILITY_RATING_TARGET} from '../src/domain/onboarding.mjs';
 import {tasteGateDecision, tasteCompleteKey} from '../src/features/auth/gate-state.mjs';
 import {genres, searchGenres, genresByCategory} from '../src/features/catalog/genres.mjs';
+import {ambientOrbs} from '../src/design/motion.mjs';
 import {parseScore} from '../src/domain/rating.mjs';
 test('ratings accept zero, ten and localized decimal scores',()=>{assert.equal(parseScore('0'),0);assert.equal(parseScore('10'),10);assert.equal(parseScore('8,5'),8.5);});
 test('ratings reject missing, out of bounds or malformed values',()=>{for(const value of ['', ' ', '-1','11','8.55','Infinity','7abc'])assert.equal(parseScore(value),null);});
@@ -32,3 +33,4 @@ test('taste completion record is per account and requires a user id',()=>{assert
 test('genre search is accent and case insensitive and returns everything when empty',()=>{assert.equal(searchGenres('').length,genres.length);assert.equal(searchGenres('   ').length,genres.length);const terror=searchGenres('TERROR');assert.ok(terror.length>=3);assert.ok(terror.every(g=>g.label.toLowerCase().includes('terror')));const ficcao=searchGenres('ficcao');assert.ok(ficcao.some(g=>g.label==='Ficção científica'));assert.deepEqual(searchGenres('xyzzy-nada'),[]);});
 test('genre ids are unique and every genre has a known category and label',()=>{const ids=new Set(genres.map(g=>g.id));assert.equal(ids.size,genres.length);const known=new Set(['film','series','anime','music','album','book','game']);for(const genre of genres){assert.ok(known.has(genre.category),genre.id);assert.ok(genre.label.length>0,genre.id);}});
 test('genres group by category without losing entries',()=>{const groups=genresByCategory(genres);const total=[...groups.values()].reduce((sum,list)=>sum+list.length,0);assert.equal(total,genres.length);assert.ok(groups.get('music').length>0);assert.ok(groups.get('game').length>0);});
+test('ambient background: no orbs under reduced motion, bounded drift otherwise',()=>{assert.deepEqual(ambientOrbs(true),[]);const orbs=ambientOrbs(false);assert.ok(orbs.length>=4&&orbs.length<=8);for(const orb of orbs){assert.ok(orb.size>0&&orb.duration>=5000);assert.ok(Math.abs(orb.dx)<=60&&Math.abs(orb.dy)<=60);assert.ok(orb.opacity>0&&orb.opacity<=1);}});
