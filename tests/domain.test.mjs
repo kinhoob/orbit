@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {compatibility} from '../src/domain/compatibility.mjs';
-import {emailError, validateCredentials} from '../src/features/auth/validation.mjs';
+import {emailError, passwordPolicyError, passwordStrength, validateCredentials, validateSignup} from '../src/features/auth/validation.mjs';
 import {parseScore} from '../src/domain/rating.mjs';
 test('ratings accept zero, ten and localized decimal scores',()=>{assert.equal(parseScore('0'),0);assert.equal(parseScore('10'),10);assert.equal(parseScore('8,5'),8.5);});
 test('ratings reject missing, out of bounds or malformed values',()=>{for(const value of ['', ' ', '-1','11','8.55','Infinity','7abc'])assert.equal(parseScore(value),null);});
@@ -12,3 +12,9 @@ test('opposite ratings yield zero',()=>assert.equal(compatibility(Array(5).fill(
 test('invalid ratings are rejected',()=>assert.throws(()=>compatibility([[NaN,5]],1),RangeError));
 test('credentials reject malformed email and short passwords',()=>{assert.ok(validateCredentials('invalid','12345678'));assert.ok(validateCredentials('a@b.com','123'));assert.equal(validateCredentials('a@b.com','12345678'),null);});
 test('emailError accepts valid addresses and rejects malformed ones',()=>{assert.equal(emailError('a@b.com'),null);assert.equal(emailError(' nome.sobrenome+tag@dominio.com.br '),null);for(const value of ['',' ','a','a@','a@b','@b.com','a b@c.com'])assert.ok(emailError(value));});
+
+test('signup policy requires uppercase, number and symbol on top of length',()=>{assert.ok(passwordPolicyError('orbit-2026'));assert.ok(passwordPolicyError('Orbit2026'));assert.ok(passwordPolicyError('Orbit-ano'));assert.ok(passwordPolicyError('Or-26'));assert.equal(passwordPolicyError('Orbit-2026'),null);});
+
+test('password strength is honest: weak until policy met, strong only with length',()=>{assert.equal(passwordStrength('orbit').level,'weak');assert.equal(passwordStrength('orbit-2026').level,'weak');assert.equal(passwordStrength('Orbit-2026').level,'medium');assert.equal(passwordStrength('Orbit-2026!x').level,'strong');});
+
+test('signup validation enforces the new policy while login keeps the old one',()=>{assert.equal(validateCredentials('a@b.com','orbit-2026'),null);assert.ok(validateSignup('a@b.com','orbit-2026'));assert.equal(validateSignup('a@b.com','Orbit-2026'),null);assert.ok(validateSignup('a','Orbit-2026'));});
