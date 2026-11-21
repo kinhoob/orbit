@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../src/components/ui';
 import { MotionPressable, ScreenMotion } from '../src/components/motion';
-import { OrbitMark } from '../src/components/icons';
+import { Icon, OrbitMark } from '../src/components/icons';
 import { font, tokens as t } from '../src/design/tokens';
 import { supabase, requireSupabase } from '../src/lib/supabase';
 import { useAuth } from '../src/features/auth/provider';
 import { useAccountSettings } from '../src/features/account/settings';
 import { needsTasteOnboarding, markTasteComplete } from '../src/features/auth/onboarding';
 import { categories, searchMedia, type MediaItem } from '../src/features/catalog/data';
+import { genres, genresByCategory, searchGenres } from '../src/features/catalog/genres.mjs';
 import { compatibilityKickoff, COMPATIBILITY_RATING_TARGET } from '../src/domain/onboarding.mjs';
 
 type Step = 'choose' | 'rate' | 'done';
@@ -27,6 +29,7 @@ export default function OnboardingScreen() {
   const [gate, setGate] = useState<'checking' | 'show' | 'skip' | 'error'>('checking');
   const [step, setStep] = useState<Step>('choose');
   const [picked, setPicked] = useState<string[]>([]);
+  const [query, setQuery] = useState('');
   const [works, setWorks] = useState<MediaItem[]>([]);
   const [worksError, setWorksError] = useState(false);
   const [loadingWorks, setLoadingWorks] = useState(false);
@@ -51,7 +54,11 @@ export default function OnboardingScreen() {
   async function loadWorks() {
     setLoadingWorks(true); setWorksError(false);
     try {
-      const lists = await Promise.all(picked.map(category => searchMedia('', category)));
+      // A seleção fica no dispositivo até a migração de gêneros ser revisada e
+      // aplicada; as notas, que alimentam a compatibilidade, vão ao servidor.
+      try { await AsyncStorage.setItem(`orbit:taste-genres:v1:${userId}`, JSON.stringify(picked)); } catch { /* ignora */ }
+      const pickedCategories = [...new Set(picked.map(id => genres.find(g => g.id === id)?.category).filter((c): c is string => !!c))];
+      const lists = await Promise.all(pickedCategories.map(category => searchMedia('', category)));
       const seen = new Set<string>();
       const merged: MediaItem[] = [];
       const columns = lists.map(list => list.filter(item => { if (seen.has(item.id)) return false; seen.add(item.id); return true; }));
@@ -96,6 +103,9 @@ export default function OnboardingScreen() {
   const kickoff = compatibilityKickoff(rated);
   const work = works[index];
   const workCategory = work ? categories.find(c => c.id === work.category)?.label || 'Outros' : '';
+  const visibleGroups = categories
+    .map(category => [category, ((genresByCategory(searchGenres(query)).get(category.id) || []) as { id: string; label: string }[])] as const)
+    .filter(([, list]) => list.length > 0);
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -122,25 +132,36 @@ export default function OnboardingScreen() {
           ) : step === 'choose' ? (
             <View style={styles.card}>
               <Text style={styles.title}>Escolha seus gostos.</Text>
-              <Text style={styles.body}>A compatibilidade com seus amigos aparece quando vocês tiverem {COMPATIBILITY_RATING_TARGET} obras avaliadas em comum. Comece com as suas {COMPATIBILITY_RATING_TARGET} primeiras avaliações. Primeiro, conte o que faz parte do seu universo.</Text>
-              <View style={styles.chips}>
-                {categories.map(category => {
-                  const active = picked.includes(category.id);
-                  return (
-                    <MotionPressable key={category.id} accessibilityRole="checkbox" accessibilityState={{ checked: active }} onPress={() => setPicked(current => active ? current.filter(id => id !== category.id) : [...current, category.id])} style={[styles.chip, active && styles.chipActive]}>
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{category.label}</Text>
-                    </MotionPressable>
-                  );
-                })}
+              <Text style={styles.body}>A compatibilidade com seus amigos vem das notas em obras em comum. Seus estilos favoritos guiam as sugestões: escolha os gêneros e avalie {COMPATIBILITY_RATING_TARGET} obras para começar.</Text>
+              <View style={styles.searchWrap}>
+                <Icon name="search" size={18} color={t.colors.muted} />
+                <TextInput accessibilityLabel="Buscar estilo" style={styles.searchInput} value={query} onChangeText={setQuery} placeholder="Buscar estilo: terror, sertanejo, RPG…" placeholderTextColor={t.colors.muted} autoCapitalize="none" />
               </View>
-              {worksError && <Text accessibilityRole="alert" style={styles.error}>Não encontrei obras dessas categorias agora. Confira a conexão ou escolha outras categorias.</Text>}
+              {visibleGroups.length === 0 ? (
+                <Text style={styles.body}>Nenhum estilo encontrado para essa busca.</Text>
+              ) : visibleGroups.map(([category, list]) => (
+                <View key={category.id} style={styles.group}>
+                  <Text style={styles.groupLabel}>{category.label}</Text>
+                  <View style={styles.chips}>
+                    {list.map(genre => {
+                      const active = picked.includes(genre.id);
+                      return (
+                        <MotionPressable key={genre.id} accessibilityRole="checkbox" accessibilityState={{ checked: active }} onPress={() => setPicked(current => active ? current.filter(id => id !== genre.id) : [...current, genre.id])} style={[styles.chip, active && styles.chipActive]}>
+                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{genre.label}</Text>
+                        </MotionPressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+              {worksError && <Text accessibilityRole="alert" style={styles.error}>Não encontrei obras desses estilos agora. Confira a conexão ou escolha outros estilos.</Text>}
               <Button label={loadingWorks ? 'Buscando obras…' : 'Ver obras para avaliar'} disabled={!picked.length || loadingWorks} onPress={() => { void loadWorks(); }} />
             </View>
           ) : step === 'rate' && outOfWorks ? (
             <View style={styles.card}>
               <Text style={styles.title}>As sugestões acabaram.</Text>
-              <Text style={styles.body}>Você tem {rated} de {COMPATIBILITY_RATING_TARGET} avaliações. Escolha outras categorias para ver mais obras e continuar.</Text>
-              <Button label="Escolher outras categorias" onPress={() => { setOutOfWorks(false); setStep('choose'); }} />
+              <Text style={styles.body}>Você tem {rated} de {COMPATIBILITY_RATING_TARGET} avaliações. Escolha outros estilos para ver mais obras e continuar.</Text>
+              <Button label="Escolher outros estilos" onPress={() => { setOutOfWorks(false); setStep('choose'); }} />
             </View>
           ) : step === 'rate' && work ? (
             <View style={styles.card}>
@@ -185,6 +206,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontFamily: font.extrabold, letterSpacing: -0.5, lineHeight: 32, color: t.colors.text },
   body: { fontSize: 15, lineHeight: 23, fontFamily: font.regular, color: t.colors.muted },
   progress: { fontSize: 13, fontFamily: font.semibold, color: t.colors.muted },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.colors.border, borderRadius: 16, paddingHorizontal: 14, backgroundColor: t.colors.surface },
+  searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, fontFamily: font.regular, color: t.colors.text },
+  group: { gap: 8 },
+  groupLabel: { fontSize: 13, fontFamily: font.semibold, color: t.colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { backgroundColor: t.colors.secondary, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 999 },
   chipActive: { backgroundColor: t.colors.gold },
