@@ -3,6 +3,7 @@ import { ActivityIndicator,ScrollView,Text,View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen,styles } from '../../src/components/ui';
 import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/feed';
+import { FriendsEmptyState } from '../../src/components/friends-empty';
 import { Pager } from '../../src/components/pager';
 import { listDiscoverTimeline, listFriendsTimeline, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
 import { toggleTimelineLike } from '../../src/features/feed/like-mutation';
@@ -105,7 +106,7 @@ function DiscoverSession() {
     const rows=pageReviews(q)||[];
     if(!order.current[kind])order.current[kind]=rows.map(row=>row.rating_id);
     const reviews=inReadingOrder(order.current[kind]!,rows) as FeedReview[];
-    return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
+    return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:(kind==='amigos'?<FriendsEmptyState/>:<Text style={styles.body}>{emptyText}</Text>);
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
   // Balao "Novas publicacoes" flutuante como no X (pedido do Marco em
