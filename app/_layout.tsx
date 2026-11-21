@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
 import { AuthProvider } from '../src/features/auth/provider';
+import { TasteGate } from '../src/features/auth/taste-gate';
 import { MotionProvider, useReducedMotion } from '../src/components/motion';
 import { IntroGate } from '../src/components/intro';
 import { font, tokens } from '../src/design/tokens';
@@ -31,5 +32,5 @@ export default function RootLayout() {
   useWebBaseStyle();
   // Enquanto as fontes carregam, a animação de entrada cobre a tela (pedido do
   // Marco em 21/11/2026); com reduzir movimento, o conteúdo aparece direto.
-  return <SafeAreaProvider><QueryClientProvider client={client}><AuthProvider><MotionProvider><IntroGate ready={loaded || !!error}><Routes /></IntroGate></MotionProvider></AuthProvider></QueryClientProvider></SafeAreaProvider>;
+  return <SafeAreaProvider><QueryClientProvider client={client}><AuthProvider><MotionProvider><IntroGate ready={loaded || !!error}><TasteGate><Routes /></TasteGate></IntroGate></MotionProvider></AuthProvider></QueryClientProvider></SafeAreaProvider>;
 }
