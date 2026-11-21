@@ -7,7 +7,7 @@ import { MotionPressable, ScreenMotion } from '../../src/components/motion';
 import { Icon, OrbitMark } from '../../src/components/icons';
 import { font, tokens as t } from '../../src/design/tokens';
 import { requireSupabase } from '../../src/lib/supabase';
-import { emailError, validateCredentials } from '../../src/features/auth/validation.mjs';
+import { emailError, passwordRequirements, passwordStrength, validateCredentials, validateSignup } from '../../src/features/auth/validation.mjs';
 
 type Mode = 'login' | 'signup' | 'reset';
 
@@ -40,7 +40,7 @@ export default function AuthScreen() {
 
   async function submit() {
     setMessage(''); setFailed(false); setEmailTouched(true);
-    const invalid = validateCredentials(email, mode === 'reset' ? 'password' : password);
+    const invalid = mode === 'signup' ? validateSignup(email, password) : validateCredentials(email, mode === 'reset' ? 'password' : password);
     if (invalid) { setMessage(invalid); setFailed(true); return; }
     setBusy(true);
     try {
@@ -67,7 +67,9 @@ export default function AuthScreen() {
     finally { setResendBusy(false); }
   }
 
-  const passwordReady = password.length >= 8;
+  const strength = passwordStrength(password);
+  const meterColor = strength.level === 'weak' ? t.colors.error : strength.level === 'medium' ? t.colors.warning : t.colors.success;
+  const requirements = passwordRequirements(password);
 
   // Pedido do Marco em 21/11/2026: o login fica central, no meio da tela.
   // A coluna rola quando a tela é baixa ou o teclado abre, sem esconder campos.
@@ -103,7 +105,7 @@ export default function AuthScreen() {
               </View>
               {mode !== 'reset' && (
                 <View style={styles.field}>
-                  <Text style={styles.label}>Senha · mínimo de 8 caracteres</Text>
+                  <Text style={styles.label}>{mode === 'signup' ? 'Senha · mínimo de 8 com maiúscula, número e símbolo' : 'Senha'}</Text>
                   <View style={styles.passwordWrap}>
                     <TextInput accessibilityLabel="Senha" style={[styles.input, styles.passwordInput]} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} returnKeyType="go" onSubmitEditing={() => { void submit(); }} editable={!busy} />
                     <MotionPressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'} hitSlop={8} disabled={busy} onPress={() => setShowPassword(value => !value)} style={styles.eye}>
@@ -111,9 +113,17 @@ export default function AuthScreen() {
                     </MotionPressable>
                   </View>
                   {mode === 'signup' && password.length > 0 && (
-                    <View style={styles.hintRow}>
-                      {passwordReady && <Icon name="check" size={14} color={t.colors.success} strokeWidth={3} />}
-                      <Text style={[styles.hint, { color: passwordReady ? t.colors.success : t.colors.muted }]}>{passwordReady ? 'Senha dentro do mínimo de 8 caracteres.' : `Faltam ${8 - password.length} para o mínimo de 8 caracteres.`}</Text>
+                    <View style={styles.meterBlock}>
+                      <View style={styles.meterRow}>
+                        {[1, 2, 3].map(i => <View key={i} style={[styles.meterSeg, i <= strength.filled && { backgroundColor: meterColor }]} />)}
+                        <Text style={[styles.meterLabel, { color: meterColor }]}>Senha {strength.label}</Text>
+                      </View>
+                      {requirements.map(r => (
+                        <View key={r.key} style={styles.reqRow}>
+                          {r.met ? <Icon name="check" size={13} color={t.colors.success} strokeWidth={3} /> : <View style={styles.reqDot} />}
+                          <Text style={[styles.reqText, { color: r.met ? t.colors.success : t.colors.muted }]}>{r.label}</Text>
+                        </View>
+                      ))}
                     </View>
                   )}
                   {mode === 'login' && (
@@ -163,8 +173,13 @@ const styles = StyleSheet.create({
   passwordWrap: { justifyContent: 'center' },
   passwordInput: { paddingRight: 52 },
   eye: { position: 'absolute', right: 8, padding: 8 },
-  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  hint: { fontSize: 13, fontFamily: font.medium },
+  meterBlock: { gap: 8 },
+  meterRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  meterSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: t.colors.border },
+  meterLabel: { fontSize: 13, fontFamily: font.semibold, marginLeft: 4 },
+  reqRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  reqDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: t.colors.muted, marginHorizontal: 4 },
+  reqText: { fontSize: 13, fontFamily: font.medium },
   forgot: { alignSelf: 'flex-end', paddingVertical: 2 },
   forgotText: { fontSize: 14, fontFamily: font.semibold, color: t.colors.text },
   feedback: { borderRadius: 16, padding: 14 },
