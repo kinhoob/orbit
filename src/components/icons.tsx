@@ -52,4 +52,4 @@ export function Icon({ name, size = 24, color, strokeWidth = 2 }: { name: IconNa
       })}
     </Svg>
   );
-                       }
+}
