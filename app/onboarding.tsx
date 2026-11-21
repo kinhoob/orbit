@@ -9,7 +9,7 @@ import { font, tokens as t } from '../src/design/tokens';
 import { supabase, requireSupabase } from '../src/lib/supabase';
 import { useAuth } from '../src/features/auth/provider';
 import { useAccountSettings } from '../src/features/account/settings';
-import { needsTasteOnboarding } from '../src/features/auth/onboarding';
+import { needsTasteOnboarding, markTasteComplete } from '../src/features/auth/onboarding';
 import { categories, searchMedia, type MediaItem } from '../src/features/catalog/data';
 import { compatibilityKickoff, COMPATIBILITY_RATING_TARGET } from '../src/domain/onboarding.mjs';
 
@@ -17,7 +17,7 @@ type Step = 'choose' | 'rate' | 'done';
 
 // Pedido do Marco em 21/11/2026: depois de se cadastrar e confirmar o e-mail,
 // a pessoa escolhe os gostos para começar a ter compatibilidade. A escolha é
-// feita de avaliações reais (0 a 10) em obras do catálogo — são elas, e não
+// feita de avaliações reais (0 a 10) em obras do catálogo: são elas, e não
 // uma lista de temas, que alimentam o cálculo de compatibilidade entre amigos.
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -76,7 +76,11 @@ export default function OnboardingScreen() {
       if (error) throw error;
       const total = rated + 1;
       setRated(total);
-      if (compatibilityKickoff(total).complete) setStep('done');
+      if (compatibilityKickoff(total).complete) {
+        // As avaliações já estão no servidor: renova o registro local de queda.
+        try { await markTasteComplete(userId); } catch { /* ignora */ }
+        setStep('done');
+      }
       else if (index + 1 >= works.length) setOutOfWorks(true);
       else setIndex(index + 1);
     } catch { setMessage('Não foi possível salvar a avaliação. Confira a conexão e tente de novo.'); }
@@ -118,7 +122,7 @@ export default function OnboardingScreen() {
           ) : step === 'choose' ? (
             <View style={styles.card}>
               <Text style={styles.title}>Escolha seus gostos.</Text>
-              <Text style={styles.body}>A compatibilidade com seus amigos aparece quando vocês tiverem {COMPATIBILITY_RATING_TARGET} obras avaliadas em comum. Comece com as suas {COMPATIBILITY_RATING_TARGET} primeiras avaliações — primeiro, conte o que faz parte do seu universo.</Text>
+              <Text style={styles.body}>A compatibilidade com seus amigos aparece quando vocês tiverem {COMPATIBILITY_RATING_TARGET} obras avaliadas em comum. Comece com as suas {COMPATIBILITY_RATING_TARGET} primeiras avaliações. Primeiro, conte o que faz parte do seu universo.</Text>
               <View style={styles.chips}>
                 {categories.map(category => {
                   const active = picked.includes(category.id);
