@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/ui';
 import { MotionPressable, ScreenMotion } from '../../src/components/motion';
@@ -60,18 +60,6 @@ export default function AuthScreen() {
           </View>
           <View style={styles.card}>
             <Text style={styles.title}>{TITLES[mode]}</Text>
-            {mode !== 'reset' && (
-              <View style={styles.switch}>
-                {(['login', 'signup'] as Mode[]).map(item => {
-                  const active = mode === item;
-                  return (
-                    <MotionPressable key={item} accessibilityRole="button" accessibilityState={{ selected: active }} disabled={busy} onPress={() => select(item)} style={[styles.switchItem, active && styles.switchItemActive]}>
-                      <Text style={[styles.switchLabel, active && styles.switchLabelActive]}>{item === 'login' ? 'Entrar' : 'Criar conta'}</Text>
-                    </MotionPressable>
-                  );
-                })}
-              </View>
-            )}
             <View style={styles.field}>
               <Text style={styles.label}>E-mail</Text>
               <TextInput accessibilityLabel="E-mail" style={styles.input} value={email} onChangeText={setEmail} placeholder="voce@exemplo.com" placeholderTextColor={t.colors.muted} keyboardType="email-address" autoCapitalize="none" autoComplete="email" returnKeyType={mode === 'reset' ? 'send' : 'next'} onSubmitEditing={() => { if (mode === 'reset') void submit(); }} editable={!busy} />
@@ -98,13 +86,12 @@ export default function AuthScreen() {
                 <Text accessibilityRole="alert" style={[styles.feedbackText, { color: failed ? t.colors.error : t.colors.success }]}>{message}</Text>
               </View>
             )}
-            {mode === 'reset' && (
-              <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => select('login')} style={styles.backToLogin}>
-                <Text style={styles.forgotText}>Voltar para entrar</Text>
-              </MotionPressable>
-            )}
           </View>
-          <Link href="/" style={styles.home}>Voltar ao início</Link>
+          {/* Pedido do Marco em 21/11/2026: Criar conta fica no lugar do antigo
+              "Voltar ao início" e abre o formulário de cadastro com e-mail e senha. */}
+          <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => select(mode === 'login' ? 'signup' : 'login')} style={styles.secondary}>
+            <Text style={styles.secondaryText}>{mode === 'login' ? 'Criar conta' : mode === 'signup' ? 'Já tenho conta' : 'Voltar para entrar'}</Text>
+          </MotionPressable>
         </ScreenMotion>
       </ScrollView>
     </View>
@@ -120,11 +107,8 @@ const styles = StyleSheet.create({
   tagline: { fontFamily: font.regular, fontSize: 13, color: t.colors.onDarkMuted, textAlign: 'center' },
   card: { padding: 20, borderRadius: t.radius, backgroundColor: t.colors.surface, gap: 18, boxShadow: '0 12px 32px rgba(0,0,0,0.28)', elevation: 4 },
   title: { fontSize: 26, fontFamily: font.extrabold, letterSpacing: -0.5, lineHeight: 32, color: t.colors.text },
-  switch: { flexDirection: 'row', backgroundColor: t.colors.secondary, borderRadius: 999, padding: 4, gap: 4 },
-  switchItem: { flex: 1, paddingVertical: 10, borderRadius: 999, alignItems: 'center' },
-  switchItemActive: { backgroundColor: t.colors.surface, boxShadow: '0 2px 8px rgba(23,20,15,0.10)', elevation: 1 },
-  switchLabel: { fontSize: 14, fontFamily: font.semibold, color: t.colors.muted },
-  switchLabelActive: { color: t.colors.text },
+  secondary: { borderWidth: 1.5, borderColor: t.colors.onDarkMuted, borderRadius: 999, paddingVertical: 15, alignItems: 'center' },
+  secondaryText: { color: t.colors.onDark, fontSize: 15, fontFamily: font.semibold },
   field: { gap: 8 },
   label: { fontSize: 13, fontFamily: font.medium, color: t.colors.muted },
   input: { borderWidth: 1, borderColor: t.colors.border, borderRadius: 16, padding: 16, fontSize: 16, fontFamily: font.regular, color: t.colors.text, backgroundColor: t.colors.surface },
@@ -137,6 +121,4 @@ const styles = StyleSheet.create({
   feedbackError: { backgroundColor: 'rgba(163,50,50,0.08)' },
   feedbackOk: { backgroundColor: 'rgba(34,99,68,0.10)' },
   feedbackText: { fontSize: 14, lineHeight: 21, fontFamily: font.regular },
-  backToLogin: { alignSelf: 'center', paddingVertical: 4 },
-  home: { alignSelf: 'center', color: t.colors.onDarkMuted, fontSize: 14, fontFamily: font.semibold, paddingVertical: 10 },
 });
