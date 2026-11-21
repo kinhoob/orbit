@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {compatibility} from '../src/domain/compatibility.mjs';
 import {emailError, passwordPolicyError, passwordStrength, validateCredentials, validateSignup} from '../src/features/auth/validation.mjs';
 import {compatibilityKickoff, COMPATIBILITY_RATING_TARGET} from '../src/domain/onboarding.mjs';
+import {tasteGateDecision, tasteCompleteKey} from '../src/features/auth/gate-state.mjs';
 import {parseScore} from '../src/domain/rating.mjs';
 test('ratings accept zero, ten and localized decimal scores',()=>{assert.equal(parseScore('0'),0);assert.equal(parseScore('10'),10);assert.equal(parseScore('8,5'),8.5);});
 test('ratings reject missing, out of bounds or malformed values',()=>{for(const value of ['', ' ', '-1','11','8.55','Infinity','7abc'])assert.equal(parseScore(value),null);});
@@ -21,3 +22,9 @@ test('password strength is honest: weak until policy met, strong only with lengt
 test('signup validation enforces the new policy while login keeps the old one',()=>{assert.equal(validateCredentials('a@b.com','orbit-2026'),null);assert.ok(validateSignup('a@b.com','orbit-2026'));assert.equal(validateSignup('a@b.com','Orbit-2026'),null);assert.ok(validateSignup('a','Orbit-2026'));});
 
 test('compatibility kickoff matches the compatibility minimum of 5 ratings',()=>{assert.equal(COMPATIBILITY_RATING_TARGET,5);assert.deepEqual(compatibilityKickoff(0),{remaining:5,complete:false});assert.deepEqual(compatibilityKickoff(4),{remaining:1,complete:false});assert.deepEqual(compatibilityKickoff(5),{remaining:0,complete:true});assert.deepEqual(compatibilityKickoff(9),{remaining:0,complete:true});assert.throws(()=>compatibilityKickoff(-1));assert.throws(()=>compatibilityKickoff(2.5));});
+
+test('taste gate: guest browses, complete passes, incomplete goes to onboarding',()=>{assert.equal(tasteGateDecision(false,'error',false),'allow');assert.equal(tasteGateDecision(false,'incomplete',false),'allow');assert.equal(tasteGateDecision(true,'complete',false),'allow');assert.equal(tasteGateDecision(true,'incomplete',false),'onboard');assert.equal(tasteGateDecision(true,'incomplete',true),'onboard');});
+
+test('taste gate on query failure: known complete falls back, unknown gets neutral retry',()=>{assert.equal(tasteGateDecision(true,'error',true),'allow');assert.equal(tasteGateDecision(true,'error',false),'retry');assert.throws(()=>tasteGateDecision(true,'bogus',false));});
+
+test('taste completion record is per account and requires a user id',()=>{assert.notEqual(tasteCompleteKey('user-a'),tasteCompleteKey('user-b'));assert.ok(tasteCompleteKey('user-a').includes('user-a'));assert.throws(()=>tasteCompleteKey(''));});
