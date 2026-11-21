@@ -11,6 +11,7 @@ import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { tokens as t } from '../../src/design/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { LoadingState } from '../../src/components/loading';
 import { Feedback } from '../../src/components/feedback';
 import { inReadingOrder } from '../../src/domain/feed-order.mjs';
@@ -29,7 +30,10 @@ export default function Discover() {
 function DiscoverSession() {
   const cache=useQueryClient();
   const insets=useSafeAreaInsets();
-  const [timeline,setTimeline]=useState<TimelineId>('descobrir');
+  // A saida do onboarding abre /(tabs)/discover?tab=amigos direto na timeline
+  // de amigos (21/11/2026); sem o parametro, o padrao continua Descobrir.
+  const params=useLocalSearchParams<{ tab?: string }>();
+  const [timeline,setTimeline]=useState<TimelineId>(params.tab==='amigos'?'amigos':'descobrir');
   const [likeError,setLikeError]=useState('');
   const [refreshing,setRefreshing]=useState(false);
   const order=useRef<Partial<Record<TimelineId,string[]>>>({});
@@ -139,4 +143,4 @@ function DiscoverSession() {
       </Screen>
       <NewPostsBubble visible={newerActive>0} onPress={openNewerActive} top={bubbleTop}/>
     </View>;
-}
+        }
