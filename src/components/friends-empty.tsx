@@ -3,14 +3,25 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../features/auth/provider';
-import { fetchFriendships, sendRequest, suggestProfiles, type ProfileSummary } from '../features/social/friends';
+import { fetchFriendships, relationWith, sendRequest, suggestProfiles, type ProfileSummary } from '../features/social/friends';
 import { pickSuggestions } from '../domain/friends-suggestions.mjs';
 import { CardEntrance, MotionPressable } from './motion';
 import { Icon } from './icons';
 import { font, tokens as t } from '../design/tokens';
 
-function SuggestionRow({ profile, index, sent, onAdd }: { profile: ProfileSummary; index: number; sent: boolean; onAdd: (id: string) => void }) {
+// Estado do botão de cada sugestão: ocioso, pedido enviado por mim, pedido
+// recebido da outra conta (aceitar fica em /friends) ou amizade já aceita.
+type AddState = 'idle' | 'sent' | 'incoming' | 'friends';
+
+const ADD_LABEL: Record<Exclude<AddState, 'idle'>, string> = {
+  sent: 'Pedido enviado',
+  incoming: 'Pedido recebido',
+  friends: 'Amigos',
+};
+
+function SuggestionRow({ profile, index, state, onAdd }: { profile: ProfileSummary; index: number; state: AddState; onAdd: (id: string) => void }) {
   const name = profile.display_name || profile.username || 'Sem nome';
+  const settled = state !== 'idle';
   return (
     <CardEntrance index={index} style={styles.row}>
       <View style={styles.avatar} accessibilityLabel={`Avatar de ${name}`}>
@@ -22,12 +33,12 @@ function SuggestionRow({ profile, index, sent, onAdd }: { profile: ProfileSummar
       </View>
       <MotionPressable
         accessibilityRole="button"
-        accessibilityLabel={sent ? `Pedido de amizade enviado para ${name}` : `Adicionar ${name} como amigo`}
-        disabled={sent}
+        accessibilityLabel={settled ? `${ADD_LABEL[state as Exclude<AddState, 'idle'>]}: ${name}` : `Adicionar ${name} como amigo`}
+        disabled={settled}
         onPress={() => onAdd(profile.id)}
-        style={[styles.addButton, sent && styles.addButtonSent]}
+        style={[styles.addButton, settled && styles.addButtonSent]}
       >
-        <Text style={[styles.addText, sent && styles.addTextSent]}>{sent ? 'Pedido enviado' : 'Adicionar'}</Text>
+        <Text style={[styles.addText, settled && styles.addTextSent]}>{settled ? ADD_LABEL[state as Exclude<AddState, 'idle'>] : 'Adicionar'}</Text>
       </MotionPressable>
     </CardEntrance>
   );
@@ -40,7 +51,7 @@ function SuggestionRow({ profile, index, sent, onAdd }: { profile: ProfileSummar
 export function FriendsEmptyState() {
   const { session } = useAuth();
   const userId = session?.user.id || '';
-  const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [states, setStates] = useState<Record<string, AddState>>({});
   const [error, setError] = useState('');
   const friendshipsQuery = useQuery({ queryKey: ['friendships', userId], queryFn: () => fetchFriendships(userId), enabled: !!userId });
   const suggestQuery = useQuery({ queryKey: ['suggested-accounts', userId], queryFn: () => suggestProfiles(userId), enabled: !!userId });
@@ -48,14 +59,27 @@ export function FriendsEmptyState() {
     () => pickSuggestions(suggestQuery.data || [], friendshipsQuery.data || [], userId) as ProfileSummary[],
     [suggestQuery.data, friendshipsQuery.data, userId],
   );
+  // Nunca mostra "Pedido enviado" para relação que já existe: antes de enviar,
+  // confere a relação atual; em corrida (a relação nasceu depois da lista
+  // carregar), o erro de duplicado dispara nova leitura e o estado real.
   const add = async (otherId: string) => {
     setError('');
+    const mark = (state: AddState) => setStates(current => ({ ...current, [otherId]: state }));
+    const existing = relationWith(friendshipsQuery.data || [], userId, otherId);
+    if (existing.kind === 'outgoing') return mark('sent');
+    if (existing.kind === 'incoming') return mark('incoming');
+    if (existing.kind === 'friends') return mark('friends');
     try {
       await sendRequest(userId, otherId);
-      setSent(current => ({ ...current, [otherId]: true }));
+      mark('sent');
     } catch (cause) {
-      if ((cause as Error).message === 'duplicate') setSent(current => ({ ...current, [otherId]: true }));
-      else setError('Não foi possível enviar o pedido agora. Tente de novo.');
+      if ((cause as Error).message === 'duplicate') {
+        const { data } = await friendshipsQuery.refetch();
+        const relation = relationWith(data || [], userId, otherId);
+        if (relation.kind === 'incoming') mark('incoming');
+        else if (relation.kind === 'friends') mark('friends');
+        else mark('sent'); // a restrição única confirma que já existe pedido nosso
+      } else setError('Não foi possível enviar o pedido agora. Tente de novo.');
     }
   };
   return (
@@ -75,7 +99,7 @@ export function FriendsEmptyState() {
         <View style={styles.suggestions}>
           <Text style={styles.section}>Sugestões de contas para você</Text>
           {suggestions.map((profile, index) => (
-            <SuggestionRow key={profile.id} profile={profile} index={index + 1} sent={!!sent[profile.id]} onAdd={add} />
+            <SuggestionRow key={profile.id} profile={profile} index={index + 1} state={states[profile.id] || 'idle'} onAdd={add} />
           ))}
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         </View>
