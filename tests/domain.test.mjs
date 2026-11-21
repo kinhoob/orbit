@@ -4,6 +4,7 @@ import {compatibility} from '../src/domain/compatibility.mjs';
 import {emailError, passwordPolicyError, passwordStrength, validateCredentials, validateSignup} from '../src/features/auth/validation.mjs';
 import {compatibilityKickoff, COMPATIBILITY_RATING_TARGET} from '../src/domain/onboarding.mjs';
 import {tasteGateDecision, tasteCompleteKey} from '../src/features/auth/gate-state.mjs';
+import {genres, searchGenres, genresByCategory} from '../src/features/catalog/genres.mjs';
 import {parseScore} from '../src/domain/rating.mjs';
 test('ratings accept zero, ten and localized decimal scores',()=>{assert.equal(parseScore('0'),0);assert.equal(parseScore('10'),10);assert.equal(parseScore('8,5'),8.5);});
 test('ratings reject missing, out of bounds or malformed values',()=>{for(const value of ['', ' ', '-1','11','8.55','Infinity','7abc'])assert.equal(parseScore(value),null);});
@@ -28,3 +29,6 @@ test('taste gate: guest browses, complete passes, incomplete goes to onboarding'
 test('taste gate on query failure: known complete falls back, unknown gets neutral retry',()=>{assert.equal(tasteGateDecision(true,'error',true),'allow');assert.equal(tasteGateDecision(true,'error',false),'retry');assert.throws(()=>tasteGateDecision(true,'bogus',false));});
 
 test('taste completion record is per account and requires a user id',()=>{assert.notEqual(tasteCompleteKey('user-a'),tasteCompleteKey('user-b'));assert.ok(tasteCompleteKey('user-a').includes('user-a'));assert.throws(()=>tasteCompleteKey(''));});
+test('genre search is accent and case insensitive and returns everything when empty',()=>{assert.equal(searchGenres('').length,genres.length);assert.equal(searchGenres('   ').length,genres.length);const terror=searchGenres('TERROR');assert.ok(terror.length>=3);assert.ok(terror.every(g=>g.label.toLowerCase().includes('terror')));const ficcao=searchGenres('ficcao');assert.ok(ficcao.some(g=>g.label==='Ficção científica'));assert.deepEqual(searchGenres('xyzzy-nada'),[]);});
+test('genre ids are unique and every genre has a known category and label',()=>{const ids=new Set(genres.map(g=>g.id));assert.equal(ids.size,genres.length);const known=new Set(['film','series','anime','music','album','book','game']);for(const genre of genres){assert.ok(known.has(genre.category),genre.id);assert.ok(genre.label.length>0,genre.id);}});
+test('genres group by category without losing entries',()=>{const groups=genresByCategory(genres);const total=[...groups.values()].reduce((sum,list)=>sum+list.length,0);assert.equal(total,genres.length);assert.ok(groups.get('music').length>0);assert.ok(groups.get('game').length>0);});
