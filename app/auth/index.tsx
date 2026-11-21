@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, router } from 'expo-router';
-import { Screen, Button } from '../../src/components/ui';
-import { MotionPressable } from '../../src/components/motion';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button } from '../../src/components/ui';
+import { MotionPressable, ScreenMotion } from '../../src/components/motion';
 import { Icon, OrbitMark } from '../../src/components/icons';
 import { font, tokens as t } from '../../src/design/tokens';
 import { requireSupabase } from '../../src/lib/supabase';
@@ -16,19 +17,8 @@ const TITLES: Record<Mode, string> = {
   reset: 'Recupere seu acesso.',
 };
 
-function Header() {
-  return (
-    <View style={styles.header}>
-      <OrbitMark size={52} />
-      <View style={styles.headerText}>
-        <Text style={styles.wordmark}>ORBIT</Text>
-        <Text style={styles.tagline}>Seu universo de filmes, séries, livros e músicas.</Text>
-      </View>
-    </View>
-  );
-}
-
 export default function AuthScreen() {
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,65 +47,78 @@ export default function AuthScreen() {
     finally { setBusy(false); }
   }
 
+  // Pedido do Marco em 21/11/2026: o login fica central, no meio da tela.
+  // A coluna rola quando a tela é baixa ou o teclado abre, sem esconder campos.
   return (
-    <Screen header={<Header />}>
-      <View style={styles.card}>
-        <Text style={styles.title}>{TITLES[mode]}</Text>
-        {mode !== 'reset' && (
-          <View style={styles.switch}>
-            {(['login', 'signup'] as Mode[]).map(item => {
-              const active = mode === item;
-              return (
-                <MotionPressable key={item} accessibilityRole="button" accessibilityState={{ selected: active }} disabled={busy} onPress={() => select(item)} style={[styles.switchItem, active && styles.switchItemActive]}>
-                  <Text style={[styles.switchLabel, active && styles.switchLabelActive]}>{item === 'login' ? 'Entrar' : 'Criar conta'}</Text>
-                </MotionPressable>
-              );
-            })}
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
+        <ScreenMotion testID="screen-motion" style={styles.center}>
+          <View style={styles.brand}>
+            <OrbitMark size={56} />
+            <Text style={styles.wordmark}>ORBIT</Text>
+            <Text style={styles.tagline}>Seu universo de filmes, séries, livros e músicas.</Text>
           </View>
-        )}
-        <View style={styles.field}>
-          <Text style={styles.label}>E-mail</Text>
-          <TextInput accessibilityLabel="E-mail" style={styles.input} value={email} onChangeText={setEmail} placeholder="voce@exemplo.com" placeholderTextColor={t.colors.muted} keyboardType="email-address" autoCapitalize="none" autoComplete="email" returnKeyType={mode === 'reset' ? 'send' : 'next'} onSubmitEditing={() => { if (mode === 'reset') void submit(); }} editable={!busy} />
-        </View>
-        {mode !== 'reset' && (
-          <View style={styles.field}>
-            <Text style={styles.label}>Senha · mínimo de 8 caracteres</Text>
-            <View style={styles.passwordWrap}>
-              <TextInput accessibilityLabel="Senha" style={[styles.input, styles.passwordInput]} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} returnKeyType="go" onSubmitEditing={() => { void submit(); }} editable={!busy} />
-              <MotionPressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'} hitSlop={8} disabled={busy} onPress={() => setShowPassword(value => !value)} style={styles.eye}>
-                <Icon name={showPassword ? 'eye-off' : 'eye'} size={20} color={t.colors.muted} />
-              </MotionPressable>
+          <View style={styles.card}>
+            <Text style={styles.title}>{TITLES[mode]}</Text>
+            {mode !== 'reset' && (
+              <View style={styles.switch}>
+                {(['login', 'signup'] as Mode[]).map(item => {
+                  const active = mode === item;
+                  return (
+                    <MotionPressable key={item} accessibilityRole="button" accessibilityState={{ selected: active }} disabled={busy} onPress={() => select(item)} style={[styles.switchItem, active && styles.switchItemActive]}>
+                      <Text style={[styles.switchLabel, active && styles.switchLabelActive]}>{item === 'login' ? 'Entrar' : 'Criar conta'}</Text>
+                    </MotionPressable>
+                  );
+                })}
+              </View>
+            )}
+            <View style={styles.field}>
+              <Text style={styles.label}>E-mail</Text>
+              <TextInput accessibilityLabel="E-mail" style={styles.input} value={email} onChangeText={setEmail} placeholder="voce@exemplo.com" placeholderTextColor={t.colors.muted} keyboardType="email-address" autoCapitalize="none" autoComplete="email" returnKeyType={mode === 'reset' ? 'send' : 'next'} onSubmitEditing={() => { if (mode === 'reset') void submit(); }} editable={!busy} />
             </View>
-            {mode === 'login' && (
-              <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => select('reset')} style={styles.forgot}>
-                <Text style={styles.forgotText}>Esqueci a senha</Text>
+            {mode !== 'reset' && (
+              <View style={styles.field}>
+                <Text style={styles.label}>Senha · mínimo de 8 caracteres</Text>
+                <View style={styles.passwordWrap}>
+                  <TextInput accessibilityLabel="Senha" style={[styles.input, styles.passwordInput]} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} returnKeyType="go" onSubmitEditing={() => { void submit(); }} editable={!busy} />
+                  <MotionPressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'} hitSlop={8} disabled={busy} onPress={() => setShowPassword(value => !value)} style={styles.eye}>
+                    <Icon name={showPassword ? 'eye-off' : 'eye'} size={20} color={t.colors.muted} />
+                  </MotionPressable>
+                </View>
+                {mode === 'login' && (
+                  <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => select('reset')} style={styles.forgot}>
+                    <Text style={styles.forgotText}>Esqueci a senha</Text>
+                  </MotionPressable>
+                )}
+              </View>
+            )}
+            <Button label={busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar conta' : 'Enviar link'} onPress={() => { void submit(); }} disabled={busy} />
+            {!!message && (
+              <View style={[styles.feedback, failed ? styles.feedbackError : styles.feedbackOk]}>
+                <Text accessibilityRole="alert" style={[styles.feedbackText, { color: failed ? t.colors.error : t.colors.success }]}>{message}</Text>
+              </View>
+            )}
+            {mode === 'reset' && (
+              <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => select('login')} style={styles.backToLogin}>
+                <Text style={styles.forgotText}>Voltar para entrar</Text>
               </MotionPressable>
             )}
           </View>
-        )}
-        <Button label={busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar conta' : 'Enviar link'} onPress={() => { void submit(); }} disabled={busy} />
-        {!!message && (
-          <View style={[styles.feedback, failed ? styles.feedbackError : styles.feedbackOk]}>
-            <Text accessibilityRole="alert" style={[styles.feedbackText, { color: failed ? t.colors.error : t.colors.success }]}>{message}</Text>
-          </View>
-        )}
-        {mode === 'reset' && (
-          <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => select('login')} style={styles.backToLogin}>
-            <Text style={styles.forgotText}>Voltar para entrar</Text>
-          </MotionPressable>
-        )}
-      </View>
-      <Link href="/" style={styles.home}>Voltar ao início</Link>
-    </Screen>
+          <Link href="/" style={styles.home}>Voltar ao início</Link>
+        </ScreenMotion>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  headerText: { gap: 2 },
-  wordmark: { fontFamily: font.extrabold, fontSize: 20, letterSpacing: 6, color: t.colors.onDark },
-  tagline: { fontFamily: font.regular, fontSize: 13, color: t.colors.onDarkMuted },
-  card: { padding: 20, borderRadius: t.radius, backgroundColor: t.colors.surface, gap: 18, boxShadow: '0 4px 16px rgba(23,20,15,0.06)', elevation: 1 },
+  root: { flex: 1, backgroundColor: t.colors.dark },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  center: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: 22 },
+  brand: { alignItems: 'center', gap: 8 },
+  wordmark: { fontFamily: font.extrabold, fontSize: 20, letterSpacing: 6, color: t.colors.onDark, marginLeft: 6 },
+  tagline: { fontFamily: font.regular, fontSize: 13, color: t.colors.onDarkMuted, textAlign: 'center' },
+  card: { padding: 20, borderRadius: t.radius, backgroundColor: t.colors.surface, gap: 18, boxShadow: '0 12px 32px rgba(0,0,0,0.28)', elevation: 4 },
   title: { fontSize: 26, fontFamily: font.extrabold, letterSpacing: -0.5, lineHeight: 32, color: t.colors.text },
   switch: { flexDirection: 'row', backgroundColor: t.colors.secondary, borderRadius: 999, padding: 4, gap: 4 },
   switchItem: { flex: 1, paddingVertical: 10, borderRadius: 999, alignItems: 'center' },
@@ -135,5 +138,5 @@ const styles = StyleSheet.create({
   feedbackOk: { backgroundColor: 'rgba(34,99,68,0.10)' },
   feedbackText: { fontSize: 14, lineHeight: 21, fontFamily: font.regular },
   backToLogin: { alignSelf: 'center', paddingVertical: 4 },
-  home: { alignSelf: 'center', color: t.colors.muted, fontSize: 14, fontFamily: font.semibold, paddingVertical: 10 },
+  home: { alignSelf: 'center', color: t.colors.onDarkMuted, fontSize: 14, fontFamily: font.semibold, paddingVertical: 10 },
 });
