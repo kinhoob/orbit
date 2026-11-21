@@ -31,6 +31,7 @@ export default function OnboardingScreen() {
   const [worksError, setWorksError] = useState(false);
   const [loadingWorks, setLoadingWorks] = useState(false);
   const [index, setIndex] = useState(0);
+  const [outOfWorks, setOutOfWorks] = useState(false);
   const [rated, setRated] = useState(0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -55,8 +56,10 @@ export default function OnboardingScreen() {
       const merged: MediaItem[] = [];
       const columns = lists.map(list => list.filter(item => { if (seen.has(item.id)) return false; seen.add(item.id); return true; }));
       for (let i = 0; columns.some(col => col.length > i); i++) for (const col of columns) { const item = col[i]; if (item) merged.push(item); }
-      setWorks(merged.slice(0, 15));
+      setWorks(merged);
       setIndex(0);
+      setOutOfWorks(false);
+      if (!merged.length) { setWorksError(true); return; }
       setStep('rate');
     } catch { setWorksError(true); }
     finally { setLoadingWorks(false); }
@@ -73,7 +76,8 @@ export default function OnboardingScreen() {
       if (error) throw error;
       const total = rated + 1;
       setRated(total);
-      if (compatibilityKickoff(total).complete || index + 1 >= works.length) setStep('done');
+      if (compatibilityKickoff(total).complete) setStep('done');
+      else if (index + 1 >= works.length) setOutOfWorks(true);
       else setIndex(index + 1);
     } catch { setMessage('Não foi possível salvar a avaliação. Confira a conexão e tente de novo.'); }
     finally { setBusy(false); }
@@ -81,14 +85,13 @@ export default function OnboardingScreen() {
 
   function skipWork() {
     // "Não conheço" não cria avaliação nem conta para a meta: só avança a obra.
-    if (index + 1 >= works.length) setStep('done');
+    if (index + 1 >= works.length) setOutOfWorks(true);
     else setIndex(index + 1);
   }
 
   const kickoff = compatibilityKickoff(rated);
   const work = works[index];
   const workCategory = work ? categories.find(c => c.id === work.category)?.label || 'Outros' : '';
-  const exhausted = step === 'done' && !kickoff.complete;
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -126,8 +129,14 @@ export default function OnboardingScreen() {
                   );
                 })}
               </View>
-              {worksError && <Text accessibilityRole="alert" style={styles.error}>Não foi possível carregar obras dessas categorias. Confira a conexão e tente de novo.</Text>}
+              {worksError && <Text accessibilityRole="alert" style={styles.error}>Não encontrei obras dessas categorias agora. Confira a conexão ou escolha outras categorias.</Text>}
               <Button label={loadingWorks ? 'Buscando obras…' : 'Ver obras para avaliar'} disabled={!picked.length || loadingWorks} onPress={() => { void loadWorks(); }} />
+            </View>
+          ) : step === 'rate' && outOfWorks ? (
+            <View style={styles.card}>
+              <Text style={styles.title}>As sugestões acabaram.</Text>
+              <Text style={styles.body}>Você tem {rated} de {COMPATIBILITY_RATING_TARGET} avaliações. Escolha outras categorias para ver mais obras e continuar.</Text>
+              <Button label="Escolher outras categorias" onPress={() => { setOutOfWorks(false); setStep('choose'); }} />
             </View>
           ) : step === 'rate' && work ? (
             <View style={styles.card}>
@@ -151,9 +160,9 @@ export default function OnboardingScreen() {
             </View>
           ) : (
             <View style={styles.card}>
-              <Text style={styles.title}>{exhausted ? 'Boas escolhas.' : 'Seu universo começou.'}</Text>
-              <Text style={styles.body}>{exhausted ? `Você viu as sugestões desta seleção sem completar as ${COMPATIBILITY_RATING_TARGET} avaliações. Continue pelo Explorar: cada obra que você avalia lá conta para a sua meta.` : `Suas ${COMPATIBILITY_RATING_TARGET} primeiras avaliações estão guardadas. A compatibilidade aparece quando você e um amigo tiverem ${COMPATIBILITY_RATING_TARGET} obras avaliadas em comum.`}</Text>
-              <Button label={exhausted ? 'Ir para o Explorar' : 'Entrar no meu universo'} onPress={() => router.replace(exhausted ? '/(tabs)/discover' : '/(tabs)')} />
+              <Text style={styles.title}>Seu universo começou.</Text>
+              <Text style={styles.body}>Suas {COMPATIBILITY_RATING_TARGET} primeiras avaliações estão guardadas. A compatibilidade aparece quando você e um amigo tiverem {COMPATIBILITY_RATING_TARGET} obras avaliadas em comum.</Text>
+              <Button label="Entrar no meu universo" onPress={() => router.replace('/(tabs)')} />
             </View>
           )}
         </ScreenMotion>
