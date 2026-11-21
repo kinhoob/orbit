@@ -9,7 +9,7 @@ import { font, tokens as t } from '../src/design/tokens';
 import { supabase, requireSupabase } from '../src/lib/supabase';
 import { useAuth } from '../src/features/auth/provider';
 import { useAccountSettings } from '../src/features/account/settings';
-import { dismissTasteOnboarding, needsTasteOnboarding } from '../src/features/auth/onboarding';
+import { needsTasteOnboarding } from '../src/features/auth/onboarding';
 import { categories, searchMedia, type MediaItem } from '../src/features/catalog/data';
 import { compatibilityKickoff, COMPATIBILITY_RATING_TARGET } from '../src/domain/onboarding.mjs';
 
@@ -79,9 +79,10 @@ export default function OnboardingScreen() {
     finally { setBusy(false); }
   }
 
-  async function skip() {
-    try { await dismissTasteOnboarding(userId); } catch { /* a dispensa local falha em silêncio; o servidor continua a referência */ }
-    router.replace('/(tabs)');
+  function skipWork() {
+    // "Não conheço" não cria avaliação nem conta para a meta: só avança a obra.
+    if (index + 1 >= works.length) setStep('done');
+    else setIndex(index + 1);
   }
 
   const kickoff = compatibilityKickoff(rated);
@@ -114,7 +115,7 @@ export default function OnboardingScreen() {
           ) : step === 'choose' ? (
             <View style={styles.card}>
               <Text style={styles.title}>Escolha seus gostos.</Text>
-              <Text style={styles.body}>Para começar a ter compatibilidade com seus amigos, avalie {COMPATIBILITY_RATING_TARGET} obras. Primeiro, conte o que faz parte do seu universo.</Text>
+              <Text style={styles.body}>A compatibilidade com seus amigos aparece quando vocês tiverem {COMPATIBILITY_RATING_TARGET} obras avaliadas em comum. Comece com as suas {COMPATIBILITY_RATING_TARGET} primeiras avaliações — primeiro, conte o que faz parte do seu universo.</Text>
               <View style={styles.chips}>
                 {categories.map(category => {
                   const active = picked.includes(category.id);
@@ -127,13 +128,10 @@ export default function OnboardingScreen() {
               </View>
               {worksError && <Text accessibilityRole="alert" style={styles.error}>Não foi possível carregar obras dessas categorias. Confira a conexão e tente de novo.</Text>}
               <Button label={loadingWorks ? 'Buscando obras…' : 'Ver obras para avaliar'} disabled={!picked.length || loadingWorks} onPress={() => { void loadWorks(); }} />
-              <MotionPressable accessibilityRole="button" onPress={() => { void skip(); }} style={styles.later}>
-                <Text style={styles.laterText}>Agora não</Text>
-              </MotionPressable>
             </View>
           ) : step === 'rate' && work ? (
             <View style={styles.card}>
-              <Text style={styles.progress}>{kickoff.remaining === 1 ? 'Falta 1 avaliação' : `Faltam ${kickoff.remaining} avaliações`} para começar a ter compatibilidade.</Text>
+              <Text style={styles.progress}>Suas avaliações: {rated} de {COMPATIBILITY_RATING_TARGET}. A compatibilidade vem das obras em comum com cada amigo.</Text>
               <View style={styles.workBox}>
                 <Text style={styles.workTitle}>{work.title}</Text>
                 <Text style={styles.workMeta}>{[work.creator, workCategory, work.release_year].filter(Boolean).join(' · ')}</Text>
@@ -147,11 +145,14 @@ export default function OnboardingScreen() {
                 ))}
               </View>
               {!!message && <Text accessibilityRole="alert" style={styles.error}>{message}</Text>}
+              <MotionPressable accessibilityRole="button" disabled={busy} onPress={skipWork} style={styles.later}>
+                <Text style={styles.laterText}>Não conheço esta obra</Text>
+              </MotionPressable>
             </View>
           ) : (
             <View style={styles.card}>
               <Text style={styles.title}>{exhausted ? 'Boas escolhas.' : 'Seu universo começou.'}</Text>
-              <Text style={styles.body}>{exhausted ? `Você avaliou as sugestões desta seleção. Continue pelo Explorar: a compatibilidade começa quando você tiver ${COMPATIBILITY_RATING_TARGET} avaliações.` : `Suas avaliações já contam: a compatibilidade aparece quando você e um amigo tiverem ${COMPATIBILITY_RATING_TARGET} obras avaliadas em comum.`}</Text>
+              <Text style={styles.body}>{exhausted ? `Você viu as sugestões desta seleção sem completar as ${COMPATIBILITY_RATING_TARGET} avaliações. Continue pelo Explorar: cada obra que você avalia lá conta para a sua meta.` : `Suas ${COMPATIBILITY_RATING_TARGET} primeiras avaliações estão guardadas. A compatibilidade aparece quando você e um amigo tiverem ${COMPATIBILITY_RATING_TARGET} obras avaliadas em comum.`}</Text>
               <Button label={exhausted ? 'Ir para o Explorar' : 'Entrar no meu universo'} onPress={() => router.replace(exhausted ? '/(tabs)/discover' : '/(tabs)')} />
             </View>
           )}
