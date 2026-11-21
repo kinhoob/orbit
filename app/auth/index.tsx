@@ -112,7 +112,7 @@ export default function AuthScreen() {
                   </View>
                   {mode === 'signup' && password.length > 0 && (
                     <View style={styles.hintRow}>
-                      <Icon name="check" size={14} color={passwordReady ? t.colors.success : t.colors.muted} strokeWidth={3} />
+                      {passwordReady && <Icon name="check" size={14} color={t.colors.success} strokeWidth={3} />}
                       <Text style={[styles.hint, { color: passwordReady ? t.colors.success : t.colors.muted }]}>{passwordReady ? 'Senha dentro do mínimo de 8 caracteres.' : `Faltam ${8 - password.length} para o mínimo de 8 caracteres.`}</Text>
                     </View>
                   )}
