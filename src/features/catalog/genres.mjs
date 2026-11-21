@@ -123,4 +123,4 @@ export function genresByCategory(list) {
     groups.get(genre.category).push(genre);
   }
   return groups;
-  }
+}
