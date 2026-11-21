@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../src/components/ui';
-import { MotionPressable, ScreenMotion } from '../src/components/motion';
+import { CardEntrance, MotionPressable, ScreenMotion, useReducedMotion } from '../src/components/motion';
+import { AmbientBackground } from '../src/components/ambient';
 import { Icon, OrbitMark } from '../src/components/icons';
+import { motionSpec } from '../src/design/motion.mjs';
 import { font, tokens as t } from '../src/design/tokens';
 import { supabase, requireSupabase } from '../src/lib/supabase';
 import { useAuth } from '../src/features/auth/provider';
@@ -16,6 +18,45 @@ import { genres, genresByCategory, searchGenres } from '../src/features/catalog/
 import { compatibilityKickoff, COMPATIBILITY_RATING_TARGET } from '../src/domain/onboarding.mjs';
 
 type Step = 'choose' | 'rate' | 'done';
+
+const nativeDriver = Platform.OS !== 'web';
+
+// Chip de estilo com resposta elástica ao tocar: a seleção fica visível na
+// hora e o toque parece físico. Movimento reduzido mantém o chip parado.
+function GenreChip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+  const reduced = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (reduced) { scale.setValue(1); return; }
+    scale.setValue(0.82);
+    Animated.spring(scale, { toValue: 1, friction: 6, tension: 220, useNativeDriver: nativeDriver }).start();
+  }, [active, reduced, scale]);
+  return (
+    <MotionPressable accessibilityRole="checkbox" accessibilityState={{ checked: active }} onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+      <Animated.Text style={[styles.chipText, active && styles.chipTextActive, { transform: [{ scale: reduced ? 1 : scale }] }]}>{label}</Animated.Text>
+    </MotionPressable>
+  );
+}
+
+// Transição entre as etapas (escolha, avaliação, fim): cada cartão entra com
+// um deslize suave em vez de trocar seco. Movimento reduzido mostra direto.
+function StepTransition({ step, children }: React.PropsWithChildren<{ step: Step }>) {
+  const reduced = useReducedMotion();
+  const value = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const spec = motionSpec(reduced);
+    if (!spec.screenDuration) { value.setValue(1); return; }
+    value.setValue(0);
+    Animated.timing(value, { toValue: 1, duration: spec.screenDuration + 60, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver, isInteraction: false }).start();
+  }, [step, reduced, value]);
+  const spec = motionSpec(reduced);
+  return (
+    <Animated.View style={{
+      opacity: reduced ? 1 : value.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }),
+      transform: [{ translateY: reduced ? 0 : value.interpolate({ inputRange: [0, 1], outputRange: [spec.screenDistance + 6, 0] }) }],
+    }}>{children}</Animated.View>
+  );
+}
 
 // Pedido do Marco em 21/11/2026: depois de se cadastrar e confirmar o e-mail,
 // a pessoa escolhe os gostos para começar a ter compatibilidade. A escolha é
@@ -109,6 +150,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <AmbientBackground />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <ScreenMotion testID="screen-motion" style={styles.center}>
           <View style={styles.brand}>
@@ -130,7 +172,7 @@ export default function OnboardingScreen() {
               <Button label="Tentar de novo" onPress={() => { setGate('checking'); needsTasteOnboarding(userId).then(needed => setGate(needed ? 'show' : 'skip')).catch(() => setGate('error')); }} />
             </View>
           ) : step === 'choose' ? (
-            <View style={styles.card}>
+            <StepTransition step={step}><View style={styles.card}>
               <Text style={styles.title}>Escolha seus gostos.</Text>
               <Text style={styles.body}>A compatibilidade com seus amigos vem das notas em obras em comum. Seus estilos favoritos guiam as sugestões: escolha os gêneros e avalie {COMPATIBILITY_RATING_TARGET} obras para começar.</Text>
               <View style={styles.searchWrap}>
@@ -139,32 +181,30 @@ export default function OnboardingScreen() {
               </View>
               {visibleGroups.length === 0 ? (
                 <Text style={styles.body}>Nenhum estilo encontrado para essa busca.</Text>
-              ) : visibleGroups.map(([category, list]) => (
-                <View key={category.id} style={styles.group}>
+              ) : visibleGroups.map(([category, list], groupIndex) => (
+                <CardEntrance key={category.id} index={groupIndex} style={styles.group}>
                   <Text style={styles.groupLabel}>{category.label}</Text>
                   <View style={styles.chips}>
                     {list.map(genre => {
                       const active = picked.includes(genre.id);
                       return (
-                        <MotionPressable key={genre.id} accessibilityRole="checkbox" accessibilityState={{ checked: active }} onPress={() => setPicked(current => active ? current.filter(id => id !== genre.id) : [...current, genre.id])} style={[styles.chip, active && styles.chipActive]}>
-                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{genre.label}</Text>
-                        </MotionPressable>
+                        <GenreChip key={genre.id} active={active} label={genre.label} onPress={() => setPicked(current => active ? current.filter(id => id !== genre.id) : [...current, genre.id])} />
                       );
                     })}
                   </View>
-                </View>
+                </CardEntrance>
               ))}
               {worksError && <Text accessibilityRole="alert" style={styles.error}>Não encontrei obras desses estilos agora. Confira a conexão ou escolha outros estilos.</Text>}
               <Button label={loadingWorks ? 'Buscando obras…' : 'Ver obras para avaliar'} disabled={!picked.length || loadingWorks} onPress={() => { void loadWorks(); }} />
-            </View>
+            </View></StepTransition>
           ) : step === 'rate' && outOfWorks ? (
-            <View style={styles.card}>
+            <StepTransition step={step}><View style={styles.card}>
               <Text style={styles.title}>As sugestões acabaram.</Text>
               <Text style={styles.body}>Você tem {rated} de {COMPATIBILITY_RATING_TARGET} avaliações. Escolha outros estilos para ver mais obras e continuar.</Text>
               <Button label="Escolher outros estilos" onPress={() => { setOutOfWorks(false); setStep('choose'); }} />
-            </View>
+            </View></StepTransition>
           ) : step === 'rate' && work ? (
-            <View style={styles.card}>
+            <StepTransition step={step}><View style={styles.card}>
               <Text style={styles.progress}>Suas avaliações: {rated} de {COMPATIBILITY_RATING_TARGET}. A compatibilidade vem das obras em comum com cada amigo.</Text>
               <View style={styles.workBox}>
                 <Text style={styles.workTitle}>{work.title}</Text>
@@ -182,13 +222,13 @@ export default function OnboardingScreen() {
               <MotionPressable accessibilityRole="button" disabled={busy} onPress={skipWork} style={styles.later}>
                 <Text style={styles.laterText}>Não conheço esta obra</Text>
               </MotionPressable>
-            </View>
+            </View></StepTransition>
           ) : (
-            <View style={styles.card}>
+            <StepTransition step={step}><View style={styles.card}>
               <Text style={styles.title}>Seu universo começou.</Text>
               <Text style={styles.body}>Suas {COMPATIBILITY_RATING_TARGET} primeiras avaliações estão guardadas. A compatibilidade aparece quando você e um amigo tiverem {COMPATIBILITY_RATING_TARGET} obras avaliadas em comum.</Text>
               <Button label="Entrar no meu universo" onPress={() => router.replace('/(tabs)')} />
-            </View>
+            </View></StepTransition>
           )}
         </ScreenMotion>
       </ScrollView>
