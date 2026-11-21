@@ -143,4 +143,4 @@ function DiscoverSession() {
       </Screen>
       <NewPostsBubble visible={newerActive>0} onPress={openNewerActive} top={bubbleTop}/>
     </View>;
-        }
+}
