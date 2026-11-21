@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/ui';
 import { MotionPressable, ScreenMotion } from '../../src/components/motion';
+import { AmbientBackground } from '../../src/components/ambient';
 import { Icon, OrbitMark } from '../../src/components/icons';
 import { font, tokens as t } from '../../src/design/tokens';
 import { requireSupabase } from '../../src/lib/supabase';
@@ -97,6 +98,7 @@ export default function AuthScreen() {
   // A coluna rola quando a tela é baixa ou o teclado abre, sem esconder campos.
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <AmbientBackground />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <ScreenMotion testID="screen-motion" style={styles.center}>
           <View style={styles.brand}>
