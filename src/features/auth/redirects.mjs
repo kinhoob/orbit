@@ -1,10 +1,14 @@
 // Pure routing rules, shared by signup, resend and recovery.
-export function authRedirectUrl({ platform, configured, origin, recovery = false }) {
+export class AuthRedirectError extends Error {}
+export function authRedirectUrl({ platform, configured, origin, expoGo = false, recovery = false }) {
+  if (platform !== 'web' && expoGo && !configured?.trim()) throw new AuthRedirectError('No Expo Go, confirme o endereço de retorno desta sessão ou use um build de desenvolvimento. Nenhum e-mail foi enviado.');
   const fallback = platform === 'web' ? (origin ? `${origin}/auth/callback` : '') : 'orbit://auth/callback';
   const url = new URL(configured?.trim() || fallback);
   if (platform === 'web') {
     if (!['http:', 'https:'].includes(url.protocol) || url.pathname !== '/auth/callback') throw new Error('Invalid web auth callback');
     if (url.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error('HTTPS required');
+  } else if (expoGo) {
+    if (!['exp:', 'exps:'].includes(url.protocol) || !url.hostname || url.hostname.includes('*') || url.pathname !== '/--/auth/callback') throw new AuthRedirectError('O retorno do Expo Go deve usar o endereço exp:// ou exps:// real desta sessão, com /--/auth/callback.');
   } else if (url.protocol !== 'orbit:' || url.hostname !== 'auth' || url.pathname !== '/callback') throw new Error('Invalid native auth callback');
   if (url.username || url.password || url.hash || url.search) throw new Error('Callback must not contain credentials, query or fragment');
   if (recovery) url.searchParams.set('flow', 'recovery');
