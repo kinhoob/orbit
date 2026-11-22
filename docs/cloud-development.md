@@ -27,6 +27,8 @@ Configure no ambiente da plataforma, usando `.env.example` como referência:
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave pública/publicável desse projeto |
 | `EXPO_PUBLIC_AUTH_REDIRECT_URL` | Opcional e específico da plataforma. Web usa a origem atual + `/auth/callback` quando vazio; builds mobile com scheme registrado usam `orbit://auth/callback` |
 
+Marco usa Expo Go: o esquema orbit não funciona dentro dele. Sem callback exp:// ou exps:// explícito e validado para a sessão, cadastro/reenvio/recuperação param antes de enviar e-mail; login com conta já confirmada continua disponível. Veja [access-preparation.md](access-preparation.md).
+
 A URL de callback precisa constar nas URLs permitidas do Supabase Auth. Reinicie o Expo quando alterar as variáveis. Os valores reais não são copiados automaticamente do PC pelo GitHub. A IA pode rodar os testes locais sem Supabase, mas consultas reais exigem a configuração acima. Guarde credenciais no gerenciador de variáveis/segredos da plataforma; não as coloque em commits ou prompts.
 
 ## Acessar e alterar o banco
