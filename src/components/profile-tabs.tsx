@@ -1,14 +1,38 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Button, styles } from './ui';
 import { LoadingState } from './loading';
-import { CatalogGrid } from './catalog';
+import { MediaCard } from './catalog';
 import { Icon } from './icons';
 import { tokens as t, font } from '../design/tokens';
-import { profileTabsFor } from '../domain/favorites.mjs';
+import { favoritesCarouselCardWidth, profileTabsFor } from '../domain/favorites.mjs';
 import { favoritesTableMissing, listFavoriteItems } from '../features/catalog/favorites';
+import type { MediaItem } from '../features/catalog/data';
+
+/** Carrossel horizontal de favoritos: a ponta do próximo card indica o arraste. */
+export function FavoritesCarousel({ items }: { items: MediaItem[] }) {
+  const { width } = useWindowDimensions();
+  const cardWidth = favoritesCarouselCardWidth(width);
+  return (
+    <ScrollView
+      horizontal
+      accessibilityRole="adjustable"
+      accessibilityLabel="Favoritos em carrossel"
+      showsHorizontalScrollIndicator={false}
+      snapToInterval={cardWidth + 12}
+      decelerationRate="fast"
+      contentContainerStyle={{ gap: 12, paddingRight: 24 }}
+    >
+      {items.map((item) => (
+        <View key={item.id} style={{ width: cardWidth }}>
+          <MediaCard item={item} />
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
 
 /** Abas do perfil (próprio ou de outra pessoa). Salvos só existem no próprio. */
 export function ProfileTabs({ own, active, onChange }: { own: boolean; active: string; onChange: (id: string) => void }) {
@@ -62,5 +86,5 @@ export function FavoritesPanel({ profileId, own }: { profileId: string; own: boo
       </View>
     );
   }
-  return <CatalogGrid items={query.data} />;
+  return <FavoritesCarousel items={query.data} />;
 }
