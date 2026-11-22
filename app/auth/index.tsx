@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Constants from 'expo-constants';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,10 +11,10 @@ import { font, tokens as t } from '../../src/design/tokens';
 import { requireSupabase } from '../../src/lib/supabase';
 import { emailError, passwordRequirements, passwordStrength, validateCredentials, validateSignup } from '../../src/features/auth/validation.mjs';
 
-import { authRedirectUrl } from '../../src/features/auth/redirects.mjs';
+import { AuthRedirectError, authRedirectUrl } from '../../src/features/auth/redirects.mjs';
 
 function callbackUrl(recovery = false) {
-  return authRedirectUrl({ platform: Platform.OS, configured: process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL, origin: Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined, recovery });
+  return authRedirectUrl({ platform: Platform.OS, expoGo: Constants.expoVersion != null, configured: process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL, origin: Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined, recovery });
 }
 
 type Mode = 'login' | 'signup' | 'reset';
@@ -52,7 +53,7 @@ export default function AuthScreen() {
     setBusy(true);
     try {
       const client = requireSupabase();
-      const redirect = callbackUrl(mode === 'reset');
+      const redirect = mode === 'login' ? undefined : callbackUrl(mode === 'reset');
       const result = mode === 'login' ? await client.auth.signInWithPassword({ email: email.trim(), password }) : mode === 'signup' ? await client.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirect } }) : await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirect });
       if (result.error) throw result.error;
       if (mode === 'login') {
@@ -76,7 +77,7 @@ export default function AuthScreen() {
         return;
       }
       setMessage('Se houver uma conta com esse e-mail, você receberá o link de recuperação.');
-    } catch { setFailed(true); setMessage('Não foi possível concluir. Confira os dados, a conexão e a configuração do Supabase.'); }
+    } catch (error) { setFailed(true); setMessage(error instanceof AuthRedirectError ? error.message : 'Não foi possível concluir. Confira os dados, a conexão e a configuração do Supabase.'); }
     finally { setBusy(false); }
   }
 
@@ -88,7 +89,7 @@ export default function AuthScreen() {
       const { error } = await requireSupabase().auth.resend({ type: 'signup', email: confirmationEmail, options: { emailRedirectTo: redirect } });
       if (error) throw error;
       setMessage('Link reenviado. Confira sua caixa de entrada e o spam.');
-    } catch { setFailed(true); setMessage('Não foi possível reenviar agora. Confira a conexão e a configuração do Supabase.'); }
+    } catch (error) { setFailed(true); setMessage(error instanceof AuthRedirectError ? error.message : 'Não foi possível reenviar agora. Confira a conexão e a configuração do Supabase.'); }
     finally { setResendBusy(false); }
   }
 
