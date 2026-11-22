@@ -9,7 +9,16 @@ This branch prepares code and a migration for review. It does not change Supabas
 - `orbit://auth/callback` for confirmation/resend;
 - `orbit://auth/callback?flow=recovery` for recovery.
 
-Do not assume Expo Go registers the custom scheme. Confirm whether the user runs Expo Go, a development build or an installed standalone build before configuring and testing mobile links. For Expo Go, choose a supported development callback flow first, rather than pretending the installed-build deep link has been tested.
+Marco confirmed Expo Go on 22 November. Expo Go does NOT register the app's custom orbit scheme. The app detects Expo Go using Constants.expoVersion, which is non-null there, and refuses to send signup/resend/recovery mail without an explicit Expo Go callback. Password login for an already confirmed account does not require a callback and remains available.
+
+For a temporary Expo Go test, obtain the actual server address reachable from the phone and configure its exact exp:// or exps:// URL ending in /--/auth/callback, plus the recovery query variant, in the app and Supabase allowlist after approval. Do not copy a localhost example or invent an IP. The server must remain reachable; changing its address invalidates that configuration. Accepting this URL in code is not evidence that an email client and Auth redirect have worked on the device.
+
+Recommended stable route: make and install a development build containing the orbit scheme, then verify orbit://auth/callback on the phone before configuring Auth. This does not require a web domain or App Store publication. Build platform, signing, any service costs and installation remain separate decisions, not actions taken by this PR.
+
+Official sources:
+- https://docs.expo.dev/linking/into-your-app/ documents custom schemes requiring a new development build and Expo Go exp:// addresses with /--/ paths.
+- https://docs.expo.dev/versions/latest/sdk/constants/ documents Constants.expoVersion as the Expo Go version, null outside Expo Go.
+- https://docs.expo.dev/guides/authentication/ says Expo Go cannot test OAuth/OpenID redirects with customized schemes. That statement is not a blanket ban on email links, which must be validated separately.
 
 There is no web app domain selected. The marketing landing page is not the app and must not be used as its callback. On web the code derives `/auth/callback` from the current app origin unless an explicit valid web callback is configured. It rejects a native callback on web, invalid paths, embedded credentials and non-local plain HTTP. The configured override must be platform-appropriate; do not reuse the mobile environment unchanged for web.
 
