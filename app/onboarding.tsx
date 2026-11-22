@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../src/components/ui';
 import { CardEntrance, MotionPressable, ScreenMotion, useReducedMotion } from '../src/components/motion';
@@ -12,7 +11,7 @@ import { font, tokens as t } from '../src/design/tokens';
 import { supabase, requireSupabase } from '../src/lib/supabase';
 import { useAuth } from '../src/features/auth/provider';
 import { useAccountSettings } from '../src/features/account/settings';
-import { needsTasteOnboarding, markTasteComplete } from '../src/features/auth/onboarding';
+import { needsTasteOnboarding, markTasteComplete, loadTasteGenres, saveTasteGenres, loadRatedMediaIds } from '../src/features/auth/onboarding';
 import { categories, searchMedia, type MediaItem } from '../src/features/catalog/data';
 import { genres, genresByCategory, searchGenres } from '../src/features/catalog/genres.mjs';
 import { compatibilityKickoff, COMPATIBILITY_RATING_TARGET } from '../src/domain/onboarding.mjs';
@@ -111,14 +110,15 @@ export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
   const [outOfWorks, setOutOfWorks] = useState(false);
   const [rated, setRated] = useState(0);
+  const [ratedMediaIds, setRatedMediaIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (loading || !session || !supabase) return;
     let active = true;
-    needsTasteOnboarding(session.user.id)
-      .then(needed => { if (active) setGate(needed ? 'show' : 'skip'); })
+    Promise.all([needsTasteOnboarding(session.user.id), loadTasteGenres(session.user.id), loadRatedMediaIds(session.user.id)])
+      .then(([needed, selected, ratedIds]) => { if (active) { setPicked(selected); setRated(ratedIds.length); setRatedMediaIds(ratedIds); setGate(needed ? 'show' : 'skip'); } })
       .catch(() => { if (active) setGate('error'); });
     return () => { active = false; };
   }, [loading, session]);
@@ -129,14 +129,12 @@ export default function OnboardingScreen() {
   async function loadWorks() {
     setLoadingWorks(true); setWorksError(false);
     try {
-      // A seleção fica no dispositivo até a migração de gêneros ser revisada e
-      // aplicada; as notas, que alimentam a compatibilidade, vão ao servidor.
-      try { await AsyncStorage.setItem(`orbit:taste-genres:v1:${userId}`, JSON.stringify(picked)); } catch { /* ignora */ }
+      await saveTasteGenres(userId, picked);
       const pickedCategories = [...new Set(picked.map(id => genres.find(g => g.id === id)?.category).filter((c): c is string => !!c))];
       const lists = await Promise.all(pickedCategories.map(category => searchMedia('', category)));
       const seen = new Set<string>();
       const merged: MediaItem[] = [];
-      const columns = lists.map(list => list.filter(item => { if (seen.has(item.id)) return false; seen.add(item.id); return true; }));
+      const columns = lists.map(list => list.filter(item => { if (seen.has(item.id) || ratedMediaIds.includes(item.id)) return false; seen.add(item.id); return true; }));
       for (let i = 0; columns.some(col => col.length > i); i++) for (const col of columns) { const item = col[i]; if (item) merged.push(item); }
       setWorks(merged);
       setIndex(0);
@@ -152,11 +150,15 @@ export default function OnboardingScreen() {
     if (!work || !userId) return;
     setBusy(true); setMessage('');
     try {
-      const { error } = await requireSupabase()
+      const { data, error } = await requireSupabase()
         .from('ratings')
-        .upsert({ user_id: userId, media_item_id: work.id, score, review: '', visibility: settings.data?.default_visibility || 'public' }, { onConflict: 'user_id,media_item_id' });
+        .upsert({ user_id: userId, media_item_id: work.id, score, review: '', visibility: settings.data?.default_visibility || 'public' }, { onConflict: 'user_id,media_item_id' })
+        .select('user_id,media_item_id').single();
       if (error) throw error;
-      const total = rated + 1;
+      if (data?.user_id !== userId || data.media_item_id !== work.id) throw new Error('Rating was not saved');
+      const ratedIds = await loadRatedMediaIds(userId);
+      const total = ratedIds.length;
+      setRatedMediaIds(ratedIds);
       setRated(total);
       if (compatibilityKickoff(total).complete) {
         // As avaliações já estão no servidor: renova o registro local de queda.
@@ -203,7 +205,7 @@ export default function OnboardingScreen() {
             <View style={styles.card}>
               <Text style={styles.title}>Escolha seus gostos.</Text>
               <Text style={styles.body}>Não foi possível verificar suas avaliações agora. Confira a conexão e tente de novo.</Text>
-              <Button label="Tentar de novo" onPress={() => { setGate('checking'); needsTasteOnboarding(userId).then(needed => setGate(needed ? 'show' : 'skip')).catch(() => setGate('error')); }} />
+              <Button label="Tentar de novo" onPress={() => { setGate('checking'); Promise.all([needsTasteOnboarding(userId), loadTasteGenres(userId), loadRatedMediaIds(userId)]).then(([needed, selected, ratedIds]) => { setPicked(selected); setRated(ratedIds.length); setRatedMediaIds(ratedIds); setGate(needed ? 'show' : 'skip'); }).catch(() => setGate('error')); }} />
             </View>
           ) : step === 'choose' ? (
             <StepTransition step={step}><View style={styles.card}>

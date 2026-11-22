@@ -9,7 +9,6 @@ import { Icon, OrbitMark } from '../../src/components/icons';
 import { font, tokens as t } from '../../src/design/tokens';
 import { requireSupabase } from '../../src/lib/supabase';
 import { emailError, passwordRequirements, passwordStrength, validateCredentials, validateSignup } from '../../src/features/auth/validation.mjs';
-import { needsTasteOnboarding } from '../../src/features/auth/onboarding';
 
 type Mode = 'login' | 'signup' | 'reset';
 
@@ -51,12 +50,9 @@ export default function AuthScreen() {
       const result = mode === 'login' ? await client.auth.signInWithPassword({ email: email.trim(), password }) : mode === 'signup' ? await client.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirect } }) : await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirect });
       if (result.error) throw result.error;
       if (mode === 'login') {
-        // Quem confirmou o e-mail mas ainda não escolheu os gostos vai para a
-        // escolha antes do perfil (pedido do Marco em 21/11/2026).
-        let destination: '/(tabs)/profile' | '/onboarding' = '/(tabs)/profile';
-        const userId = (result.data as { user?: { id?: string } | null }).user?.id;
-        if (userId) { try { if (await needsTasteOnboarding(userId)) destination = '/onboarding'; } catch { /* mantém o perfil */ } }
-        router.replace(destination);
+        // AuthProvider verifies Auth; TasteGate waits for the database before
+        // revealing the profile or routing an incomplete account to onboarding.
+        router.replace('/(tabs)/profile');
         return;
       }
       if (mode === 'signup') {

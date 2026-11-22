@@ -4,6 +4,7 @@ import { Link } from 'expo-router';
 import { Text, TextInput } from 'react-native';
 import { requireSupabase } from '../../src/lib/supabase';
 import { Screen, Button, styles } from '../../src/components/ui';
+import { passwordPolicyError } from '../../src/features/auth/validation.mjs';
 export default function Callback() {
   const url=Linking.useURL(); const [message,setMessage]=useState('Confirmando o link…');
   const [recovery,setRecovery]=useState(false); const [confirmed,setConfirmed]=useState(false); const [password,setPassword]=useState(''); const [busy,setBusy]=useState(false);
@@ -18,6 +19,6 @@ export default function Callback() {
     }catch{if(active)setMessage('O link é inválido ou expirou. Solicite um novo link.');}})();
     return ()=>{active=false;};
   },[url]);
-  async function update(){if(password.length<8){setMessage('Use pelo menos 8 caracteres.');return;}setBusy(true);try{const {error}=await requireSupabase().auth.updateUser({password});if(error)throw error;setRecovery(false);setPassword('');setMessage('Senha atualizada.');}catch{setMessage('Não foi possível atualizar a senha. Tente novamente.');}finally{setBusy(false);}}
+  async function update(){const invalid=passwordPolicyError(password);if(invalid){setMessage(invalid);return;}setBusy(true);try{const {error}=await requireSupabase().auth.updateUser({password});if(error)throw error;setRecovery(false);setPassword('');setMessage('Senha atualizada.');}catch{setMessage('Não foi possível atualizar a senha. Tente novamente.');}finally{setBusy(false);}}
   return <Screen><Text style={styles.eyebrow}>ORBIT</Text><Text accessibilityRole="alert" style={styles.body}>{message}</Text>{recovery && <><TextInput accessibilityLabel="Nova senha" placeholder="Nova senha" style={styles.input} secureTextEntry value={password} onChangeText={setPassword}/><Button label="Salvar nova senha" disabled={busy} onPress={()=>{void update();}}/></>}{confirmed && <Link href="/onboarding" style={styles.link}>Escolher meus gostos →</Link>}<Link href="/" style={styles.link}>Voltar ao início</Link></Screen>;
 }
