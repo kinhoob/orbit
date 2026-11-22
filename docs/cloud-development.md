@@ -25,7 +25,7 @@ Configure no ambiente da plataforma, usando `.env.example` como referência:
 | --- | --- |
 | `EXPO_PUBLIC_SUPABASE_URL` | URL do projeto ORBIT no Supabase |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave pública/publicável desse projeto |
-| `EXPO_PUBLIC_AUTH_REDIRECT_URL` | URL acessível da prévia seguida de `/auth/callback`; em builds mobile, `orbit://auth/callback` |
+| `EXPO_PUBLIC_AUTH_REDIRECT_URL` | Opcional e específico da plataforma. Web usa a origem atual + `/auth/callback` quando vazio; builds mobile com scheme registrado usam `orbit://auth/callback` |
 
 A URL de callback precisa constar nas URLs permitidas do Supabase Auth. Reinicie o Expo quando alterar as variáveis. Os valores reais não são copiados automaticamente do PC pelo GitHub. A IA pode rodar os testes locais sem Supabase, mas consultas reais exigem a configuração acima. Guarde credenciais no gerenciador de variáveis/segredos da plataforma; não as coloque em commits ou prompts.
 
@@ -47,3 +47,5 @@ Copie esta mensagem depois de conectar o repositório:
 
 - [Autorizar uma integração GitHub em repositórios específicos](https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party).
 - [Armazenar variáveis e segredos de desenvolvimento em Codespaces](https://docs.github.com/en/codespaces/managing-codespaces-for-your-organization/managing-development-environment-secrets-for-your-repository-or-organization).
+
+Preparação de segurança/callbacks ainda não aplicada: [access-preparation.md](access-preparation.md).
