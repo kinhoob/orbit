@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/ui';
@@ -9,6 +9,12 @@ import { Icon, OrbitMark } from '../../src/components/icons';
 import { font, tokens as t } from '../../src/design/tokens';
 import { requireSupabase } from '../../src/lib/supabase';
 import { emailError, passwordRequirements, passwordStrength, validateCredentials, validateSignup } from '../../src/features/auth/validation.mjs';
+
+import { authRedirectUrl } from '../../src/features/auth/redirects.mjs';
+
+function callbackUrl(recovery = false) {
+  return authRedirectUrl({ platform: Platform.OS, configured: process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL, origin: Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined, recovery });
+}
 
 type Mode = 'login' | 'signup' | 'reset';
 
@@ -46,7 +52,7 @@ export default function AuthScreen() {
     setBusy(true);
     try {
       const client = requireSupabase();
-      const redirect = process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL || 'orbit://auth/callback';
+      const redirect = callbackUrl(mode === 'reset');
       const result = mode === 'login' ? await client.auth.signInWithPassword({ email: email.trim(), password }) : mode === 'signup' ? await client.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirect } }) : await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirect });
       if (result.error) throw result.error;
       if (mode === 'login') {
@@ -78,7 +84,7 @@ export default function AuthScreen() {
     if (!confirmationEmail) return;
     setMessage(''); setFailed(false); setResendBusy(true);
     try {
-      const redirect = process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL || 'orbit://auth/callback';
+      const redirect = callbackUrl();
       const { error } = await requireSupabase().auth.resend({ type: 'signup', email: confirmationEmail, options: { emailRedirectTo: redirect } });
       if (error) throw error;
       setMessage('Link reenviado. Confira sua caixa de entrada e o spam.');
