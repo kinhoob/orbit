@@ -30,3 +30,10 @@ test('implicit recovery links still work; broken and mismatched sessions fail cl
  await assert.rejects(acceptAuthCallback(client({invalid:true}),'orbit://auth/callback?code=test'));
  await assert.rejects(acceptAuthCallback(client({wrong:true}),'orbit://auth/callback?code=test'));
 });
+
+test('Expo Go never falls back to the build scheme and requires an explicit session address', () => {
+  assert.throws(() => authRedirectUrl({platform:'ios',expoGo:true}));
+  assert.throws(() => authRedirectUrl({platform:'ios',expoGo:true,configured:'orbit://auth/callback'}));
+  assert.throws(() => authRedirectUrl({platform:'android',expoGo:true,configured:'exp://*/--/auth/callback'}));
+  assert.equal(authRedirectUrl({platform:'ios',expoGo:true,configured:'exp://192.0.2.10:8081/--/auth/callback',recovery:true}), 'exp://192.0.2.10:8081/--/auth/callback?flow=recovery');
+});
