@@ -13,6 +13,15 @@ export function profileTabsFor(isOwnProfile) {
   return PROFILE_TABS.filter((tab) => isOwnProfile || !tab.ownOnly);
 }
 
+/**
+ * Largura do card no carrossel de favoritos: cabem ~2,2 cards na tela,
+ * então a ponta do terceiro indica que dá para arrastar (padrão carrossel).
+ */
+export function favoritesCarouselCardWidth(viewportWidth, maxContentWidth = 760) {
+  const visible = Math.max(280, Math.min(viewportWidth || 390, maxContentWidth));
+  return Math.max(150, Math.floor((visible - 48) / 2.2));
+}
+
 /** Detecta a resposta do Supabase/PostgREST para tabela ainda não aplicada. */
 export function isMissingTableError(error) {
   if (!error) return false;
