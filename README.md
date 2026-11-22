@@ -25,6 +25,8 @@ Para somente instalar e verificar: `.\iniciar-orbit.ps1 -SomenteVerificar`. Depo
 - Descobrir sem Supabase: busca pública ao vivo de séries/animes (TVmaze, CC BY-SA) e livros (Open Library), com atribuição na tela.
 - Cadastro, login, confirmação por link, recuperação de senha e persistência de sessão.
 - Animação curta de entrada na abertura do app; as informações aparecem depois dela. Com reduzir movimento, o conteúdo aparece direto.
+- Abertura valida a sessão confirmada pelo Auth antes de entrar na conta: com sessão válida entra direto; sem sessão cai na tela de acesso, e quem já está autenticado não vê o formulário de novo.
+- Troca entre entrar e criar conta com a animação da marca: o véu escuro sobe e a bolinha dourada gira no círculo creme antes do novo modo aparecer. Com reduzir movimento, a troca é imediata.
 - Busca no catálogo com filtro por categoria e estados de carregamento, erro e vazio.
 - Detalhes da obra, avaliação de 0 a 10, opinião e visibilidade pública, amigos ou privada.
 - Adicionar/remover salvos e consultar os 100 itens recentes da biblioteca privada.
