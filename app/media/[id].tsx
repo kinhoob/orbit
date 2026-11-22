@@ -13,6 +13,7 @@ import { Feedback, StatePulse } from '../../src/components/feedback';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
 import { toggleSavedItem } from '../../src/features/catalog/save-mutation';
+import { toggleFavorite, favoritesTableMissing, markFavoritesTableMissing } from '../../src/features/catalog/favorites';
 import { IllustratedCover } from '../../src/components/mural';
 import { useAccountSettings } from '../../src/features/account/settings';
 
@@ -94,7 +95,14 @@ export default function MediaDetail() {
       ]);
       if (saved.error) throw saved.error;
       if (rating.error) throw rating.error;
-      return { saved: !!saved.data, rating: rating.data };
+      let favorite = false;
+      if (!favoritesTableMissing()) {
+        const fav = await client.from('profile_favorites').select('media_item_id').eq('user_id', userId!).eq('media_item_id', id!).maybeSingle();
+        if (fav.error) {
+          if (!markFavoritesTableMissing(fav.error)) throw fav.error;
+        } else favorite = !!fav.data;
+      }
+      return { saved: !!saved.data, rating: rating.data, favorite };
     },
   });
   useEffect(() => {
@@ -124,6 +132,21 @@ export default function MediaDetail() {
     } catch {
       setFailed(true);
       setMessage('Não foi possível atualizar os salvos. Tente novamente.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function toggleFavoriteAction() {
+    if (!userId || !id) return;
+    setBusy(true);
+    setMessage('');
+    setFailed(false);
+    try {
+      const favorite = await toggleFavorite(cache, userId, id);
+      if (favorite !== null) setMessage(favorite ? 'Obra destacada nos favoritos do seu perfil.' : 'Obra removida dos favoritos.');
+    } catch {
+      setFailed(true);
+      setMessage('Não foi possível atualizar os favoritos. Tente novamente.');
     } finally {
       setBusy(false);
     }
@@ -220,6 +243,12 @@ export default function MediaDetail() {
                 <StatePulse active={!!state.data?.saved}><Icon name="bookmark" size={21} color={state.data?.saved ? t.colors.success : t.colors.text} /></StatePulse>
                 <Text style={[styles.buttonOutlineText, state.data?.saved && { color: t.colors.success }]}>{state.data?.saved ? 'Salvo na biblioteca' : 'Salvar na biblioteca'}</Text>
               </MotionPressable>
+              {!favoritesTableMissing() && (
+                <MotionPressable accessibilityRole="button" accessibilityLabel={state.data?.favorite ? 'Remover dos favoritos' : 'Marcar como favorita'} accessibilityState={{ selected: !!state.data?.favorite, disabled: busy, busy }} disabled={busy} onPress={() => void toggleFavoriteAction()} style={[styles.buttonOutline, { flexDirection: 'row', justifyContent: 'center', gap: 10, opacity: busy ? 0.6 : 1 }]}>
+                  <StatePulse active={!!state.data?.favorite}><Icon name="heart" size={21} color={state.data?.favorite ? t.colors.gold : t.colors.text} /></StatePulse>
+                  <Text style={[styles.buttonOutlineText, state.data?.favorite && { color: t.colors.warning }]}>{state.data?.favorite ? 'Favorita no seu perfil' : 'Marcar como favorita'}</Text>
+                </MotionPressable>
+              )}
               <View style={styles.card}>
                 <Text style={[styles.title, { fontSize: 25, lineHeight: 30 }]}>Sua avaliação</Text>
                 <Text style={styles.body}>Nota de 0 a 10</Text>
@@ -299,4 +328,3 @@ const detail = StyleSheet.create({
   segmentText: { fontSize: 15, fontFamily: font.semibold, color: t.colors.text },
   segmentTextActive: { color: t.colors.onDark },
 });
-

@@ -11,13 +11,14 @@ import { tokens } from '../../src/design/tokens';
 import { useAuth } from '../../src/features/auth/provider';
 import { requireSupabase } from '../../src/lib/supabase';
 import { ProfileTimeline } from '../../src/components/profile-timeline';
+import { ProfileTabs, FavoritesPanel } from '../../src/components/profile-tabs';
 import { ProgressSummary } from '../../src/components/progress';
 import { SharedCollections } from '../../src/components/shared-collections';
 import { ProfileIdentity } from '../../src/components/profile-identity';
 
 export default function Profile() {
   const {session,loading}=useAuth();const cache=useQueryClient();
-  const [name,setName]=useState('');const [username,setUsername]=useState('');const [bio,setBio]=useState('');const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const [editing,setEditing]=useState(false);
+  const [name,setName]=useState('');const [username,setUsername]=useState('');const [bio,setBio]=useState('');const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const [editing,setEditing]=useState(false);const [tab,setTab]=useState('timeline');
   const query=useQuery({queryKey:['profile',session?.user.id],enabled:!!session,queryFn:async()=>{const {data,error}=await requireSupabase().from('profiles').select('*').eq('id',session!.user.id).single();if(error)throw error;return data;}});
   const savedQuery=useQuery({queryKey:['saved',session?.user.id],enabled:!!session,queryFn:async()=>{
     const client=requireSupabase();const {data,error}=await client.from('saved_items').select('media_item_id').eq('user_id',session!.user.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;
@@ -49,16 +50,17 @@ export default function Profile() {
         <MotionPressable accessibilityRole="button" onPress={()=>{setEditing(false);setMessage('');}} style={styles.buttonOutline}><Text style={styles.buttonOutlineText}>Cancelar</Text></MotionPressable>
       </View>}
       </>}
-      <ProfileTimeline profileId={session.user.id} />
-      <SharedCollections profileId={session.user.id} />
-      <Link href="/library" style={styles.link}>Minha biblioteca completa</Link>
-      <View style={{gap:12}}>
+      <ProfileTabs own active={tab} onChange={setTab} />
+      {tab==='timeline'&&<ProfileTimeline profileId={session.user.id} />}
+      {tab==='favorites'&&<FavoritesPanel profileId={session.user.id} own />}
+      {tab==='collections'&&<><SharedCollections profileId={session.user.id} /><Link href="/collections" style={styles.link}>Todas as minhas coleções →</Link></>}
+      {tab==='saved'&&<View style={{gap:12}}>
         <Text style={styles.eyebrow}>SEUS SALVOS</Text>
         <Text style={styles.body}>Privados, só aparecem no seu perfil. Até 100 obras recentes.</Text>
         {savedQuery.isPending?<Text style={styles.body}>Carregando sua biblioteca…</Text>:savedQuery.isError?<><Text style={styles.error}>Não foi possível carregar seus salvos.</Text><Button label="Tentar novamente" onPress={()=>{void savedQuery.refetch();}}/></>:savedQuery.data?.length?<CatalogGrid items={savedQuery.data}/>:<View style={{gap:16}}><View style={{width:72,height:72,borderRadius:36,backgroundColor:tokens.colors.secondary,alignItems:'center',justifyContent:'center'}}><Icon name="bookmark" size={30} color={tokens.colors.muted} /></View><Text style={styles.body}>Sua próxima descoberta ainda não está aqui. Salve uma obra para encontrá-la depois.</Text><Link href="/(tabs)/discover" style={styles.link}>Encontrar algo novo →</Link></View>}
-      </View>
+      </View>}
+      <Link href="/library" style={styles.link}>Minha biblioteca completa</Link>
       <Link href="/friends" style={styles.link}>Amizades →</Link><Button label="Sair da conta" disabled={busy} onPress={()=>{void signout();}}/>{!!message&&<Text accessibilityRole="alert" style={styles.body}>{message}</Text>}
     </>}
   </Screen>;
 }
-
