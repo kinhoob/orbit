@@ -6,7 +6,7 @@ Pedido do Marco em 22/11/2026: personalizar o perfil com uma aba de favoritos.
 
 - O perfil passa a ter abas: **Linha do tempo**, **Favoritos**, **Coleções** e **Salvos**. Salvos são privados e só aparecem no próprio perfil; no perfil de outra pessoa as abas são Linha do tempo, Favoritos e Coleções (`profileTabsFor` em `src/domain/favorites.mjs`).
 - A página de cada obra ganha o botão de coração: "Marcar como favorita" destaca a obra na aba Favoritos do perfil. O toque responde na hora, desfaz em caso de erro e atualiza o servidor em seguida (mesmo padrão dos salvos, em `src/features/catalog/favorites.ts`).
-- A aba Favoritos mostra as obras em grade, da marcação mais recente para a mais antiga.
+- A aba Favoritos mostra as obras em carrossel horizontal (pedido do Marco, 22/11/2026), da marcação mais recente para a mais antiga; a ponta do próximo card indica o arraste.
 
 ## Banco: migration em revisão, não aplicada
 
