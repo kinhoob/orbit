@@ -22,6 +22,15 @@ test('own profile shows all tabs, other profiles hide the private saved tab', ()
   assert.deepEqual(other, ['timeline', 'favorites', 'collections']);
 });
 
+test('favorites carousel cards leave a peeking card to signal swiping', () => {
+  const phone = domain.favoritesCarouselCardWidth(390);
+  assert.ok(phone >= 150 && phone <= 180, `phone card ${phone}`);
+  assert.ok(phone * 2 < 390, 'at least two full cards fit');
+  assert.ok(phone * 3 > 390, 'third card only peeks');
+  assert.equal(domain.favoritesCarouselCardWidth(2000), domain.favoritesCarouselCardWidth(760), 'content width is capped');
+  assert.equal(domain.favoritesCarouselCardWidth(100), 150, 'minimum card size holds');
+});
+
 test('missing-table detection recognizes PostgREST and PostgreSQL signals only', () => {
   assert.equal(domain.isMissingTableError({ code: '42P01' }), true);
   assert.equal(domain.isMissingTableError({ code: 'PGRST205' }), true);
