@@ -41,6 +41,19 @@ export async function fetchProfilesByIds(ids: string[]): Promise<ProfileSummary[
   return (data || []) as ProfileSummary[];
 }
 
+// Sugestões da timeline de amigos vazia (21/11/2026): leitura simples de
+// perfis, sem mudança de banco; o filtro de relações fica no domínio.
+export async function suggestProfiles(userId: string): Promise<ProfileSummary[]> {
+  const { data, error } = await requireSupabase()
+    .from('profiles')
+    .select('id,username,display_name,avatar_url')
+    .neq('id', userId)
+    .order('username')
+    .limit(12);
+  if (error) throw error;
+  return (data || []) as ProfileSummary[];
+}
+
 export function relationWith(friendships: Friendship[], userId: string, otherId: string): Relation {
   return relationFn(friendships, userId, otherId) as Relation;
 }
@@ -64,4 +77,4 @@ export async function respondToRequest(friendshipId: string, accept: boolean, us
 export async function deleteFriendship(friendshipId: string, userId: string): Promise<void> {
   const { error } = await requireSupabase().from('friendships').delete().eq('id', friendshipId).or(`requester_id.eq.${userId},addressee_id.eq.${userId}`).select('id').single();
   if (error) throw error;
-    }
+}

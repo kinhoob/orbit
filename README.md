@@ -20,6 +20,7 @@ Para somente instalar e verificar: `.\iniciar-orbit.ps1 -SomenteVerificar`. Depo
 - Mural da Início com curadoria local de obras reais (metadados reais; todas as capas ilustradas localmente, sem imagem protegida); ver docs/visual-review.md.
 - Descobrir sem Supabase: busca pública ao vivo de séries/animes (TVmaze, CC BY-SA) e livros (Open Library), com atribuição na tela.
 - Cadastro, login, confirmação por link, recuperação de senha e persistência de sessão.
+- Animação curta de entrada na abertura do app; as informações aparecem depois dela. Com reduzir movimento, o conteúdo aparece direto.
 - Busca no catálogo com filtro por categoria e estados de carregamento, erro e vazio.
 - Detalhes da obra, avaliação de 0 a 10, opinião e visibilidade pública, amigos ou privada.
 - Adicionar/remover salvos e consultar os 100 itens recentes da biblioteca privada.
@@ -82,4 +83,3 @@ Autenticação, migrations e RLS precisam de validação com um projeto Supabase
 | tests/ | Testes com Node |
 
 Próxima entrega: validar a base instalada e o Supabase, depois implementar mural, amizades e notificações. Daily, compatibilidade protegida e XP seguro seguem o plano em `docs/architecture.md`.
-

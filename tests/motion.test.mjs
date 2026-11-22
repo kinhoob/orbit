@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { motionSpec } from '../src/design/motion.mjs';
+import { introSpec, motionSpec } from '../src/design/motion.mjs';
+
+test('entry animation is fully removed with reduced motion', () => {
+  assert.deepEqual(introSpec(true), { orbitDuration: 0, wordDelay: 0, wordDuration: 0, minVisible: 0, fadeOut: 0 });
+});
+test('entry animation is short, finite and covers the wordmark reveal', () => {
+  const spec = introSpec(false);
+  assert.deepEqual(spec, { orbitDuration: 1600, wordDelay: 220, wordDuration: 420, minVisible: 1800, fadeOut: 320 });
+  assert.ok(spec.wordDelay + spec.wordDuration <= spec.minVisible);
+});
 
 test('reduced motion removes distances, duration and stagger', () => {
   for (const index of [0, 4, 7, 8, 100, -1, NaN]) {

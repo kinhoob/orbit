@@ -3,6 +3,7 @@ import { ActivityIndicator,ScrollView,Text,View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen,styles } from '../../src/components/ui';
 import { TimelineTabs,TimelineList,NewPostsBubble } from '../../src/components/feed';
+import { FriendsEmptyState } from '../../src/components/friends-empty';
 import { Pager } from '../../src/components/pager';
 import { listDiscoverTimeline, listFriendsTimeline, advanceWatermark, countNewerDiscoverReviews, countNewerFriendReviews, type FeedReview } from '../../src/features/feed/timelines';
 import { toggleTimelineLike } from '../../src/features/feed/like-mutation';
@@ -10,6 +11,7 @@ import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { tokens as t } from '../../src/design/tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { LoadingState } from '../../src/components/loading';
 import { Feedback } from '../../src/components/feedback';
 import { inReadingOrder } from '../../src/domain/feed-order.mjs';
@@ -28,7 +30,10 @@ export default function Discover() {
 function DiscoverSession() {
   const cache=useQueryClient();
   const insets=useSafeAreaInsets();
-  const [timeline,setTimeline]=useState<TimelineId>('descobrir');
+  // A saida do onboarding abre /(tabs)/discover?tab=amigos direto na timeline
+  // de amigos (21/11/2026); sem o parametro, o padrao continua Descobrir.
+  const params=useLocalSearchParams<{ tab?: string }>();
+  const [timeline,setTimeline]=useState<TimelineId>(params.tab==='amigos'?'amigos':'descobrir');
   const [likeError,setLikeError]=useState('');
   const [refreshing,setRefreshing]=useState(false);
   const order=useRef<Partial<Record<TimelineId,string[]>>>({});
@@ -105,7 +110,7 @@ function DiscoverSession() {
     const rows=pageReviews(q)||[];
     if(!order.current[kind])order.current[kind]=rows.map(row=>row.rating_id);
     const reviews=inReadingOrder(order.current[kind]!,rows) as FeedReview[];
-    return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:<Text style={styles.body}>{emptyText}</Text>;
+    return reviews.length?<TimelineList reviews={reviews} onToggleLike={toggleLike}/>:(kind==='amigos'?<FriendsEmptyState/>:<Text style={styles.body}>{emptyText}</Text>);
   };
   const updating=timelinesOn&&(discoverQuery.isRefetching||friendsQuery.isRefetching);
   // Balao "Novas publicacoes" flutuante como no X (pedido do Marco em
