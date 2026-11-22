@@ -23,10 +23,11 @@ do $$ begin
  exception when insufficient_privilege then null; end;
 end $$;
 update public.profiles set profile_theme='sky',avatar_frame='line' where id=auth.uid();
-insert into public.account_settings(user_id,default_visibility) values(auth.uid(),'private');
+insert into public.account_settings(user_id,default_visibility) values(auth.uid(),'private')
+ on conflict (user_id) do update set default_visibility=excluded.default_visibility;
 select set_config('request.jwt.claim.sub','a2222222-2222-4222-8222-222222222222',true);
 do $$ begin
- if exists(select 1 from public.xp_transactions) or exists(select 1 from public.discovery_history) or exists(select 1 from public.account_settings) then raise exception 'Another accounts private data leaked'; end if;
+ if exists(select 1 from public.xp_transactions) or exists(select 1 from public.discovery_history) or exists(select 1 from public.account_settings where user_id='a1111111-1111-4111-8111-111111111111') then raise exception 'Another accounts private data leaked'; end if;
  if public.friend_compatibility('a1111111-1111-4111-8111-111111111111') is not null then raise exception 'Compatibility available without accepted friendship'; end if;
 end $$;
 reset role;
