@@ -1,5 +1,7 @@
 # ORBIT
 
+Preparação revisável de callbacks/Auth e privacidade: [docs/access-preparation.md](docs/access-preparation.md). Não aplicada ao Supabase.
+
 Para trabalhar com outra IA ou em um ambiente na nuvem, comece por [docs/cloud-development.md](docs/cloud-development.md) e [AGENTS.md](AGENTS.md). O estado atual da validação de login e do banco está em [docs/login-validation.md](docs/login-validation.md); algumas seções abaixo descrevem etapas anteriores do projeto.
 
 Aplicativo social de descobertas culturais em React Native, Expo Router, TypeScript e Supabase. Amizades bidirecionais; sem seguidores.
