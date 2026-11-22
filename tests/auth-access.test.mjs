@@ -138,3 +138,11 @@ test('access checks keep the root navigator mounted but hidden and inert', () =>
     assert.match(html, /data-pointer-events="none"/);
   }
 });
+
+test('entry route validates the session before entering the account', async () => {
+  const { entryRouteDecision } = await import('../src/features/auth/gate-state.mjs');
+  assert.equal(entryRouteDecision(true, false), 'checking');
+  assert.equal(entryRouteDecision(true, true), 'checking');
+  assert.equal(entryRouteDecision(false, false), 'auth');
+  assert.equal(entryRouteDecision(false, true), 'account');
+});

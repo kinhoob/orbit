@@ -15,3 +15,12 @@ export function tasteGateDecision(hasSession, check, knownComplete) {
   if (check === 'error') return knownComplete ? 'allow' : 'retry'; // desconhecido não vira "refaça o setup"
   throw new RangeError('Invalid check');
 }
+
+// Decisão da porta de entrada do app: ao abrir, valida se existe uma sessão
+// confirmada pelo Auth antes de entrar na conta. Sem sessão válida, a
+// entrada é a tela de acesso; enquanto a verificação corre, a tela mostra a
+// validação em andamento. Função pura para ser testada decisão a decisão.
+export function entryRouteDecision(loading, hasSession) {
+  if (loading) return 'checking';
+  return hasSession ? 'account' : 'auth';
+}

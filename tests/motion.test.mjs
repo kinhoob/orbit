@@ -24,3 +24,12 @@ test('screen entrance is short and small, card stagger has a finite budget', () 
     assert.equal(motionSpec(false, index).cardDelay, 0);
   }
 });
+
+test('auth mode transition plays one short orbit and fades; reduced motion swaps instantly', async () => {
+  const { authTransitionSpec } = await import('../src/design/motion.mjs');
+  assert.deepEqual(authTransitionSpec(true), { fadeIn: 0, orbitDuration: 0, fadeOut: 0 });
+  const spec = authTransitionSpec(false);
+  assert.ok(spec.fadeIn > 0 && spec.fadeIn <= 200);
+  assert.ok(spec.orbitDuration >= 400 && spec.orbitDuration <= 900);
+  assert.ok(spec.fadeOut > 0 && spec.fadeOut <= 300);
+});

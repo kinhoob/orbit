@@ -33,3 +33,14 @@ export function ambientOrbs(reduced) {
     { size: 60, color: 'rgba(244,239,231,0.10)', opacity: 0.75, left: 130, top: 190, dx: -20, dy: 22, duration: 7500, delay: 600 },
   ];
 }
+
+/** Troca animada entre entrar e criar conta: o véu escuro cobre a tela, a
+// bolinha dourada gira no círculo creme e o novo modo aparece no fade.
+// Movimento reduzido troca o modo na hora, sem véu nem giro. */
+export function authTransitionSpec(reduced) {
+  return {
+    fadeIn: reduced ? 0 : 120,
+    orbitDuration: reduced ? 0 : 620,
+    fadeOut: reduced ? 0 : 180,
+  };
+}

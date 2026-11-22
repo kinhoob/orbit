@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Constants from 'expo-constants';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { Animated, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Redirect, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/ui';
-import { MotionPressable, ScreenMotion } from '../../src/components/motion';
+import { MotionPressable, ScreenMotion, useReducedMotion } from '../../src/components/motion';
 import { AmbientBackground } from '../../src/components/ambient';
 import { Icon, OrbitMark } from '../../src/components/icons';
+import { OrbitSpinner } from '../../src/components/orbit-spinner';
 import { font, tokens as t } from '../../src/design/tokens';
+import { authTransitionSpec } from '../../src/design/motion.mjs';
 import { requireSupabase } from '../../src/lib/supabase';
+import { useAuth } from '../../src/features/auth/provider';
 import { emailError, passwordRequirements, passwordStrength, validateCredentials, validateSignup } from '../../src/features/auth/validation.mjs';
 
 import { AuthRedirectError, authRedirectUrl } from '../../src/features/auth/redirects.mjs';
@@ -27,6 +30,8 @@ const TITLES: Record<Mode, string> = {
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
+  const { session, loading: authLoading } = useAuth();
+  const reduced = useReducedMotion();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,6 +47,28 @@ export default function AuthScreen() {
 
   function select(next: Mode) {
     setMode(next); setMessage(''); setPassword(''); setFailed(false); setShowPassword(false); setConfirmationEmail(null);
+  }
+
+  // Troca entre entrar e criar conta com a animação da marca: o véu escuro
+  // sobe, a bolinha dourada gira no círculo creme e o novo modo aparece no
+  // fade. Com reduzir movimento, a troca é imediata.
+  const veil = useRef(new Animated.Value(0)).current;
+  const [veiled, setVeiled] = useState(false);
+  function selectAnimated(next: Mode) {
+    if (next === mode || veiled) return;
+    if (reduced) { select(next); return; }
+    const spec = authTransitionSpec(false);
+    setVeiled(true);
+    veil.setValue(0);
+    Animated.timing(veil, { toValue: 1, duration: spec.fadeIn, useNativeDriver: false }).start(({ finished }) => {
+      if (!finished) return;
+      select(next);
+      setTimeout(() => {
+        Animated.timing(veil, { toValue: 0, duration: spec.fadeOut, useNativeDriver: false }).start(({ finished: done }) => {
+          if (done) setVeiled(false);
+        });
+      }, spec.orbitDuration);
+    });
   }
 
   const invalidEmail = emailTouched ? emailError(email) : null;
@@ -96,6 +123,9 @@ export default function AuthScreen() {
   const strength = passwordStrength(password);
   const meterColor = strength.level === 'weak' ? t.colors.error : strength.level === 'medium' ? t.colors.warning : t.colors.success;
   const requirements = passwordRequirements(password);
+
+  // Já autenticado: entra direto na conta, sem pedir e-mail e senha de novo.
+  if (!authLoading && session) return <Redirect href="/(tabs)/profile" />;
 
   // Pedido do Marco em 21/11/2026: o login fica central, no meio da tela.
   // A coluna rola quando a tela é baixa ou o teclado abre, sem esconder campos.
@@ -154,7 +184,7 @@ export default function AuthScreen() {
                     </View>
                   )}
                   {mode === 'login' && (
-                    <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => select('reset')} style={styles.forgot}>
+                    <MotionPressable accessibilityRole="button" disabled={busy} onPress={() => selectAnimated('reset')} style={styles.forgot}>
                       <Text style={styles.forgotText}>Esqueci a senha</Text>
                     </MotionPressable>
                   )}
@@ -170,11 +200,16 @@ export default function AuthScreen() {
           )}
           {/* Pedido do Marco em 21/11/2026: Criar conta fica no lugar do antigo
               "Voltar ao início" e abre o formulário de cadastro com e-mail e senha. */}
-          <MotionPressable accessibilityRole="button" disabled={busy || resendBusy} onPress={() => { if (confirmationEmail) { setConfirmationEmail(null); setMessage(''); setFailed(false); } else { select(mode === 'login' ? 'signup' : 'login'); } }} style={styles.secondary}>
+          <MotionPressable accessibilityRole="button" disabled={busy || resendBusy || veiled} onPress={() => { if (confirmationEmail) { setConfirmationEmail(null); setMessage(''); setFailed(false); } else { selectAnimated(mode === 'login' ? 'signup' : 'login'); } }} style={styles.secondary}>
             <Text style={styles.secondaryText}>{confirmationEmail ? 'Voltar para entrar' : mode === 'login' ? 'Criar conta' : mode === 'signup' ? 'Já tenho conta' : 'Voltar para entrar'}</Text>
           </MotionPressable>
         </ScreenMotion>
       </ScrollView>
+      {veiled && (
+        <Animated.View style={[styles.veil, { opacity: veil }]} accessibilityElementsHidden importantForAccessibility="no">
+          <OrbitSpinner size={92} />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -213,4 +248,5 @@ const styles = StyleSheet.create({
   feedbackError: { backgroundColor: 'rgba(163,50,50,0.08)' },
   feedbackOk: { backgroundColor: 'rgba(34,99,68,0.10)' },
   feedbackText: { fontSize: 14, lineHeight: 21, fontFamily: font.regular },
+  veil: { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.colors.dark, alignItems: 'center', justifyContent: 'center' },
 });
