@@ -8,17 +8,17 @@ Pedido do Marco em 22/11/2026: personalizar o perfil com uma aba de favoritos.
 - A página de cada obra ganha o botão de coração: "Marcar como favorita" destaca a obra na aba Favoritos do perfil. O toque responde na hora, desfaz em caso de erro e atualiza o servidor em seguida (mesmo padrão dos salvos, em `src/features/catalog/favorites.ts`).
 - A aba Favoritos mostra as obras em carrossel horizontal (pedido do Marco, 22/11/2026), da marcação mais recente para a mais antiga; a ponta do próximo card indica o arraste.
 
-## Banco: migration em revisão, não aplicada
+## Banco: migration aplicada em 22/11/2026
 
-`supabase/migrations/20261122233000_profile_favorites.sql` cria `public.profile_favorites` (uma linha por pessoa e obra) com RLS:
+`supabase/migrations/20261122233000_profile_favorites.sql` cria `public.profile_favorites` (uma linha por pessoa e obra) com RLS. Foi aplicada ao projeto ORBIT em 22/11/2026, depois de `20261122202000_private_social_helpers.sql`, e registrada em `supabase_migrations.schema_migrations`. Visibilidade pública confirmada pelo Marco em 22/11/2026:
 
 - leitura pública (inclusive anônima), escondida quando há bloqueio entre as pessoas — mesma visibilidade das avaliações públicas, pois os favoritos são a vitrine do perfil;
 - marcar e desmarcar só pelo próprio `auth.uid()`;
 - depende do schema `orbit_private` da migration `20261122202000_private_social_helpers.sql`, portanto precisa ser aplicada depois dela.
 
-A migration **não foi aplicada** ao projeto remoto neste PR. Enquanto isso, o app age com honestidade: a aba Favoritos explica que o recurso chega com a atualização do banco, e o botão de coração não aparece nas obras (a primeira resposta de "tabela inexistente" desliga o recurso na sessão, sem dado inventado — mesmo padrão do Sino de notificações).
+Antes da aplicação, o app agia com honestidade: a aba Favoritos explicava que o recurso chegava com a atualização do banco, e o botão de coração ficava oculto (a primeira resposta de "tabela inexistente" desliga o recurso na sessão, sem dado inventado — mesmo padrão do Sino de notificações). Esse comportamento continua protegendo instalações sem a migration.
 
-Se a visibilidade pública dos favoritos não for a desejada, a policy `profile_favorites_read` é o único ponto a ajustar antes de aplicar.
+Se a visibilidade pública dos favoritos deixar de ser a desejada, a policy `profile_favorites_read` é o único ponto a ajustar em uma nova migration.
 
 ## Validação
 
