@@ -2,19 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   typingChannelName,
+  typingPairKey,
   shouldEmitTyping,
   typingStillVisible,
   TYPING_EMIT_INTERVAL_MS,
   TYPING_VISIBLE_MS,
 } from '../src/domain/typing.mjs';
 
-// Indicador "digitando" (pedido do Marco): presença real por broadcast, sem
-// migration. Estas regras garantem que o aviso é simétrico entre os dois
-// aparelhos, não inunda o canal e some sozinho quando a pessoa para.
+// Indicador "digitando" (pedido do Marco): presença real por postgres_changes
+// na tabela typing_status (migration em revisão). Estas regras garantem que a
+// chave do par é simétrica entre os dois aparelhos, que o aviso não inunda o
+// banco e que o indicador some sozinho quando a pessoa para.
 
 test('nome do canal é simétrico entre os dois lados', () => {
   assert.equal(typingChannelName('ana', 'bia'), typingChannelName('bia', 'ana'));
   assert.ok(typingChannelName('ana', 'bia').startsWith('typing:'));
+});
+
+test('chave do par é simétrica, ordenada e sem prefixo', () => {
+  assert.equal(typingPairKey('bia', 'ana'), 'ana:bia');
+  assert.equal(typingPairKey('ana', 'bia'), typingPairKey('bia', 'ana'));
+  assert.ok(!typingPairKey('ana', 'bia').startsWith('typing:'));
 });
 
 test('avisa quando começa a digitar (rascunho sai do vazio)', () => {
