@@ -150,13 +150,16 @@ export default function Conversation() {
   }, [supabase, userId, id, allowed, unavailable]);
 
   // "Digitando" (pedido do Marco em 23/11/2026): presença REAL por broadcast
-  // no canal simétrico da conversa — sem tabela, sem migration. O indicador
-  // só aparece quando o aparelho da outra pessoa avisa; some sozinho após
-  // TYPING_VISIBLE_MS sem novo aviso. Nada aqui simula evento dela.
+  // em canal PRIVADO e simétrico da conversa — sem tabela nova no app. A
+  // autorização é no servidor (policies em realtime.messages, migration
+  // 20261123015000 em revisão): só os dois participantes, com amizade ativa
+  // e sem bloqueio, emitem/recebem; terceiros não escutam nem forjam. Sem a
+  // migration aplicada, o canal privado nega tudo (fail-closed) e o
+  // indicador simplesmente não aparece. Nada aqui simula evento dela.
   useEffect(() => {
     if (!supabase || !userId || !id || !allowed || unavailable) return;
     const client = requireSupabase();
-    const channel = client.channel(typingChannelName(userId, id));
+    const channel = client.channel(typingChannelName(userId, id), { config: { private: true } });
     channel
       .on('broadcast', { event: 'typing' }, (payload) => {
         const p = (payload as { payload?: { userId?: string; typing?: boolean } }).payload || {};
@@ -182,7 +185,10 @@ export default function Conversation() {
   function emitTyping(typing: boolean) {
     const channel = typingChannelRef.current;
     if (!channel || !userId) return;
-    void channel.send({ type: 'broadcast', event: 'typing', payload: { userId, typing } });
+    // Sem a migration de autorização aplicada, o servidor nega o envio —
+    // esperado e silencioso: o indicador só funciona quando a autorização
+    // existir dos dois lados.
+    void Promise.resolve(channel.send({ type: 'broadcast', event: 'typing', payload: { userId, typing } })).catch(() => {});
   }
 
   // Avisa a outra pessoa quando começo a digitar e, no máximo 1x a cada
