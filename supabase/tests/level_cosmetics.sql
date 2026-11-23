@@ -13,7 +13,7 @@ set local role authenticated;
 -- 1. Conta nova (nível 1): catálogo é público, padrões neutros, nível 1 bloqueia itens altos.
 select set_config('request.jwt.claim.sub','d1111111-1111-4111-8111-111111111111',true);
 do $$ begin
- if (select count(*) from public.cosmetic_catalog) <> 20 then raise exception 'Cosmetic catalog incomplete'; end if;
+ if (select count(*) from public.cosmetic_catalog) <> 25 then raise exception 'Cosmetic catalog incomplete'; end if;
  if (select button_theme from public.profiles where id = auth.uid()) <> 'ink'
    or (select profile_animation from public.profiles where id = auth.uid()) <> 'none' then
   raise exception 'Cosmetic defaults changed';
@@ -63,13 +63,18 @@ do $$ declare m jsonb := public.my_achievements(); begin
  end if;
 end $$;
 -- Nível 3 libera botão Dourado e insígnia de nível equipável; Brilho (Nv 6) continua bloqueado.
-update public.profiles set profile_theme='sky', button_theme='gold', equipped_badges='{level_3,ratings_1}' where id=auth.uid();
+update public.profiles set profile_theme='sky', button_theme='gold', profile_animation='sway', equipped_badges='{level_3,ratings_1}' where id=auth.uid();
 do $$ begin
  begin
   update public.profiles set profile_animation='shimmer' where id=auth.uid();
   raise exception 'Level 6 animation unexpectedly permitted at level 3';
  exception when insufficient_privilege then null; end;
+ begin
+  update public.profiles set profile_animation='glow' where id=auth.uid();
+  raise exception 'Level 5 animation unexpectedly permitted at level 3';
+ exception when insufficient_privilege then null; end;
  if (select button_theme from public.profiles where id=auth.uid()) <> 'gold' then raise exception 'Level 3 button blocked at level 3'; end if;
+ if (select profile_animation from public.profiles where id=auth.uid()) <> 'sway' then raise exception 'Level 3 animation blocked at level 3'; end if;
 end $$;
 
 -- 3. Reavaliar a mesma obra não muda nível nem destrava nada novo.
@@ -83,7 +88,7 @@ end $$;
 -- 4. Outra conta: lê o catálogo, mas não escreve nos cosméticos de ninguém.
 select set_config('request.jwt.claim.sub','d2222222-2222-4222-8222-222222222222',true);
 do $$ begin
- if (select count(*) from public.cosmetic_catalog) <> 20 then raise exception 'Catalog not readable'; end if;
+ if (select count(*) from public.cosmetic_catalog) <> 25 then raise exception 'Catalog not readable'; end if;
 end $$;
 -- RLS esconde a linha ou o gatilho barra; nos dois casos nada muda.
 update public.profiles set button_theme='ink' where id='d1111111-1111-4111-8111-111111111111';
