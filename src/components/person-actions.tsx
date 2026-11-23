@@ -54,7 +54,7 @@ export function FollowButton({ profileId }: { profileId: string }) {
     }
   }
   return <View style={{ gap: 8 }}>
-    <Button label={busy ? 'Aguarde…' : followLabel(following)} disabled={busy || state.isPending} onPress={() => { void toggle(); }} />
+    <Button variant={following ? 'outline' : 'primary'} label={busy ? 'Aguarde…' : followLabel(following)} disabled={busy || state.isPending} onPress={() => { void toggle(); }} />
     {followsUnavailable() && !message ? <Text style={styles.body}>O seguir chega com a próxima atualização do banco, que já está em revisão.</Text> : null}
     {!!message && <Text accessibilityRole="alert" style={message.startsWith('Não') ? styles.error : styles.body}>{message}</Text>}
   </View>;
@@ -62,7 +62,7 @@ export function FollowButton({ profileId }: { profileId: string }) {
 
 /** Denúncia de perfil: motivo, detalhe opcional e registro honesto — sem
  * prometer análise, porque a moderação ainda não existe. No perfil ela abre
- * a partir do menu de opções (três pontinhos), como em outras redes. */
+ * a partir do menu de opções (três tracinhos), como em outras redes. */
 export function ReportFlow({ profileId, startOpen = false }: { profileId: string; startOpen?: boolean }) {
   const { session } = useAuth();
   const [open, setOpen] = useState(startOpen);
@@ -123,7 +123,7 @@ export function ReportFlow({ profileId, startOpen = false }: { profileId: string
     />
     <Text style={styles.body}>A denúncia fica registrada, mas o ORBIT ainda não tem moderação para analisá-la. Se precisar de efeito imediato, bloqueie esta pessoa.</Text>
     <Button label={busy ? 'Enviando…' : 'Registrar denúncia'} disabled={busy || !reason} onPress={() => { void submit(); }} />
-    <Button label="Cancelar" disabled={busy} onPress={() => { setOpen(false); setMessage(''); }} />
+    <Button variant="outline" label="Cancelar" disabled={busy} onPress={() => { setOpen(false); setMessage(''); }} />
     {!!message && <Text accessibilityRole="alert" style={styles.error}>{message}</Text>}
   </View>;
 }
