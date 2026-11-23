@@ -56,7 +56,17 @@ export function ProfileTabs({ own, active, onChange }: { own: boolean; active: s
   );
 }
 
-/** Grade de favoritos de um perfil, com estados honestos enquanto a migration está em revisão. */
+/** Favoritos fixados no perfil, visíveis sem clicar, acima das opções (abas). */
+export function PinnedFavorites({ profileId, own }: { profileId: string; own: boolean }) {
+  return (
+    <View accessibilityLabel="Favoritos fixados" style={{ gap: 12 }}>
+      <Text style={styles.eyebrow}>FAVORITOS</Text>
+      <FavoritesPanel profileId={profileId} own={own} />
+    </View>
+  );
+}
+
+/** Carrossel de favoritos de um perfil, com estados honestos enquanto a migration está em revisão. */
 export function FavoritesPanel({ profileId, own }: { profileId: string; own: boolean }) {
   const query = useQuery({ queryKey: ['profile-favorites', profileId], queryFn: () => listFavoriteItems(profileId) });
   if (query.isPending) return <LoadingState kind="feed" />;
