@@ -7,7 +7,10 @@ import { isMissingFunctionError } from '../../domain/profile-stats.mjs';
 // função não existe no banco, estas funções respondem indisponível — nunca
 // número inventado — e a interface explica o estado no perfil.
 
-export type ProfileStats = { ratings: number; friends: number; likes: number };
+// followers/following só chegam quando a migration do seguir (20261123010000)
+// está aplicada; enquanto isso a RPC antiga responde sem eles e a interface
+// simplesmente não mostra esses dois números.
+export type ProfileStats = { ratings: number; friends: number; likes: number; followers?: number; following?: number };
 
 let functionMissing = false;
 
