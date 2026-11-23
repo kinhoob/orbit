@@ -68,3 +68,13 @@ export function relativeTime(iso, now = new Date()) {
   if (days < 30) return `${days} d`;
   return new Date(iso).toLocaleDateString('pt-BR');
 }
+
+/** Erro de coluna ausente (ex.: genres antes da migration chegar ao banco):
+ * Postgres 42703 ou PostgREST PGRST204 / mensagem de schema cache. */
+export function isMissingColumnError(error) {
+  if (!error) return false;
+  const code = error.code || '';
+  const message = error.message || '';
+  return code === '42703' || code === 'PGRST204'
+    || /column .+ does not exist|Could not find the '.+' column/i.test(`${code} ${message}`);
+}
