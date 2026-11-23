@@ -132,6 +132,9 @@ export default function Friends() {
       <Link href="/(tabs)/profile" style={styles.link}>
         ← Perfil
       </Link>
+      <Link href="/messages" style={styles.link}>
+        Mensagens →
+      </Link>
       {!supabase ? (
         <Text style={styles.body}>As amizades ficam disponíveis quando a conexão com o ORBIT for configurada.</Text>
       ) : loading ? (

@@ -17,9 +17,9 @@ function loadFeature(rpc) {
   return api;
 }
 
-test('profile stats keep the TikTok/Instagram trio: ratings, friends, likes — no followers', () => {
-  assert.deepEqual(domain.PROFILE_STATS.map((s) => s.id), ['ratings', 'friends', 'likes']);
-  assert.deepEqual(domain.PROFILE_STATS.map((s) => s.label), ['Avaliações', 'Amigos', 'Curtidas']);
+test('profile stats show ratings, followers, following, friends, likes — follows decided by Marco on 22/11/2026', () => {
+  assert.deepEqual(domain.PROFILE_STATS.map((s) => s.id), ['ratings', 'followers', 'following', 'friends', 'likes']);
+  assert.deepEqual(domain.PROFILE_STATS.map((s) => s.label), ['Avaliações', 'Seguidores', 'Seguindo', 'Amigos', 'Curtidas']);
 });
 
 test('stat counts are exact below one thousand, then compact in Portuguese', () => {

@@ -79,14 +79,16 @@ export const MotionPressable = React.forwardRef<React.ElementRef<typeof Pressabl
   const [pressed, setPressed] = useState(false);
   useEffect(() => { scale.stopAnimation(); scale.setValue(1); setPressed(false); }, [reduced, disabled, scale]);
   useEffect(() => () => scale.stopAnimation(), [scale]);
+  // Toque com mola (pedido do Marco em 22/11/2026): afunda firme e rápido no
+  // pressionar e volta com um balanço suave, fluido mesmo interrompendo no meio.
   const animate = (toValue: number) => {
     scale.stopAnimation();
     if (reduced || disabled) { scale.setValue(1); return; }
-    Animated.timing(scale, { toValue, duration: toValue === 1 ? 150 : 90, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver }).start();
+    Animated.spring(scale, { toValue, useNativeDriver: nativeDriver, stiffness: toValue === 1 ? 260 : 520, damping: toValue === 1 ? 16 : 34, mass: 0.7 }).start();
   };
   return <AnimatedPressable {...props} ref={ref} disabled={disabled}
-    onPressIn={event => { setPressed(true); animate(0.98); onPressIn?.(event); }}
+    onPressIn={event => { setPressed(true); animate(0.965); onPressIn?.(event); }}
     onPressOut={event => { setPressed(false); animate(1); onPressOut?.(event); }}
-    style={[typeof style === 'function' ? style({ pressed }) : style, pressed && !disabled && { opacity: 0.8 }, { transform: [{ scale: reduced ? 1 : scale }] }]} />;
+    style={[typeof style === 'function' ? style({ pressed }) : style, pressed && !disabled && { opacity: 0.85 }, { transform: [{ scale: reduced ? 1 : scale }] }]} />;
 });
 
