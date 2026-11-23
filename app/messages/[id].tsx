@@ -153,7 +153,12 @@ export default function Conversation() {
   // em canal PRIVADO e simétrico da conversa — sem tabela nova no app. A
   // autorização é no servidor (policies em realtime.messages, migration
   // 20261123015000 em revisão): só os dois participantes, com amizade ativa
-  // e sem bloqueio, emitem/recebem; terceiros não escutam nem forjam. Sem a
+  // e sem bloqueio, emitem/recebem; terceiros não escutam nem forjam, e o
+  // userId do payload é amarrado ao auth.uid() no envio. Semântica Realtime
+  // (doc Supabase, 23/11/2026): a autorização é calculada ao entrar no tópico
+  // e fica cacheada na conexão — após bloqueio ou fim de amizade, o corte no
+  // servidor vale para novas conexões, e a interrupção imediata vem deste
+  // efeito: `allowed` cai, o canal é removido e a emissão para na hora. Sem a
   // migration aplicada, o canal privado nega tudo (fail-closed) e o
   // indicador simplesmente não aparece. Nada aqui simula evento dela.
   useEffect(() => {
