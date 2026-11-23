@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { Button, styles } from './ui';
 import { MotionPressable, useReducedMotion } from './motion';
 import { Icon, type IconName } from './icons';
 import { tokens as t, font } from '../design/tokens';
+import { parseGifBody } from '../domain/gif.mjs';
 
 // Menu de três pontinhos da CONVERSA (pedido do Marco em 22/11/2026, com a
 // referência de chat que ele mandou): prévia do perfil e silenciar. É outra
@@ -136,15 +137,22 @@ export function ChatBubble({ mine, body, time, state, animate }: {
     }
     Animated.spring(progress, { toValue: 1, useNativeDriver: menuNativeDriver, stiffness: 380, damping: 26, mass: 0.6 }).start();
   }, [animate, reduced, progress]);
+  const gifUrl = parseGifBody(body);
   return (
     <Animated.View
-      accessibilityLabel={`${mine ? 'Você' : 'A outra pessoa'}: ${body}${mine ? `. Mensagem ${stateLabel[state]}` : ''}`}
-      style={[bubbleStyles.bubble, mine ? bubbleStyles.mine : bubbleStyles.theirs, {
+      accessibilityLabel={gifUrl
+        ? `${mine ? 'Você' : 'A outra pessoa'} enviou um GIF${mine ? `. Mensagem ${stateLabel[state]}` : ''}`
+        : `${mine ? 'Você' : 'A outra pessoa'}: ${body}${mine ? `. Mensagem ${stateLabel[state]}` : ''}`}
+      style={[bubbleStyles.bubble, mine ? bubbleStyles.mine : bubbleStyles.theirs, gifUrl && bubbleStyles.gifBubble, {
         opacity: progress,
         transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
       }]}
     >
-      <Text style={mine ? bubbleStyles.mineText : bubbleStyles.theirsText}>{body}</Text>
+      {gifUrl ? (
+        <Image source={{ uri: gifUrl }} style={bubbleStyles.gif} accessibilityLabel="GIF" />
+      ) : (
+        <Text style={mine ? bubbleStyles.mineText : bubbleStyles.theirsText}>{body}</Text>
+      )}
       <View style={bubbleStyles.footer}>
         <Text style={[bubbleStyles.time, mine && bubbleStyles.timeMine]}>{time}</Text>
         {mine && <StatusTicks state={state} />}
@@ -155,6 +163,8 @@ export function ChatBubble({ mine, body, time, state, animate }: {
 
 const bubbleStyles = StyleSheet.create({
   bubble: { maxWidth: '85%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 18 },
+  gifBubble: { paddingVertical: 6, paddingHorizontal: 6 },
+  gif: { width: 200, height: 200, borderRadius: 12, backgroundColor: t.colors.surface },
   mine: { alignSelf: 'flex-end', backgroundColor: t.colors.primary, borderBottomRightRadius: 4 },
   theirs: { alignSelf: 'flex-start', backgroundColor: t.colors.surface, borderBottomLeftRadius: 4 },
   mineText: { color: t.colors.onDark, fontSize: 15, lineHeight: 21 },
