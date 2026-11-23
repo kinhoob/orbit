@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { requireSupabase } from '../lib/supabase';
 import { useAuth } from '../features/auth/provider';
 import { setRatingLike } from '../features/feed/timelines';
-import { withLike } from '../domain/timelines.mjs';
+import { withLike, isMissingColumnError } from '../domain/timelines.mjs';
+import { categories } from '../features/catalog/data';
+import { genreLabelsFor } from '../features/catalog/genres.mjs';
+import { IllustratedCover } from './mural';
 import { styles, Button } from './ui';
 import { LoadingState } from './loading';
 import { MotionPressable } from './motion';
@@ -13,7 +16,49 @@ import { StatePulse } from './feedback';
 import { Icon } from './icons';
 import { tokens as t, font} from '../design/tokens';
 
-type TimelineRating = { id: string; user_id: string; score: number; review: string; visibility: string; created_at: string; media: { id: string; title: string; category: string } | null; like_count?: number; liked_by_me?: boolean };
+type TimelineMediaInfo = { id: string; title: string; category: string; cover_url?: string | null; creator?: string | null; release_year?: number | null; genres?: string[] | null };
+type TimelineRating = { id: string; user_id: string; score: number; review: string; visibility: string; created_at: string; media: TimelineMediaInfo | null; like_count?: number; liked_by_me?: boolean };
+
+const MEDIA_FIELDS_RICH = 'id,title,category,cover_url,creator,release_year,genres';
+const MEDIA_FIELDS_BASIC = 'id,title,category';
+
+/** Coluna genres ainda não existe no banco (migration em revisão): a consulta
+ * volta aos campos básicos uma única vez e a timeline nunca quebra por isso. */
+let mediaRichFieldsMissing = false;
+
+/** Capa + ficha da obra avaliada (pedido do Marco em 23/11/2026): capa real
+ * quando a obra tem cover_url das fontes já autorizadas, capa ilustrada da
+ * categoria como fallback honesto; tipo, ano, autor e chips de gênero só
+ * aparecem quando o dado existe — nada é inventado. */
+export function TimelineMedia({ media }: { media: TimelineMediaInfo }) {
+  const [failed, setFailed] = useState(false);
+  const categoryLabel = categories.find((c) => c.id === media.category)?.label || 'Outros';
+  const genreLabels = genreLabelsFor(media.genres, media.category).slice(0, 3);
+  const meta = [categoryLabel, media.release_year].filter(Boolean).join(' · ');
+  return (
+    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+      <View style={{ width: 60, borderRadius: 10, overflow: 'hidden' }}>
+        {media.cover_url && !failed
+          ? <Image source={{ uri: media.cover_url }} resizeMode="cover" onError={() => setFailed(true)} style={{ width: 60, aspectRatio: 2 / 3 }} accessibilityLabel={`Capa de ${media.title}`} />
+          : <IllustratedCover category={media.category} aspectRatio={2 / 3} />}
+      </View>
+      <View style={{ flex: 1, gap: 3 }}>
+        <Link href={{ pathname: '/media/[id]', params: { id: media.id } }} style={[styles.link, { fontFamily: font.bold, color: t.colors.text }]}>{media.title} →</Link>
+        <Text style={{ color: t.colors.muted, fontSize: 12 }}>{meta}</Text>
+        {!!media.creator && <Text style={{ color: t.colors.muted, fontSize: 12 }}>{media.creator}</Text>}
+        {genreLabels.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+            {genreLabels.map((label) => (
+              <View key={label} style={{ backgroundColor: t.colors.secondary, borderRadius: 999, paddingVertical: 3, paddingHorizontal: 9 }}>
+                <Text style={{ color: t.colors.text, fontSize: 11, fontFamily: font.semibold }}>{label}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
 
 /** Curtidas das avaliações da página: total e se a pessoa logada curtiu. */
 async function attachTimelineLikes(ratings: TimelineRating[], userId: string): Promise<TimelineRating[]> {
@@ -38,8 +83,12 @@ export function ProfileTimeline({ profileId }: { profileId: string }) {
   const query = useInfiniteQuery({
     queryKey, initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
-      const fields = 'id,user_id,score,review,visibility,created_at,media:media_items(id,title,category)';
-      const { data, error } = await requireSupabase().from('ratings').select(fields).eq('user_id', profileId).order('created_at', { ascending: false }).order('id').range(pageParam * 20, pageParam * 20 + 19);
+      const select = (mediaFields: string) => requireSupabase().from('ratings').select(`id,user_id,score,review,visibility,created_at,media:media_items(${mediaFields})`).eq('user_id', profileId).order('created_at', { ascending: false }).order('id').range(pageParam * 20, pageParam * 20 + 19);
+      let { data, error } = await select(mediaRichFieldsMissing ? MEDIA_FIELDS_BASIC : MEDIA_FIELDS_RICH);
+      if (error && !mediaRichFieldsMissing && isMissingColumnError(error)) {
+        mediaRichFieldsMissing = true;
+        ({ data, error } = await select(MEDIA_FIELDS_BASIC));
+      }
       if (error) throw error;
       const ratings = (data || []) as unknown as TimelineRating[];
       return userId ? attachTimelineLikes(ratings, userId) : ratings;
@@ -75,8 +124,14 @@ export function ProfileTimeline({ profileId }: { profileId: string }) {
       : query.data.pages.flat().map(rating => <View key={rating.id} style={{ borderLeftWidth: 2, borderLeftColor: t.colors.border, paddingLeft: 18, gap: 8 }}>
         <Text style={{ color: t.colors.muted, fontSize: 12 }}>{new Date(rating.created_at).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}</Text>
         <View style={[styles.card, { gap: 10 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}><Text style={{ color: t.colors.accentStrong, fontFamily: font.bold, fontSize: 21 }}>{String(rating.score).replace('.', ',')}/10</Text><Text style={{ color: t.colors.muted }}>{rating.visibility === 'private' ? 'Privada' : rating.visibility === 'friends' ? 'Amigos' : 'Pública'}</Text></View>
-          {rating.media ? <Link href={{ pathname: '/media/[id]', params: { id: rating.media.id } }} style={[styles.link, { fontFamily: font.bold }]}>{rating.media.title} →</Link> : <Text style={styles.body}>Obra indisponível</Text>}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name="star" size={18} color={t.colors.gold} />
+              <Text style={{ color: t.colors.accentStrong, fontFamily: font.bold, fontSize: 21 }}>{String(rating.score).replace('.', ',')}/10</Text>
+            </View>
+            <Text style={{ color: t.colors.muted }}>{rating.visibility === 'private' ? 'Privada' : rating.visibility === 'friends' ? 'Amigos' : 'Pública'}</Text>
+          </View>
+          {rating.media ? <TimelineMedia media={rating.media} /> : <Text style={styles.body}>Obra indisponível</Text>}
           {!!rating.review && <Text style={styles.body}>{rating.review}</Text>}
           {rating.like_count !== undefined && (userId && userId !== rating.user_id
             ? <MotionPressable
