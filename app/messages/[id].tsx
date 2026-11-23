@@ -3,6 +3,8 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../../src/components/ui';
+import { MotionPressable } from '../../src/components/motion';
+import { Icon } from '../../src/components/icons';
 import { LoadingState } from '../../src/components/loading';
 import { tokens as t } from '../../src/design/tokens';
 import { supabase, requireSupabase } from '../../src/lib/supabase';
@@ -112,17 +114,30 @@ export default function Conversation() {
               ))}
             </View>
           )}
-          <TextInput
-            style={styles.input}
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={`Mensagem para ${name}`}
-            placeholderTextColor={t.colors.muted}
-            multiline
-            maxLength={MESSAGE_MAX}
-            accessibilityLabel={`Escrever mensagem para ${name}`}
-          />
-          <Button label="Enviar" disabled={!normalizeMessageBody(draft)} onPress={() => { void send(); }} />
+          {/* Composer estilo iMessage (pedido do Marco em 22/11/2026): caixa
+           * de texto com o botão redondo de avião de papel ao lado. */}
+          <View style={chat.composer}>
+            <TextInput
+              style={[styles.input, chat.composerInput]}
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={`Mensagem para ${name}`}
+              placeholderTextColor={t.colors.muted}
+              multiline
+              maxLength={MESSAGE_MAX}
+              accessibilityLabel={`Escrever mensagem para ${name}`}
+            />
+            <MotionPressable
+              accessibilityRole="button"
+              accessibilityLabel="Enviar mensagem"
+              accessibilityState={{ disabled: !normalizeMessageBody(draft) }}
+              disabled={!normalizeMessageBody(draft)}
+              onPress={() => { void send(); }}
+              style={[chat.sendButton, !normalizeMessageBody(draft) && { opacity: 0.45 }]}
+            >
+              <Icon name="send" size={18} color={t.colors.onDark} />
+            </MotionPressable>
+          </View>
           {!!feedback && <Text accessibilityRole="alert" style={styles.error}>{feedback}</Text>}
         </>
       )}
@@ -132,6 +147,9 @@ export default function Conversation() {
 
 const chat = StyleSheet.create({
   thread: { gap: 10 },
+  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  composerInput: { flex: 1 },
+  sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.colors.primary, alignItems: 'center', justifyContent: 'center' },
   bubble: { maxWidth: '85%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 18 },
   mine: { alignSelf: 'flex-end', backgroundColor: t.colors.primary, borderBottomRightRadius: 4 },
   theirs: { alignSelf: 'flex-start', backgroundColor: t.colors.surface, borderBottomLeftRadius: 4 },
