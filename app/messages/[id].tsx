@@ -7,6 +7,7 @@ import { Button, Screen, styles } from '../../src/components/ui';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
 import { ChatBubble, ChatMenu, ProfilePreviewCard, type MessageState } from '../../src/components/chat-actions';
+import { GifPicker } from '../../src/components/gif-picker';
 import { LoadingState } from '../../src/components/loading';
 import { tokens as t, font } from '../../src/design/tokens';
 import { supabase, requireSupabase } from '../../src/lib/supabase';
@@ -15,7 +16,9 @@ import { fetchFriendships, relationWith } from '../../src/features/social/friend
 import { fetchThread, markConversationDelivered, markConversationRead, sendMessage, type ChatMessage } from '../../src/features/social/messages';
 import { fetchMutedConversations, setConversationMuted } from '../../src/features/social/mute';
 import { playChatPop } from '../../src/features/social/chat-sound';
+import { type Gif } from '../../src/features/social/giphy';
 import { buildThread, canMessageWith, normalizeMessageBody, MESSAGE_MAX } from '../../src/domain/messages.mjs';
+import { buildGifBody } from '../../src/domain/gif.mjs';
 
 // Emojis mais usados, fixos no app — sem dados externos.
 const EMOJIS = ['😀', '😂', '🥰', '😍', '🤔', '😅', '😭', '😴', '🤝', '👏', '👍', '🙏', '❤️', '🔥', '✨', '🎉', '🎬', '🎵', '📚', '🎮', '⚽', '🍕', '☕', '💯'];
@@ -140,13 +143,11 @@ export default function Conversation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, userId, id, allowed, unavailable]);
 
-  async function send() {
-    const body = normalizeMessageBody(draft);
-    if (!body || !userId || !id) return;
+  async function sendBody(body: string, restoreDraft: boolean) {
+    if (!userId || !id) return;
     const optimistic: ChatMessage = { id: `local-${Date.now()}`, sender_id: userId, recipient_id: id, body, created_at: new Date().toISOString(), read_at: null, delivered_at: null };
     animatedIds.current.add(optimistic.id);
     setPending((list) => [...list, optimistic]);
-    setDraft('');
     try {
       const result = await sendMessage(userId, id, body);
       if (result === 'ok') {
@@ -155,7 +156,7 @@ export default function Conversation() {
         await thread.refetch();
       } else {
         setPending((list) => list.filter((m) => m.id !== optimistic.id));
-        setDraft(body);
+        if (restoreDraft) setDraft(body);
         setFeedback(
           result === 'unavailable'
             ? 'As mensagens estão em atualização no banco de dados. Quando a atualização em revisão for aplicada, vocês poderão conversar aqui.'
@@ -164,9 +165,26 @@ export default function Conversation() {
       }
     } catch {
       setPending((list) => list.filter((m) => m.id !== optimistic.id));
-      setDraft(body);
+      if (restoreDraft) setDraft(body);
       setFeedback('Não foi possível enviar. Tente novamente.');
     }
+  }
+
+  async function send() {
+    const body = normalizeMessageBody(draft);
+    if (!body) return;
+    setDraft('');
+    await sendBody(body, true);
+  }
+
+  // GIF escolhido no seletor: vira uma mensagem com marcador (sem mudança de
+  // banco) e entra no mesmo fluxo de envio do texto — otimista, som e tiques.
+  async function sendGif(gif: Gif) {
+    const body = buildGifBody(gif.url);
+    if (!body) return;
+    setGifOpen(false);
+    setFeedback('');
+    await sendBody(body, false);
   }
 
   async function toggleMute() {
@@ -284,14 +302,7 @@ export default function Conversation() {
                     ))}
                   </ScrollView>
                 )}
-                {gifOpen && (
-                  <View style={[styles.card, { gap: 6 }]}>
-                    <Text style={chat.gifText}>GIFs</Text>
-                    <Text style={styles.body}>
-                      A busca de GIFs precisa de um provedor de imagens (GIPHY, Tenor ou similar) com chave de API, que o ORBIT ainda não tem. Quando a chave for configurada, a busca aparece aqui. O envio de texto e emojis já funciona normalmente.
-                    </Text>
-                  </View>
-                )}
+                {gifOpen && <GifPicker onPick={(gif) => { void sendGif(gif); }} />}
                 {emojiOpen && (
                   <View style={chat.emojiPanel} accessibilityLabel="Emojis">
                     {EMOJIS.map((emoji) => (
