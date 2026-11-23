@@ -16,7 +16,7 @@ A linha fica acima dos favoritos fixados e das opções (Linha do tempo, Coleç�
 
 ## Fonte dos dados
 
-Os três números vêm da RPC `profile_stats(profile_id)` da migration `supabase/migrations/20261123001500_profile_stats.sql` (**em revisão, não aplicada**). A função é `security definer` e replica exatamente as regras de leitura já existentes:
+Os três números vêm da RPC `profile_stats(profile_id)` da migration `supabase/migrations/20261123001500_profile_stats.sql` (**aplicada em 22/11/2026**). A função é `security definer` e replica exatamente as regras de leitura já existentes:
 
 - bloqueio em qualquer direção entre visitante e dono do perfil retorna nulo — o perfil inteiro já fica escondido nesse caso;
 - avaliações contam conforme a visibilidade (pública para todos; de amigos só para amigos aceitos; privadas só para a própria pessoa), espelhando a política `ratings_read`;
@@ -27,7 +27,7 @@ Depende de `orbit_private` (20261122202000, já aplicada) e de `rating_likes` (2
 
 ## Estado honesto
 
-Enquanto a RPC não existe no banco, o cliente detecta a resposta de função ausente (`PGRST202`/`42883`) e mostra no perfil o aviso "Os números do perfil chegam com a próxima atualização do banco, que já está em revisão." — nunca número inventado (`src/features/social/profile-stats.ts`). Falhas de rede não derrubam o perfil: a linha simplesmente não aparece.
+A RPC já está aplicada em produção. Se um ambiente sem ela for usado, o cliente detecta a resposta de função ausente (`PGRST202`/`42883`) e mostra no perfil o aviso "Os números do perfil chegam com a próxima atualização do banco, que já está em revisão." — nunca número inventado (`src/features/social/profile-stats.ts`). Falhas de rede não derrubam o perfil: a linha simplesmente não aparece.
 
 ## Testes
 
