@@ -11,7 +11,7 @@ import { tokens } from '../../src/design/tokens';
 import { useAuth } from '../../src/features/auth/provider';
 import { requireSupabase } from '../../src/lib/supabase';
 import { ProfileTimeline } from '../../src/components/profile-timeline';
-import { ProfileTabs, FavoritesPanel } from '../../src/components/profile-tabs';
+import { ProfileTabs, PinnedFavorites } from '../../src/components/profile-tabs';
 import { ProgressSummary } from '../../src/components/progress';
 import { SharedCollections } from '../../src/components/shared-collections';
 import { ProfileIdentity } from '../../src/components/profile-identity';
@@ -50,9 +50,9 @@ export default function Profile() {
         <MotionPressable accessibilityRole="button" onPress={()=>{setEditing(false);setMessage('');}} style={styles.buttonOutline}><Text style={styles.buttonOutlineText}>Cancelar</Text></MotionPressable>
       </View>}
       </>}
+      <PinnedFavorites profileId={session.user.id} own />
       <ProfileTabs own active={tab} onChange={setTab} />
       {tab==='timeline'&&<ProfileTimeline profileId={session.user.id} />}
-      {tab==='favorites'&&<FavoritesPanel profileId={session.user.id} own />}
       {tab==='collections'&&<><SharedCollections profileId={session.user.id} /><Link href="/collections" style={styles.link}>Todas as minhas coleções →</Link></>}
       {tab==='saved'&&<View style={{gap:12}}>
         <Text style={styles.eyebrow}>SEUS SALVOS</Text>
