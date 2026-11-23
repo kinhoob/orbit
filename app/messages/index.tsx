@@ -56,7 +56,8 @@ export default function Conversations() {
       ) : !conversations.length ? (
         <Text style={styles.body}>Nenhuma conversa ainda. Quando você segue uma pessoa e ela segue de volta, vocês viram amigos e podem trocar mensagens — abra o perfil dela e toque em Enviar mensagem.</Text>
       ) : (
-        conversations.map((c) => {
+        <View>
+          {conversations.map((c) => {
           const profile = byId.get(c.otherId);
           const name = profile?.display_name || profile?.username || 'Perfil indisponível';
           // Conversa silenciada: sem contagem de não lidas, só o sino cortado.
@@ -69,7 +70,7 @@ export default function Conversations() {
                 </View>
                 <View style={list.rowText}>
                   <Text style={list.name}>{name}</Text>
-                  <Text style={styles.body} numberOfLines={1}>{(() => { const preview = gifPreviewLabel(c.lastBody) || c.lastBody; return c.lastMine ? `Você: ${preview}` : preview; })()}</Text>
+                  <Text style={list.preview} numberOfLines={1}>{(() => { const preview = gifPreviewLabel(c.lastBody) || c.lastBody; return c.lastMine ? `Você: ${preview}` : preview; })()}</Text>
                 </View>
                 {isMuted ? (
                   <Icon name="bell-off" size={16} color={t.colors.muted} />
@@ -81,7 +82,8 @@ export default function Conversations() {
               </View>
             </Link>
           );
-        })
+          })}
+        </View>
       )}
     </Screen>
   );
@@ -89,11 +91,14 @@ export default function Conversations() {
 
 const list = StyleSheet.create({
   rowLink: { textDecorationLine: 'none' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: t.radius, backgroundColor: t.colors.surface },
+  // Lista minimalista (revisão visual 23/11/2026): linhas abertas separadas
+  // por filetes, sem cartão — o conteúdo (nome + prévia) carrega a hierarquia.
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: t.colors.border },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.colors.primary, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: t.colors.onDark, fontSize: 18, fontFamily: font.bold },
   rowText: { flex: 1, gap: 2 },
   name: { fontSize: 16, fontFamily: font.semibold, color: t.colors.text },
+  preview: { fontSize: 14, fontFamily: font.regular, color: t.colors.muted, lineHeight: 20 },
   badge: { minWidth: 24, height: 24, borderRadius: 12, backgroundColor: t.colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 },
   badgeText: { color: t.colors.onDark, fontSize: 12, fontFamily: font.bold },
 });
