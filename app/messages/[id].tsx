@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../../src/components/ui';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
-import { ChatBubble, ChatMenu, ProfilePreviewCard, type MessageState } from '../../src/components/chat-actions';
+import { ChatBubble, ChatMenu, PanelReveal, ProfilePreviewCard, type MessageState } from '../../src/components/chat-actions';
 import { GifPicker } from '../../src/components/gif-picker';
 import { LoadingState } from '../../src/components/loading';
 import { tokens as t, font } from '../../src/design/tokens';
@@ -302,21 +302,27 @@ export default function Conversation() {
                     ))}
                   </ScrollView>
                 )}
-                {gifOpen && <GifPicker onPick={(gif) => { void sendGif(gif); }} />}
+                {gifOpen && (
+                  <PanelReveal>
+                    <GifPicker onPick={(gif) => { void sendGif(gif); }} />
+                  </PanelReveal>
+                )}
                 {emojiOpen && (
-                  <View style={chat.emojiPanel} accessibilityLabel="Emojis">
-                    {EMOJIS.map((emoji) => (
-                      <MotionPressable
-                        key={emoji}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Inserir ${emoji}`}
-                        onPress={() => setDraft((d) => d + emoji)}
-                        style={chat.emojiItem}
-                      >
-                        <Text style={{ fontSize: 22 }}>{emoji}</Text>
-                      </MotionPressable>
-                    ))}
-                  </View>
+                  <PanelReveal>
+                    <View style={chat.emojiPanel} accessibilityLabel="Emojis">
+                      {EMOJIS.map((emoji) => (
+                        <MotionPressable
+                          key={emoji}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Inserir ${emoji}`}
+                          onPress={() => setDraft((d) => d + emoji)}
+                          style={chat.emojiItem}
+                        >
+                          <Text style={{ fontSize: 22 }}>{emoji}</Text>
+                        </MotionPressable>
+                      ))}
+                    </View>
+                  </PanelReveal>
                 )}
                 {!!feedback && <Text accessibilityRole="alert" style={styles.error}>{feedback}</Text>}
                 {/* Composer fixo embaixo (pedido do Marco em 22/11/2026):
@@ -373,7 +379,7 @@ export default function Conversation() {
 const chat = StyleSheet.create({
   root: { flex: 1, backgroundColor: t.colors.dark },
   inner: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', padding: 24, paddingTop: 30, gap: 12 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, zIndex: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, zIndex: 20, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: t.colors.border },
   headerIdentity: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.colors.primary, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: t.colors.onDark, fontSize: 17, fontFamily: font.bold },
@@ -381,9 +387,11 @@ const chat = StyleSheet.create({
   mutedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   mutedText: { fontSize: 12, color: t.colors.muted, fontFamily: font.regular },
   threadScroll: { flex: 1 },
-  thread: { gap: 10, paddingVertical: 8 },
-  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  composerInput: { flex: 1, minWidth: 0 },
+  thread: { gap: 8, paddingVertical: 8 },
+  // Composer (revisão visual 23/11/2026): filete separador acima, campo mais
+  // arredondado e chip GIF/emoji discretos — a conversa fica com o palco.
+  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.colors.border },
+  composerInput: { flex: 1, minWidth: 0, borderRadius: 22, paddingVertical: 12, paddingHorizontal: 14 },
   gifButton: { height: 44, paddingHorizontal: 12, borderRadius: 22, borderWidth: 1, borderColor: t.colors.border, alignItems: 'center', justifyContent: 'center' },
   gifText: { fontSize: 13, fontFamily: font.bold, color: t.colors.muted, letterSpacing: 0.5 },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
