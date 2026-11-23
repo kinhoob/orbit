@@ -47,8 +47,15 @@ test('cosmeticLock blocks above level and rejects unknown ids', () => {
   assert.equal(cosmeticLock('theme', 'royal', 6), null);
   assert.equal(cosmeticLock('button', 'gold', 2), 3);
   assert.equal(cosmeticLock('button', 'gold', 3), null);
+  assert.equal(cosmeticLock('animation', 'float', 1), 2);
+  assert.equal(cosmeticLock('animation', 'sway', 3), null);
+  assert.equal(cosmeticLock('animation', 'glow', 4), 5);
+  assert.equal(cosmeticLock('animation', 'comet', 6), 7);
+  assert.equal(cosmeticLock('animation', 'comet', 7), null);
   assert.equal(cosmeticLock('animation', 'orbit', 7), 8);
   assert.equal(cosmeticLock('animation', 'orbit', 8), null);
+  assert.equal(cosmeticLock('animation', 'aurora', 8), 9);
+  assert.equal(cosmeticLock('animation', 'aurora', 9), null);
   assert.equal(cosmeticLock('animation', 'laser', 10), 'unknown');
   assert.equal(cosmeticById('theme', 'nope'), null);
 });
