@@ -41,10 +41,14 @@ create policy messages_send on public.messages for insert to authenticated
 
 -- Sem update e sem delete pela API: ninguém edita nem apaga mensagem. A
 -- marcação de lida acontece só pela função abaixo, que mexe exclusivamente
--- nas mensagens recebidas por quem chama.
+-- nas mensagens recebidas por quem chama — e não faz nada quando há
+-- bloqueio entre os dois (quem não pode ler também não marca leitura).
 create function public.mark_conversation_read(other_user uuid) returns void
 language plpgsql security definer set search_path = '' as $$
 begin
+  if orbit_private.is_blocked(auth.uid(), other_user) then
+    return;
+  end if;
   update public.messages set read_at = now()
   where recipient_id = auth.uid() and sender_id = other_user and read_at is null;
 end $$;
