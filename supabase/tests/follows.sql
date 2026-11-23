@@ -43,11 +43,33 @@ do $$ declare s jsonb := public.profile_stats('e2222222-2222-4222-8222-222222222
  end if;
 end $$;
 
--- 3. Deixar de seguir não desfaz a amizade.
+-- 3. Deixar de seguir desfaz a amizade (confirmação do Marco em 22/11/2026).
 delete from public.follows where follower_id='e2222222-2222-4222-8222-222222222222' and followed_id='e1111111-1111-4111-8111-111111111111';
 do $$ begin
- if not orbit_private.are_friends('e1111111-1111-4111-8111-111111111111','e2222222-2222-4222-8222-222222222222') then
-  raise exception 'Unfollow removed the friendship';
+ if orbit_private.are_friends('e1111111-1111-4111-8111-111111111111','e2222222-2222-4222-8222-222222222222') then
+  raise exception 'Unfollow kept the friendship';
+ end if;
+ if exists (select 1 from public.friendships where status='accepted'
+   and ((requester_id='e1111111-1111-4111-8111-111111111111' and addressee_id='e2222222-2222-4222-8222-222222222222')
+     or (requester_id='e2222222-2222-4222-8222-222222222222' and addressee_id='e1111111-1111-4111-8111-111111111111'))) then
+  raise exception 'Accepted friendship row survived the unfollow';
+ end if;
+end $$;
+
+-- 3b. Amizade de pedido manual não é apagada por unfollow de mão única:
+-- Caio e Duda viram amigos por pedido; Caio segue Duda e depois dessegue,
+-- e a amizade continua porque o par nunca foi seguir mútuo.
+reset role;
+insert into public.friendships(requester_id, addressee_id, status) values
+ ('e3333333-3333-4333-8333-333333333333','e4444444-4444-4444-8444-444444444444','accepted');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','e3333333-3333-4333-8333-333333333333',true);
+insert into public.follows(follower_id, followed_id) values
+ ('e3333333-3333-4333-8333-333333333333','e4444444-4444-4444-8444-444444444444');
+delete from public.follows where follower_id='e3333333-3333-4333-8333-333333333333' and followed_id='e4444444-4444-4444-8444-444444444444';
+do $$ begin
+ if not orbit_private.are_friends('e3333333-3333-4333-8333-333333333333','e4444444-4444-4444-8444-444444444444') then
+  raise exception 'One-way unfollow removed a manual friendship';
  end if;
 end $$;
 
