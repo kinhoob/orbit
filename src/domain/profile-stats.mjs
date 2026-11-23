@@ -1,8 +1,13 @@
 // Regras puras dos números do perfil. Sem rede aqui.
 
-/** Números exibidos no perfil (pedido do Marco em 22/11/2026), estilo TikTok/Instagram, sem seguidores. */
+/** Números exibidos no perfil, estilo TikTok/Instagram. O trio inicial
+ * (pedido do Marco em 22/11/2026) ganhou Seguidores e Seguindo com o seguir
+ * unilateral sem aceite (decisão do Marco em 22/11/2026). Amizade continua
+ * bidirecional e separada do seguir. */
 export const PROFILE_STATS = [
   { id: 'ratings', label: 'Avaliações' },
+  { id: 'followers', label: 'Seguidores' },
+  { id: 'following', label: 'Seguindo' },
   { id: 'friends', label: 'Amigos' },
   { id: 'likes', label: 'Curtidas' },
 ];
