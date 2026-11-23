@@ -12,6 +12,7 @@ import { fetchProfilesByIds, type ProfileSummary } from '../../src/features/soci
 import { fetchRecentMessages } from '../../src/features/social/messages';
 import { fetchMutedConversations } from '../../src/features/social/mute';
 import { groupConversations } from '../../src/domain/messages.mjs';
+import { gifPreviewLabel } from '../../src/domain/gif.mjs';
 
 export default function Conversations() {
   const { session, loading } = useAuth();
@@ -68,7 +69,7 @@ export default function Conversations() {
                 </View>
                 <View style={list.rowText}>
                   <Text style={list.name}>{name}</Text>
-                  <Text style={styles.body} numberOfLines={1}>{c.lastMine ? `Você: ${c.lastBody}` : c.lastBody}</Text>
+                  <Text style={styles.body} numberOfLines={1}>{(() => { const preview = gifPreviewLabel(c.lastBody) || c.lastBody; return c.lastMine ? `Você: ${preview}` : preview; })()}</Text>
                 </View>
                 {isMuted ? (
                   <Icon name="bell-off" size={16} color={t.colors.muted} />
