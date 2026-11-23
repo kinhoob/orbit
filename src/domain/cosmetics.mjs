@@ -42,9 +42,14 @@ export const COSMETICS = [
   { kind: 'button', id: 'forest', name: 'Mata', min_level: 4 },
   { kind: 'button', id: 'wine', name: 'Vinho', min_level: 5 },
   { kind: 'animation', id: 'none', name: 'Sem animação', min_level: 1 },
+  { kind: 'animation', id: 'float', name: 'Flutuar', min_level: 2 },
+  { kind: 'animation', id: 'sway', name: 'Balanço', min_level: 3 },
   { kind: 'animation', id: 'pulse', name: 'Pulso', min_level: 4 },
+  { kind: 'animation', id: 'glow', name: 'Halo', min_level: 5 },
   { kind: 'animation', id: 'shimmer', name: 'Brilho', min_level: 6 },
+  { kind: 'animation', id: 'comet', name: 'Cometa', min_level: 7 },
   { kind: 'animation', id: 'orbit', name: 'Órbita viva', min_level: 8 },
+  { kind: 'animation', id: 'aurora', name: 'Aurora', min_level: 9 },
 ];
 
 const BY_KIND_ID = new Map(COSMETICS.map((c) => [`${c.kind}:${c.id}`, c]));
