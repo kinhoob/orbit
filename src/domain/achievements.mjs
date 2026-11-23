@@ -20,6 +20,10 @@ export const ACHIEVEMENTS = [
   { id: 'friends_5', title: 'Círculo fechado', description: 'Formou 5 amizades.', icon: 'orbit', kind: 'friends', threshold: 5, xp: 30 },
   { id: 'followers_10', title: 'Voz na órbita', description: 'Alcançou 10 seguidores.', icon: 'megaphone', kind: 'followers', threshold: 10, xp: 30 },
   { id: 'likes_10', title: 'Aplausos', description: 'Recebeu 10 curtidas nas avaliações.', icon: 'heart', kind: 'likes_received', threshold: 10, xp: 25 },
+  { id: 'level_3', title: 'Nível Curioso', description: 'Alcançou o nível 3, Curioso.', icon: 'medal', kind: 'level', threshold: 3, xp: 25 },
+  { id: 'level_5', title: 'Nível Colecionador', description: 'Alcançou o nível 5, Colecionador.', icon: 'flame', kind: 'level', threshold: 5, xp: 50 },
+  { id: 'level_7', title: 'Nível Conhecedor', description: 'Alcançou o nível 7, Conhecedor.', icon: 'trophy', kind: 'level', threshold: 7, xp: 80 },
+  { id: 'level_10', title: 'Nível Lenda', description: 'Alcançou o nível 10, Lenda.', icon: 'crown', kind: 'level', threshold: 10, xp: 150 },
 ];
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));

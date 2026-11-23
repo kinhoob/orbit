@@ -8,6 +8,9 @@ export const palettes = {
   neutral: { background: '#F4EFE7', surface: '#FDFBF7', primary: '#17140F', secondary: '#EAE3D6', accent: '#E8C554' },
   sky: { background: '#EDF2F8', surface: '#FFFFFF', primary: '#1D3560', secondary: '#DBE5F2', accent: '#A8C4F0' },
   softYellow: { background: '#FBF3DC', surface: '#FFFCF2', primary: '#39372F', secondary: '#F3E7C0', accent: '#EBC85C' },
+  forest: { background: '#EDF2EA', surface: '#FBFDF9', primary: '#24402F', secondary: '#DCE7DA', accent: '#A9CBA4' },
+  blossom: { background: '#F9EEF1', surface: '#FFFBFC', primary: '#5C2438', secondary: '#F2DCE3', accent: '#E7B7C7' },
+  royal: { background: '#EFEDF7', surface: '#FCFBFF', primary: '#33295C', secondary: '#E1DCF0', accent: '#BDB1E8' },
 };
 
 /** Famílias Inter carregadas no app/_layout.tsx (expo-font). */

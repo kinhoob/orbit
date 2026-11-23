@@ -18,7 +18,7 @@ import { useAuth } from '../features/auth/provider';
 
 /** Botão Seguir/Seguindo. Enquanto a migration do seguir está em revisão,
  * explica o estado em vez de fingir que seguiu. */
-export function FollowButton({ profileId }: { profileId: string }) {
+export function FollowButton({ profileId, buttonTheme }: { profileId: string; buttonTheme?: string }) {
   const { session } = useAuth();
   const cache = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -54,7 +54,7 @@ export function FollowButton({ profileId }: { profileId: string }) {
     }
   }
   return <View style={{ gap: 8 }}>
-    <Button variant={following ? 'outline' : 'primary'} label={busy ? 'Aguarde…' : followLabel(following)} disabled={busy || state.isPending} onPress={() => { void toggle(); }} />
+    <Button buttonTheme={buttonTheme} variant={following ? 'outline' : 'primary'} label={busy ? 'Aguarde…' : followLabel(following)} disabled={busy || state.isPending} onPress={() => { void toggle(); }} />
     {followsUnavailable() && !message ? <Text style={styles.body}>O seguir chega com a próxima atualização do banco, que já está em revisão.</Text> : null}
     {!!message && <Text accessibilityRole="alert" style={message.startsWith('Não') ? styles.error : styles.body}>{message}</Text>}
   </View>;

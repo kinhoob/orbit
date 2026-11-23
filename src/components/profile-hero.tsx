@@ -4,11 +4,12 @@ import Svg, { Circle } from 'react-native-svg';
 import { palettes, font, tokens as t } from '../design/tokens';
 import { useAccountProgress, type AccountProgress } from '../features/account/settings';
 import { EquippedBadges } from './profile-badges';
+import { ProfileAccent } from './profile-animation';
 import type { AchievementDefinition } from '../features/account/achievements';
 
 type HeroProfile = {
   display_name?: string | null; username?: string | null; avatar_url?: string | null;
-  profile_theme?: string; avatar_frame?: string; equipped_badges?: string[] | null;
+  profile_theme?: string; avatar_frame?: string; profile_animation?: string | null; equipped_badges?: string[] | null;
 };
 
 const RING = 96;
@@ -30,6 +31,7 @@ export function ProfileHero({ profile, progress, badgeDefinitions }: { profile: 
   const initial = (profile.display_name || profile.username || '?').charAt(0).toUpperCase();
   return (
     <View style={{ padding: 20, borderRadius: 22, backgroundColor: colors.background, gap: 14, alignItems: 'center' }}>
+      <ProfileAccent animation={profile.profile_animation} size={RING} color={t.colors.gold}>
       <View style={{ width: RING, height: RING, alignItems: 'center', justifyContent: 'center' }}>
         {p && (
           <Svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`} style={{ position: 'absolute' }} accessibilityElementsHidden importantForAccessibility="no">
@@ -48,6 +50,7 @@ export function ProfileHero({ profile, progress, badgeDefinitions }: { profile: 
           </View>
         )}
       </View>
+      </ProfileAccent>
       <View style={{ alignItems: 'center', gap: 4 }}>
         <Text style={{ fontSize: 26, fontFamily: font.extrabold, letterSpacing: -0.4, color: colors.primary }}>{profile.display_name || profile.username || 'Perfil'}</Text>
         {!!profile.username && <Text style={{ color: colors.primary, opacity: 0.75, fontFamily: font.medium }}>@{profile.username}</Text>}

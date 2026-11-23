@@ -47,7 +47,7 @@ export default function Profile() {
         <Text style={styles.body}>Nome</Text><TextInput style={styles.input} accessibilityLabel="Nome" value={name} onChangeText={setName} maxLength={80} editable={!busy}/>
         <Text style={styles.body}>Username</Text><TextInput style={styles.input} accessibilityLabel="Username" autoCapitalize="none" value={username} onChangeText={setUsername} maxLength={30} editable={!busy}/>
         <Text style={styles.body}>Biografia</Text><TextInput style={[styles.input,{minHeight:110,textAlignVertical:'top'}]} accessibilityLabel="Biografia" multiline value={bio} onChangeText={setBio} maxLength={500} editable={!busy}/>
-        <Button label={busy?'Salvando…':'Salvar perfil'} disabled={busy} onPress={()=>{void save();}}/>
+        <Button buttonTheme={query.data?.button_theme} label={busy?'Salvando…':'Salvar perfil'} disabled={busy} onPress={()=>{void save();}}/>
         <MotionPressable accessibilityRole="button" onPress={()=>{setEditing(false);setMessage('');}} style={styles.buttonOutline}><Text style={styles.buttonOutlineText}>Cancelar</Text></MotionPressable>
       </View>}
       </>}

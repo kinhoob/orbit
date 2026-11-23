@@ -40,7 +40,7 @@ export default function PersonProfile() {
       <ProfileStatsRow profileId={id} own={false} />
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, zIndex: 20 }}>
         <View style={{ flex: 1 }}>
-          <FollowButton profileId={id} />
+          <FollowButton profileId={id} buttonTheme={profile.data.button_theme} />
         </View>
         {!!session && session.user.id !== id && (
           <ProfileMenu canMessage={canMessage} onMessage={() => router.push({ pathname: '/messages/[id]', params: { id: id! } })} onReport={() => setAction('report')} onBlock={() => setAction('block')} />
