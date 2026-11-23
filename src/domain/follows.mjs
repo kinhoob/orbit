@@ -1,7 +1,8 @@
 // Regras puras do seguir unilateral (decisão do Marco em 22/11/2026): seguir
 // não pede aceite; quando a pessoa segue de volta, os dois viram amigos
-// (gatilho follows_mutual_friendship no banco). Deixar de seguir não desfaz
-// a amizade. Sem rede aqui.
+// (gatilho follows_mutual_friendship no banco). Deixar de seguir desfaz a
+// amizade e a permissão de novas mensagens (gatilho
+// follows_unfriend_on_unfollow). Sem rede aqui.
 
 /** Rótulo do botão de seguir no perfil de outra pessoa. */
 export function followLabel(following) {
