@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, styles } from './ui';
-import { MotionPressable } from './motion';
-import { Icon } from './icons';
+import { MotionPressable, useReducedMotion } from './motion';
+import { Icon, type IconName } from './icons';
 import { tokens as t, font } from '../design/tokens';
 import { followLabel, nextFollow } from '../domain/follows.mjs';
 import { REPORT_REASONS, REPORT_DETAILS_MAX } from '../domain/report.mjs';
@@ -60,9 +60,80 @@ export function FollowButton({ profileId }: { profileId: string }) {
   </View>;
 }
 
+const menuNativeDriver = Platform.OS !== 'web';
+
+/** Menu "+" do perfil de outra pessoa (pedido do Marco em 22/11/2026): o botão
+ * gira ao abrir e o dropdown aparece e recolhe com animação suave — ao abrir
+ * e ao subir. Reúne só as ações reais do modelo: mensagem (só amigos),
+ * denúncia e bloqueio. Movimento reduzido desliga a animação. */
+export function ProfileMenu({ canMessage, onMessage, onReport, onBlock }: {
+  canMessage: boolean;
+  onMessage: () => void;
+  onReport: () => void;
+  onBlock: () => void;
+}) {
+  const reduced = useReducedMotion();
+  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    progress.stopAnimation();
+    if (reduced) {
+      progress.setValue(open ? 1 : 0);
+      setVisible(open);
+      return;
+    }
+    if (open) {
+      setVisible(true);
+      Animated.spring(progress, { toValue: 1, useNativeDriver: menuNativeDriver, stiffness: 420, damping: 28, mass: 0.7 }).start();
+    } else {
+      Animated.timing(progress, { toValue: 0, duration: 130, easing: Easing.out(Easing.cubic), useNativeDriver: menuNativeDriver }).start(({ finished }) => { if (finished) setVisible(false); });
+    }
+  }, [open, reduced, progress]);
+
+  const items: { key: string; label: string; icon: IconName; onPress: () => void }[] = [
+    ...(canMessage ? [{ key: 'message', label: 'Enviar mensagem', icon: 'mail' as IconName, onPress: onMessage }] : []),
+    { key: 'report', label: 'Denunciar usuário', icon: 'flag' as IconName, onPress: onReport },
+    { key: 'block', label: 'Bloquear usuário', icon: 'eye-off' as IconName, onPress: onBlock },
+  ];
+  return (
+    <View style={menuStyles.root}>
+      <MotionPressable accessibilityRole="button" accessibilityLabel="Mais opções" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={menuStyles.toggle}>
+        <Animated.View style={{ transform: [{ rotate: progress.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] }) }] }}>
+          <Icon name="plus" size={22} color={t.colors.text} />
+        </Animated.View>
+      </MotionPressable>
+      {visible && (
+        <Animated.View style={[styles.card, menuStyles.dropdown, {
+          opacity: progress,
+          transform: [
+            { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) },
+            { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+          ],
+        }]}>
+          {items.map((item) => (
+            <MotionPressable key={item.key} accessibilityRole="button" onPress={() => { setOpen(false); item.onPress(); }} style={menuStyles.item}>
+              <Icon name={item.icon} size={16} color={t.colors.muted} />
+              <Text style={styles.body}>{item.label}</Text>
+            </MotionPressable>
+          ))}
+        </Animated.View>
+      )}
+    </View>
+  );
+}
+
+const menuStyles = StyleSheet.create({
+  root: { position: 'relative', zIndex: 20 },
+  toggle: { padding: 12 },
+  dropdown: { position: 'absolute', top: 48, right: 0, minWidth: 210, gap: 4, zIndex: 20, padding: 12 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 4 },
+});
+
 /** Denúncia de perfil: motivo, detalhe opcional e registro honesto — sem
  * prometer análise, porque a moderação ainda não existe. No perfil ela abre
- * a partir do menu de opções (três tracinhos), como em outras redes. */
+ * a partir do menu "+" de opções, como em outras redes. */
 export function ReportFlow({ profileId, startOpen = false }: { profileId: string; startOpen?: boolean }) {
   const { session } = useAuth();
   const [open, setOpen] = useState(startOpen);
