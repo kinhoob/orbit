@@ -115,8 +115,8 @@ function StatusTicks({ state }: { state: MessageState }) {
   const dim = state === 'sent' ? 0.65 : 1;
   return (
     <View style={bubbleStyles.ticks} accessibilityLabel={stateLabel[state]}>
-      <View style={{ opacity: dim }}><Icon name="check" size={12} color={color} /></View>
-      {state !== 'sent' && <View style={{ marginLeft: -5 }}><Icon name="check" size={12} color={color} /></View>}
+      <View style={{ opacity: dim }}><Icon name="check" size={11} color={color} /></View>
+      {state !== 'sent' && <View style={{ marginLeft: -5 }}><Icon name="check" size={11} color={color} /></View>}
     </View>
   );
 }
@@ -135,7 +135,9 @@ export function ChatBubble({ mine, body, time, state, animate }: {
       progress.setValue(1);
       return;
     }
-    Animated.spring(progress, { toValue: 1, useNativeDriver: menuNativeDriver, stiffness: 380, damping: 26, mass: 0.6 }).start();
+    // Entrada minimalista (revisão visual 23/11/2026): deslize curto com mola
+    // bem amortecida e um toque de escala — suave, sem quicar.
+    Animated.spring(progress, { toValue: 1, useNativeDriver: menuNativeDriver, stiffness: 280, damping: 30, mass: 0.7 }).start();
   }, [animate, reduced, progress]);
   const gifUrl = parseGifBody(body);
   return (
@@ -145,7 +147,10 @@ export function ChatBubble({ mine, body, time, state, animate }: {
         : `${mine ? 'Você' : 'A outra pessoa'}: ${body}${mine ? `. Mensagem ${stateLabel[state]}` : ''}`}
       style={[bubbleStyles.bubble, mine ? bubbleStyles.mine : bubbleStyles.theirs, gifUrl && bubbleStyles.gifBubble, {
         opacity: progress,
-        transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+        transform: [
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
+          { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) },
+        ],
       }]}
     >
       {gifUrl ? (
@@ -162,16 +167,38 @@ export function ChatBubble({ mine, body, time, state, animate }: {
 }
 
 const bubbleStyles = StyleSheet.create({
-  bubble: { maxWidth: '85%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 18 },
+  // Bolhas minimalistas (revisão visual 23/11/2026): raio uniforme (sem
+  // "rabinho"), bastante respiro interno, e a da outra pessoa com contorno
+  // fino em vez de bloco cheio — o painel creme continua protagonista.
+  bubble: { maxWidth: '85%', paddingVertical: 11, paddingHorizontal: 15, borderRadius: 18 },
   gifBubble: { paddingVertical: 6, paddingHorizontal: 6 },
-  gif: { width: 200, height: 200, borderRadius: 12, backgroundColor: t.colors.surface },
-  mine: { alignSelf: 'flex-end', backgroundColor: t.colors.primary, borderBottomRightRadius: 4 },
-  theirs: { alignSelf: 'flex-start', backgroundColor: t.colors.surface, borderBottomLeftRadius: 4 },
-  mineText: { color: t.colors.onDark, fontSize: 15, lineHeight: 21 },
-  theirsText: { color: t.colors.text, fontSize: 15, lineHeight: 21 },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 },
-  time: { fontSize: 11, color: t.colors.muted, fontFamily: font.regular },
-  timeMine: { color: t.colors.onDark, opacity: 0.65 },
+  gif: { width: 200, height: 200, borderRadius: 14, backgroundColor: t.colors.surface },
+  mine: { alignSelf: 'flex-end', backgroundColor: t.colors.primary },
+  theirs: { alignSelf: 'flex-start', backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.border },
+  mineText: { color: t.colors.onDark, fontSize: 15, lineHeight: 22 },
+  theirsText: { color: t.colors.text, fontSize: 15, lineHeight: 22 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 3 },
+  time: { fontSize: 11, color: t.colors.muted, fontFamily: font.regular, opacity: 0.8 },
+  timeMine: { color: t.colors.onDark, opacity: 0.55 },
   ticks: { flexDirection: 'row', alignItems: 'center' },
-  sendingText: { fontSize: 11, color: t.colors.onDark, opacity: 0.65, fontFamily: font.regular, fontStyle: 'italic' },
+  sendingText: { fontSize: 11, color: t.colors.onDark, opacity: 0.55, fontFamily: font.regular, fontStyle: 'italic' },
 });
+
+/** Painéis do composer (GIF e emoji) entram com um deslize curto e fade —
+ * mesma linguagem suave das bolhas, desligado com movimento reduzido. */
+export function PanelReveal({ children }: React.PropsWithChildren) {
+  const reduced = useReducedMotion();
+  const progress = useRef(new Animated.Value(reduced ? 1 : 0)).current;
+  useEffect(() => {
+    if (reduced) { progress.setValue(1); return; }
+    Animated.timing(progress, { toValue: 1, duration: 160, easing: Easing.out(Easing.cubic), useNativeDriver: menuNativeDriver }).start();
+  }, [reduced, progress]);
+  return (
+    <Animated.View style={{
+      opacity: progress,
+      transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+    }}>
+      {children}
+    </Animated.View>
+  );
+}
