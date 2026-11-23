@@ -7,11 +7,14 @@ import { font, tokens as t } from '../design/tokens';
 import { PROFILE_STATS, formatStatCount } from '../domain/profile-stats.mjs';
 import { fetchProfileStats, profileStatsUnavailable, type ProfileStats } from '../features/social/profile-stats';
 
-/** Linha de números já carregados (avaliações, amigos, curtidas recebidas). */
+/** Linha de números já carregados. Números que a RPC ainda não devolve
+ * (seguidores/seguindo antes da migration do seguir) são simplesmente
+ * omitidos — nunca exibidos como zero inventado. */
 export function ProfileStatsValues({ stats, own }: { stats: ProfileStats; own: boolean }) {
+  const visible = PROFILE_STATS.filter((stat) => stats[stat.id as keyof ProfileStats] !== undefined);
   return (
-    <View accessibilityLabel="Números do perfil" style={{ flexDirection: 'row', gap: 28 }}>
-      {PROFILE_STATS.map((stat) => {
+    <View accessibilityLabel="Números do perfil" style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 22, rowGap: 12 }}>
+      {visible.map((stat) => {
         const value = formatStatCount(stats[stat.id as keyof ProfileStats]);
         const inner = (
           <View style={{ alignItems: 'center', gap: 2 }}>
