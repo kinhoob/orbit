@@ -6,6 +6,7 @@ import { ProfileTimeline } from '../../src/components/profile-timeline';
 import { ProfileTabs, PinnedFavorites } from '../../src/components/profile-tabs';
 import { SharedCollections } from '../../src/components/shared-collections';
 import { ProfileIdentity } from '../../src/components/profile-identity';
+import { EquippedBadges } from '../../src/components/profile-badges';
 import { ProfileStatsRow } from '../../src/components/profile-stats';
 import { FollowButton, ProfileMenu, ReportFlow } from '../../src/components/person-actions';
 import { Screen, Button, styles } from '../../src/components/ui';
@@ -35,7 +36,7 @@ export default function PersonProfile() {
       : profile.isPending ? <LoadingState kind="feed" />
       : profile.isError ? <><Text style={styles.error}>Não foi possível abrir este perfil.</Text><Button label="Tentar novamente" onPress={() => { void profile.refetch(); }} /></>
       : !profile.data ? <Text style={styles.body}>Este perfil não está disponível.</Text>
-      : <><Text style={styles.eyebrow}>NA SUA ÓRBITA</Text><ProfileIdentity profile={profile.data} />{!!profile.data.bio && <Text style={styles.body}>{profile.data.bio}</Text>}
+      : <><Text style={styles.eyebrow}>NA SUA ÓRBITA</Text><ProfileIdentity profile={profile.data} /><EquippedBadges badges={profile.data.equipped_badges} />{!!profile.data.bio && <Text style={styles.body}>{profile.data.bio}</Text>}
       <ProfileStatsRow profileId={id} own={false} />
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, zIndex: 20 }}>
         <View style={{ flex: 1 }}>

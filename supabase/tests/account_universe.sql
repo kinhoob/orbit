@@ -11,7 +11,11 @@ delete from public.ratings where media_item_id='a3333333-3333-4333-8333-33333333
 insert into public.ratings(user_id,media_item_id,score) values('a1111111-1111-4111-8111-111111111111','a3333333-3333-4333-8333-333333333333',9);
 insert into public.collections(user_id,title) values('a1111111-1111-4111-8111-111111111111','First'),('a1111111-1111-4111-8111-111111111111','Second');
 do $$ begin
- if (public.account_progress()->>'total_xp')::integer is distinct from 35 then raise exception 'XP duplicated or missing'; end if;
+ -- 35 do ledger (15 pela obra avaliada + 20 pela primeira coleção) + 25 das
+ -- conquistas derivadas (ratings_1: 10, collections_1: 15) desde a migration
+ -- 20261123030000, que incluiu o bônus de conquistas no total.
+ if (public.account_progress()->>'total_xp')::integer is distinct from 60 then raise exception 'XP duplicated or missing'; end if;
+ if (public.account_progress()->>'base_xp')::integer is distinct from 35 then raise exception 'Ledger XP changed by re-rating'; end if;
  if (select count(*) from public.discovery_history)<>1 then raise exception 'Discovery duplicated'; end if;
  begin
   insert into public.xp_transactions(user_id,amount,reason,reference_id) values(auth.uid(),999,'first_rating','forged');
