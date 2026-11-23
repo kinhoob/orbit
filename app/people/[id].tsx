@@ -6,6 +6,7 @@ import { ProfileTimeline } from '../../src/components/profile-timeline';
 import { ProfileTabs, PinnedFavorites } from '../../src/components/profile-tabs';
 import { SharedCollections } from '../../src/components/shared-collections';
 import { ProfileIdentity } from '../../src/components/profile-identity';
+import { ProfileStatsRow } from '../../src/components/profile-stats';
 import { Screen, Button, styles } from '../../src/components/ui';
 import { LoadingState } from '../../src/components/loading';
 import { requireSupabase, supabase } from '../../src/lib/supabase';
@@ -27,6 +28,7 @@ export default function PersonProfile() {
       : profile.isError ? <><Text style={styles.error}>Não foi possível abrir este perfil.</Text><Button label="Tentar novamente" onPress={() => { void profile.refetch(); }} /></>
       : !profile.data ? <Text style={styles.body}>Este perfil não está disponível.</Text>
       : <><Text style={styles.eyebrow}>NA SUA ÓRBITA</Text><ProfileIdentity profile={profile.data} />{!!profile.data.bio && <Text style={styles.body}>{profile.data.bio}</Text>}
+      <ProfileStatsRow profileId={id} own={false} />
       {compatibility.data && <Text style={styles.body}>{compatibility.data.percent === null ? `Avaliem pelo menos ${compatibility.data.minimum} obras em comum para comparar gostos. Vocês têm ${compatibility.data.common}.` : `${compatibility.data.percent}% de compatibilidade · ${compatibility.data.common} obras em comum. Uma comparação de notas, não de personalidade.`}</Text>}
       <Link href={{ pathname: '/friends', params: { search: profile.data.username || profile.data.display_name } }} style={styles.link}>Gerenciar amizade →</Link>
       <PinnedFavorites profileId={id} own={false} />

@@ -29,10 +29,10 @@ Para somente instalar e verificar: `.\iniciar-orbit.ps1 -SomenteVerificar`. Depo
 - Detalhes da obra, avaliação de 0 a 10, opinião e visibilidade pública, amigos ou privada.
 - Adicionar/remover salvos e consultar os 100 itens recentes da biblioteca privada.
 - Edição de nome, username e biografia; logout com limpeza do cache.
-- Perfil com Favoritos em carrossel fixado no topo, visível sem clicar, e abaixo as opções Linha do tempo, Coleções e Salvos (salvos só no próprio perfil). A página da obra tem botão de coração para destacá-la nos favoritos. Detalhes em [docs/profile-favorites.md](docs/profile-favorites.md).
+- Perfil com números sociais (avaliações, amigos e curtidas recebidas, estilo TikTok/Instagram, sem seguidores), Favoritos em carrossel fixado no topo, visível sem clicar, e abaixo as opções Linha do tempo, Coleções e Salvos (salvos só no próprio perfil). A página da obra tem botão de coração para destacá-la nos favoritos. Detalhes em [docs/profile-favorites.md](docs/profile-favorites.md) e [docs/profile-stats.md](docs/profile-stats.md).
 - Tokens neutros com alternativas em azul-claro e amarelo suave.
 - Migration com perfis, bloqueios, amizades, catálogo, avaliações, salvos e coleções, incluindo RLS.
-- Migrations em revisão (não aplicadas): curtidas em avaliações, criador nas obras, notificações do Sino (pedido de amizade, amizade aceita e curtida, criadas por gatilhos; o app mostra estado honesto enquanto a tabela não existe, sem contador inventado). Favoritos do perfil: `20261122233000_profile_favorites.sql` já aplicada em 22/11/2026 (visibilidade pública confirmada pelo Marco).
+- Migrations em revisão (não aplicadas): curtidas em avaliações, criador nas obras, números do perfil (`20261123001500_profile_stats.sql`, depende de rating_likes), notificações do Sino (pedido de amizade, amizade aceita e curtida, criadas por gatilhos; o app mostra estado honesto enquanto a tabela não existe, sem contador inventado). Favoritos do perfil: `20261122233000_profile_favorites.sql` já aplicada em 22/11/2026 (visibilidade pública confirmada pelo Marco).
 - Sete testes de regras: compatibilidade, notas e credenciais.
 
 As telas consultam o Supabase; não há pessoas, avaliações ou catálogo fictícios. Sem conexão, mostram estados informativos. Mural social, amizades pela interface, coleções pela interface, Daily, XP, loja, conquistas e moderação **ainda não estão implementados**. A estrutura do banco não representa uma interface concluída.
