@@ -47,7 +47,7 @@ export default function PersonProfile() {
         </View>
         {!!session && session.user.id !== id && (
           <MotionPressable accessibilityRole="button" accessibilityLabel="Mais opções" accessibilityState={{ expanded: menuOpen }} onPress={() => { setMenuOpen(!menuOpen); setAction(''); }} style={{ padding: 12 }}>
-            <Icon name="ellipsis" size={22} color={t.colors.text} />
+            <Icon name="menu" size={22} color={t.colors.text} />
           </MotionPressable>
         )}
       </View>
