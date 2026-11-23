@@ -41,8 +41,9 @@ export function Screen({ children, maxWidth = 560, onRefresh, refreshing = false
   );
 }
 
-export function Button({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
-  return <MotionPressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[styles.button, disabled && { opacity: 0.5 }]}><Text style={styles.buttonText}>{label}</Text></MotionPressable>;
+export function Button({ label, onPress, disabled = false, variant = 'primary' }: { label: string; onPress: () => void; disabled?: boolean; variant?: 'primary' | 'outline' }) {
+  const outline = variant === 'outline';
+  return <MotionPressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[outline ? styles.buttonOutline : styles.button, disabled && { opacity: 0.5 }]}><Text style={outline ? styles.buttonOutlineText : styles.buttonText}>{label}</Text></MotionPressable>;
 }
 
 export const styles = StyleSheet.create({
@@ -57,11 +58,11 @@ export const styles = StyleSheet.create({
   body: { fontSize: 16, lineHeight: 25, fontFamily: font.regular, color: t.colors.muted },
   card: { padding: 20, borderRadius: t.radius, backgroundColor: t.colors.surface, gap: 16, boxShadow: '0 4px 16px rgba(23,20,15,0.06)', elevation: 1 },
   input: { borderWidth: 1, borderColor: t.colors.border, borderRadius: 16, padding: 16, fontSize: 16, fontFamily: font.regular, color: t.colors.text, backgroundColor: t.colors.surface },
-  button: { backgroundColor: t.colors.primary, paddingVertical: 16, paddingHorizontal: 22, borderRadius: 999, alignItems: 'center' },
-  buttonText: { color: t.colors.onDark, fontSize: 15, fontFamily: font.semibold },
+  button: { backgroundColor: t.colors.primary, paddingVertical: 11, paddingHorizontal: 20, minHeight: 44, justifyContent: 'center', borderRadius: 999, alignItems: 'center' },
+  buttonText: { color: t.colors.onDark, fontSize: 14, fontFamily: font.semibold, letterSpacing: 0.2 },
   link: { color: t.colors.text, fontSize: 15, fontFamily: font.semibold, paddingVertical: 10 },
-  buttonOutline: { borderWidth: 1.5, borderColor: t.colors.primary, borderRadius: 999, paddingVertical: 14, paddingHorizontal: 22, alignItems: 'center', backgroundColor: 'transparent' },
-  buttonOutlineText: { color: t.colors.text, fontSize: 15, fontFamily: font.semibold },
+  buttonOutline: { borderWidth: 1.5, borderColor: t.colors.primary, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 20, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' },
+  buttonOutlineText: { color: t.colors.text, fontSize: 14, fontFamily: font.semibold, letterSpacing: 0.2 },
   error: { color: t.colors.error, lineHeight: 22, fontFamily: font.regular },
   pullRoot: { flex: 1 },
   pullContent: { flex: 1 },
