@@ -39,9 +39,14 @@ insert into public.cosmetic_catalog (kind, id, name, min_level) values
  ('button','forest','Mata',4),
  ('button','wine','Vinho',5),
  ('animation','none','Sem animação',1),
+ ('animation','float','Flutuar',2),
+ ('animation','sway','Balanço',3),
  ('animation','pulse','Pulso',4),
+ ('animation','glow','Halo',5),
  ('animation','shimmer','Brilho',6),
- ('animation','orbit','Órbita viva',8);
+ ('animation','comet','Cometa',7),
+ ('animation','orbit','Órbita viva',8),
+ ('animation','aurora','Aurora',9);
 
 -- Novas escolhas no perfil: cor dos botões e animação do perfil.
 alter table public.profiles drop constraint profiles_profile_theme_check;
@@ -50,7 +55,7 @@ alter table public.profiles add constraint profiles_profile_theme_check
 alter table public.profiles add column button_theme text not null default 'ink'
   check(button_theme in ('ink','gold','forest','wine'));
 alter table public.profiles add column profile_animation text not null default 'none'
-  check(profile_animation in ('none','pulse','shimmer','orbit'));
+  check(profile_animation in ('none','float','sway','pulse','glow','shimmer','comet','orbit','aurora'));
 grant update(button_theme, profile_animation) on public.profiles to authenticated;
 
 -- Conquistas de nível: o XP dá novas insígnias conforme o nível sobe.
