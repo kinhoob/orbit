@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -52,6 +52,7 @@ export default function Conversation() {
   const seenIds = useRef<Set<string> | null>(null);
   const animatedIds = useRef<Set<string>>(new Set());
   const mutedRef = useRef(false);
+  const appState = useRef(AppState.currentState);
 
   const profile = useQuery({
     queryKey: ['public-profile', userId, id],
@@ -81,11 +82,33 @@ export default function Conversation() {
     if (userId) void fetchMutedConversations(userId).then(setMuted);
   }, [userId]);
 
+  // Entrega e leitura são coisas diferentes (pedido do Marco em 22/11/2026):
+  // ENTREGUE vale quando o aparelho recebe a mensagem (busca ou tempo real),
+  // mesmo com o app em segundo plano; LIDA só quando o app está em primeiro
+  // plano, com a pessoa vendo a conversa. Carregar a lista em segundo plano
+  // nunca marca leitura.
+  function confirmReceiptAndRead() {
+    if (!userId || !id) return;
+    void markConversationDelivered(userId, id);
+    if (appState.current === 'active') void markConversationRead(userId, id);
+  }
+
   useEffect(() => {
-    if (userId && id && thread.data && thread.data.length) {
-      void markConversationDelivered(userId, id);
-      void markConversationRead(userId, id);
-    }
+    if (userId && id && thread.data && thread.data.length) confirmReceiptAndRead();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, id, thread.data]);
+
+  // Voltou ao primeiro plano com a conversa aberta: aí sim marca como lida.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      const was = appState.current;
+      appState.current = next;
+      if (next === 'active' && was !== 'active' && userId && id && thread.data?.length) {
+        void markConversationRead(userId, id);
+      }
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, id, thread.data]);
 
   const isMutedNow = !!id && muted.includes(id);
