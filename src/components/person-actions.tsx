@@ -61,10 +61,11 @@ export function FollowButton({ profileId }: { profileId: string }) {
 }
 
 /** Denúncia de perfil: motivo, detalhe opcional e registro honesto — sem
- * prometer análise, porque a moderação ainda não existe. */
-export function ReportFlow({ profileId }: { profileId: string }) {
+ * prometer análise, porque a moderação ainda não existe. No perfil ela abre
+ * a partir do menu de opções (três pontinhos), como em outras redes. */
+export function ReportFlow({ profileId, startOpen = false }: { profileId: string; startOpen?: boolean }) {
   const { session } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);
