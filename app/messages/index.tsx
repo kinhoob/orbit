@@ -1,19 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen, styles } from '../../src/components/ui';
 import { LoadingState } from '../../src/components/loading';
+import { Icon } from '../../src/components/icons';
 import { tokens as t, font } from '../../src/design/tokens';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { fetchProfilesByIds, type ProfileSummary } from '../../src/features/social/friends';
 import { fetchRecentMessages } from '../../src/features/social/messages';
+import { fetchMutedConversations } from '../../src/features/social/mute';
 import { groupConversations } from '../../src/domain/messages.mjs';
 
 export default function Conversations() {
   const { session, loading } = useAuth();
   const userId = session?.user.id;
+  const [muted, setMuted] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (userId) void fetchMutedConversations(userId).then(setMuted);
+  }, [userId]);
 
   const recent = useQuery({
     queryKey: ['conversations', userId],
@@ -51,6 +58,8 @@ export default function Conversations() {
         conversations.map((c) => {
           const profile = byId.get(c.otherId);
           const name = profile?.display_name || profile?.username || 'Perfil indisponível';
+          // Conversa silenciada: sem contagem de não lidas, só o sino cortado.
+          const isMuted = muted.includes(c.otherId);
           return (
             <Link key={c.otherId} href={{ pathname: '/messages/[id]', params: { id: c.otherId } }} style={list.rowLink}>
               <View style={list.row}>
@@ -61,7 +70,9 @@ export default function Conversations() {
                   <Text style={list.name}>{name}</Text>
                   <Text style={styles.body} numberOfLines={1}>{c.lastMine ? `Você: ${c.lastBody}` : c.lastBody}</Text>
                 </View>
-                {c.unread > 0 && (
+                {isMuted ? (
+                  <Icon name="bell-off" size={16} color={t.colors.muted} />
+                ) : c.unread > 0 && (
                   <View style={list.badge} accessibilityLabel={`${c.unread} mensagens não lidas`}>
                     <Text style={list.badgeText}>{c.unread}</Text>
                   </View>
