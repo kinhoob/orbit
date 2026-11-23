@@ -21,7 +21,8 @@ test('achievement catalog is unique, ordered per kind and mirrors the migration 
     list.push(a);
     byKind.set(a.kind, list);
   }
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20261123030000_profile_achievements.sql', import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20261123030000_profile_achievements.sql', import.meta.url), 'utf8')
+    + fs.readFileSync(new URL('../supabase/migrations/20261123040000_level_cosmetics.sql', import.meta.url), 'utf8');
   for (const a of ACHIEVEMENTS) {
     assert.ok(
       sql.includes(`('${a.id}','${a.title}','${a.description}','${a.icon}','${a.kind}',${a.threshold},${a.xp})`),
