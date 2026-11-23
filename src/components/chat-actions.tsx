@@ -92,3 +92,76 @@ const chatMenu = StyleSheet.create({
   avatarText: { color: t.colors.onDark, fontSize: 18, fontFamily: font.bold },
   name: { fontSize: 16, fontFamily: font.semibold, color: t.colors.text },
 });
+
+// Bolha de mensagem com entrada animada (pedido do Marco em 22/11/2026: animar
+// ao enviar e ao chegar) e estados REAIS no rodapé das minhas mensagens:
+// enviada (INSERT confirmou), entregue (o aparelho da outra pessoa confirmou
+// o recebimento) e lida (ela abriu a conversa). Sem estado inventado: enquanto
+// o envio não confirma, a bolha diz "enviando…".
+
+export type MessageState = 'sending' | 'sent' | 'delivered' | 'read';
+
+const stateLabel: Record<MessageState, string> = {
+  sending: 'enviando',
+  sent: 'enviada',
+  delivered: 'entregue',
+  read: 'lida',
+};
+
+function StatusTicks({ state }: { state: MessageState }) {
+  if (state === 'sending') return <Text style={bubbleStyles.sendingText}>enviando…</Text>;
+  const color = state === 'read' ? t.colors.accent : t.colors.onDark;
+  const dim = state === 'sent' ? 0.65 : 1;
+  return (
+    <View style={bubbleStyles.ticks} accessibilityLabel={stateLabel[state]}>
+      <View style={{ opacity: dim }}><Icon name="check" size={12} color={color} /></View>
+      {state !== 'sent' && <View style={{ marginLeft: -5 }}><Icon name="check" size={12} color={color} /></View>}
+    </View>
+  );
+}
+
+export function ChatBubble({ mine, body, time, state, animate }: {
+  mine: boolean;
+  body: string;
+  time: string;
+  state: MessageState;
+  animate: boolean;
+}) {
+  const reduced = useReducedMotion();
+  const progress = useRef(new Animated.Value(animate && !reduced ? 0 : 1)).current;
+  useEffect(() => {
+    if (!animate || reduced) {
+      progress.setValue(1);
+      return;
+    }
+    Animated.spring(progress, { toValue: 1, useNativeDriver: menuNativeDriver, stiffness: 380, damping: 26, mass: 0.6 }).start();
+  }, [animate, reduced, progress]);
+  return (
+    <Animated.View
+      accessibilityLabel={`${mine ? 'Você' : 'A outra pessoa'}: ${body}${mine ? `. Mensagem ${stateLabel[state]}` : ''}`}
+      style={[bubbleStyles.bubble, mine ? bubbleStyles.mine : bubbleStyles.theirs, {
+        opacity: progress,
+        transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+      }]}
+    >
+      <Text style={mine ? bubbleStyles.mineText : bubbleStyles.theirsText}>{body}</Text>
+      <View style={bubbleStyles.footer}>
+        <Text style={[bubbleStyles.time, mine && bubbleStyles.timeMine]}>{time}</Text>
+        {mine && <StatusTicks state={state} />}
+      </View>
+    </Animated.View>
+  );
+}
+
+const bubbleStyles = StyleSheet.create({
+  bubble: { maxWidth: '85%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 18 },
+  mine: { alignSelf: 'flex-end', backgroundColor: t.colors.primary, borderBottomRightRadius: 4 },
+  theirs: { alignSelf: 'flex-start', backgroundColor: t.colors.surface, borderBottomLeftRadius: 4 },
+  mineText: { color: t.colors.onDark, fontSize: 15, lineHeight: 21 },
+  theirsText: { color: t.colors.text, fontSize: 15, lineHeight: 21 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 },
+  time: { fontSize: 11, color: t.colors.muted, fontFamily: font.regular },
+  timeMine: { color: t.colors.onDark, opacity: 0.65 },
+  ticks: { flexDirection: 'row', alignItems: 'center' },
+  sendingText: { fontSize: 11, color: t.colors.onDark, opacity: 0.65, fontFamily: font.regular, fontStyle: 'italic' },
+});
