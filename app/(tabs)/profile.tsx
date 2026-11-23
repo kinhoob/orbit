@@ -15,6 +15,7 @@ import { ProfileTabs, PinnedFavorites } from '../../src/components/profile-tabs'
 import { ProgressSummary } from '../../src/components/progress';
 import { SharedCollections } from '../../src/components/shared-collections';
 import { ProfileIdentity } from '../../src/components/profile-identity';
+import { ProfileStatsRow } from '../../src/components/profile-stats';
 
 export default function Profile() {
   const {session,loading}=useAuth();const cache=useQueryClient();
@@ -39,6 +40,7 @@ export default function Profile() {
       {query.isPending?<Text style={styles.body}>Carregando seu perfil…</Text>:query.isError?<><Text style={styles.error}>Não foi possível carregar seu perfil. Verifique se as migrations foram aplicadas.</Text><Button label="Tentar novamente" onPress={()=>{void query.refetch();}}/></>:<>
       <ProfileIdentity profile={{...query.data,display_name:name,username}} />
       {!!bio&&<Text style={styles.body}>{bio}</Text>}
+      <ProfileStatsRow profileId={session.user.id} own />
       <ProgressSummary />
       <Link href="/customize" style={styles.link}>Personalizar perfil</Link>
       {!editing&&<MotionPressable accessibilityRole="button" onPress={()=>setEditing(true)} style={styles.buttonOutline}><Text style={styles.buttonOutlineText}>Editar perfil</Text></MotionPressable>}
@@ -63,4 +65,4 @@ export default function Profile() {
       <Link href="/friends" style={styles.link}>Amizades →</Link><Button label="Sair da conta" disabled={busy} onPress={()=>{void signout();}}/>{!!message&&<Text accessibilityRole="alert" style={styles.body}>{message}</Text>}
     </>}
   </Screen>;
-}
+      }
