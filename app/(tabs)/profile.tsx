@@ -12,9 +12,8 @@ import { useAuth } from '../../src/features/auth/provider';
 import { requireSupabase } from '../../src/lib/supabase';
 import { ProfileTimeline } from '../../src/components/profile-timeline';
 import { ProfileTabs, PinnedFavorites } from '../../src/components/profile-tabs';
-import { ProgressSummary } from '../../src/components/progress';
 import { SharedCollections } from '../../src/components/shared-collections';
-import { ProfileIdentity } from '../../src/components/profile-identity';
+import { ProfileHero } from '../../src/components/profile-hero';
 import { ProfileStatsRow } from '../../src/components/profile-stats';
 
 export default function Profile() {
@@ -38,10 +37,10 @@ export default function Profile() {
       <Link href="/auth" style={styles.link}>Entrar ou criar conta →</Link>
     </View>:<>
       {query.isPending?<Text style={styles.body}>Carregando seu perfil…</Text>:query.isError?<><Text style={styles.error}>Não foi possível carregar seu perfil. Verifique se as migrations foram aplicadas.</Text><Button label="Tentar novamente" onPress={()=>{void query.refetch();}}/></>:<>
-      <ProfileIdentity profile={{...query.data,display_name:name,username}} />
+      <ProfileHero profile={{...query.data,display_name:name,username}} />
       {!!bio&&<Text style={styles.body}>{bio}</Text>}
       <ProfileStatsRow profileId={session.user.id} own />
-      <ProgressSummary />
+      <Link href="/achievements" style={styles.link}>Conquistas e insígnias →</Link>
       <Link href="/customize" style={styles.link}>Personalizar perfil</Link>
       {!editing&&<MotionPressable accessibilityRole="button" onPress={()=>setEditing(true)} style={styles.buttonOutline}><Text style={styles.buttonOutlineText}>Editar perfil</Text></MotionPressable>}
       {editing&&<View style={{gap:14}}>
