@@ -1,9 +1,8 @@
 // Regras puras dos favoritos e das abas do perfil. Sem rede aqui.
 
-/** Abas do perfil. Salvos são privados: só aparecem no próprio perfil. */
+/** Abas do perfil (opções abaixo dos favoritos fixados). Salvos são privados: só aparecem no próprio perfil. */
 export const PROFILE_TABS = [
   { id: 'timeline', label: 'Linha do tempo', ownOnly: false },
-  { id: 'favorites', label: 'Favoritos', ownOnly: false },
   { id: 'collections', label: 'Coleções', ownOnly: false },
   { id: 'saved', label: 'Salvos', ownOnly: true },
 ];
