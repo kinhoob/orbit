@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../../src/components/ui';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
-import { ChatBubble, ChatMenu, PanelReveal, ProfilePreviewCard, type MessageState } from '../../src/components/chat-actions';
+import { ChatBubble, ChatMenu, PanelReveal, ProfilePreviewCard, TypingBubble, type MessageState } from '../../src/components/chat-actions';
 import { GifPicker } from '../../src/components/gif-picker';
 import { LoadingState } from '../../src/components/loading';
 import { tokens as t, font } from '../../src/design/tokens';
@@ -19,6 +19,7 @@ import { playChatPop } from '../../src/features/social/chat-sound';
 import { type Gif } from '../../src/features/social/giphy';
 import { buildThread, canMessageWith, normalizeMessageBody, MESSAGE_MAX } from '../../src/domain/messages.mjs';
 import { buildGifBody } from '../../src/domain/gif.mjs';
+import { typingChannelName, typingPairKey, shouldEmitTyping, TYPING_VISIBLE_MS } from '../../src/domain/typing.mjs';
 
 // Emojis mais usados, fixos no app — sem dados externos.
 const EMOJIS = ['😀', '😂', '🥰', '😍', '🤔', '😅', '😭', '😴', '🤝', '👏', '👍', '🙏', '❤️', '🔥', '✨', '🎉', '🎬', '🎵', '📚', '🎮', '⚽', '🍕', '☕', '💯'];
@@ -56,6 +57,9 @@ export default function Conversation() {
   const animatedIds = useRef<Set<string>>(new Set());
   const mutedRef = useRef(false);
   const appState = useRef(AppState.currentState);
+  const [otherTyping, setOtherTyping] = useState(false);
+  const typingLastSent = useRef(0);
+  const typingHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const profile = useQuery({
     queryKey: ['public-profile', userId, id],
@@ -130,6 +134,7 @@ export default function Conversation() {
         const row = payload.new as ChatMessage;
         if (row.sender_id !== id) return;
         animatedIds.current.add(row.id);
+        setOtherTyping(false);
         if (!mutedRef.current) playChatPop('receive');
         void markConversationDelivered(userId, id);
         void thread.refetch();
@@ -142,6 +147,70 @@ export default function Conversation() {
     // thread.refetch é estável o suficiente para este efeito.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, userId, id, allowed, unavailable]);
+
+  // "Digitando" (pedido do Marco em 23/11/2026): presença REAL por
+  // postgres_changes na tabela public.typing_status (migration 20261123020000
+  // em revisão) — o mesmo padrão das mensagens. A autorização é POR EVENTO no
+  // servidor: cada upsert passa pela RLS com amizade/bloqueio atuais e
+  // sender_id amarrado ao auth.uid(), e cada mudança só chega a quem a policy
+  // SELECT deixa ler naquele instante. Bloqueio ou fim de amizade corta envio
+  // e recebimento já no próximo evento, inclusive em conexão aberta antes da
+  // mudança — não depende de teardown no cliente (que também acontece: caiu
+  // `allowed`, sai o canal). Sem a migration aplicada, a tabela não existe e
+  // o recurso falha fechado: nada é exibido. Nada aqui simula evento dela.
+  useEffect(() => {
+    if (!supabase || !userId || !id || !allowed || unavailable) return;
+    const client = requireSupabase();
+    const pairKey = typingPairKey(userId, id);
+    const channel = client.channel(typingChannelName(userId, id));
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'typing_status', filter: `pair_key=eq.${pairKey}` }, (payload) => {
+        const row = (payload as { new?: { sender_id?: string; is_typing?: boolean; updated_at?: string } }).new || {};
+        if (row.sender_id === userId) return; // garantia contra eco
+        const fresh = row.updated_at ? Date.now() - new Date(row.updated_at).getTime() < TYPING_VISIBLE_MS : true;
+        if (row.is_typing && fresh) {
+          setOtherTyping(true);
+          if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+          typingHideTimer.current = setTimeout(() => setOtherTyping(false), TYPING_VISIBLE_MS);
+        } else {
+          setOtherTyping(false);
+        }
+      })
+      .subscribe();
+    return () => {
+      if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+      void client.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, userId, id, allowed, unavailable]);
+
+  function emitTyping(typing: boolean) {
+    if (!supabase || !userId || !id) return;
+    // Sem a migration aplicada ou sem permissão no momento do evento, o
+    // servidor nega o upsert — esperado e silencioso: o indicador só
+    // funciona quando a autorização existir dos dois lados.
+    void Promise.resolve(
+      requireSupabase()
+        .from('typing_status')
+        .upsert(
+          { pair_key: typingPairKey(userId, id), sender_id: userId, is_typing: typing, updated_at: new Date().toISOString() },
+          { onConflict: 'pair_key,sender_id' }
+        )
+    ).catch(() => {});
+  }
+
+  // Avisa a outra pessoa quando começo a digitar e, no máximo 1x a cada
+  // intervalo, enquanto continuo; rascunho esvaziado avisa que parei.
+  function changeDraft(next: string) {
+    const now = Date.now();
+    if (shouldEmitTyping(draft, next, typingLastSent.current, now)) {
+      typingLastSent.current = now;
+      emitTyping(true);
+    } else if (draft.trim() && !next.trim()) {
+      emitTyping(false);
+    }
+    setDraft(next);
+  }
 
   async function sendBody(body: string, restoreDraft: boolean) {
     if (!userId || !id) return;
@@ -174,6 +243,7 @@ export default function Conversation() {
     const body = normalizeMessageBody(draft);
     if (!body) return;
     setDraft('');
+    emitTyping(false);
     await sendBody(body, true);
   }
 
@@ -300,6 +370,7 @@ export default function Conversation() {
                         animate={animatedIds.current.has(m.id) || (seenIds.current ? !seenIds.current.has(m.id) : false)}
                       />
                     ))}
+                    {otherTyping && <TypingBubble label={`${name} está digitando`} />}
                   </ScrollView>
                 )}
                 {gifOpen && (
@@ -349,7 +420,7 @@ export default function Conversation() {
                   <TextInput
                     style={[styles.input, chat.composerInput]}
                     value={draft}
-                    onChangeText={setDraft}
+                    onChangeText={changeDraft}
                     placeholder={`Mensagem para ${name}`}
                     placeholderTextColor={t.colors.muted}
                     multiline

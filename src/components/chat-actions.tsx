@@ -184,6 +184,56 @@ const bubbleStyles = StyleSheet.create({
   sendingText: { fontSize: 11, color: t.colors.onDark, opacity: 0.55, fontFamily: font.regular, fontStyle: 'italic' },
 });
 
+/** Indicador "digitando" (pedido do Marco em 23/11/2026): bolha no estilo
+ * da outra pessoa com três pontos pulsando em sequência. Só é renderizado
+ * quando um broadcast REAL de digitação chega (ver app/messages/[id].tsx) —
+ * nunca como enfeite. Com movimento reduzido, os pontos ficam estáticos. */
+export function TypingBubble({ label }: { label: string }) {
+  const reduced = useReducedMotion();
+  const loop = useRef(new Animated.Value(0)).current;
+  const entrance = useRef(new Animated.Value(reduced ? 1 : 0)).current;
+  useEffect(() => {
+    if (reduced) {
+      entrance.setValue(1);
+      loop.setValue(0.5);
+      return;
+    }
+    Animated.timing(entrance, { toValue: 1, duration: 160, easing: Easing.out(Easing.cubic), useNativeDriver: menuNativeDriver }).start();
+    const animation = Animated.loop(
+      Animated.timing(loop, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: menuNativeDriver }),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [reduced, loop, entrance]);
+  const dots = [0, 1, 2].map((i) => {
+    const start = i / 3;
+    const peak = start + 1 / 6;
+    const end = start + 1 / 3;
+    return {
+      opacity: reduced ? 0.45 : loop.interpolate({ inputRange: [start, peak, end, 1], outputRange: [0.25, 1, 0.25, 0.25], extrapolate: 'clamp' }),
+      translateY: reduced ? 0 : loop.interpolate({ inputRange: [start, peak, end, 1], outputRange: [0, -2.5, 0, 0], extrapolate: 'clamp' }),
+    };
+  });
+  return (
+    <Animated.View
+      accessibilityLabel={label}
+      style={[bubbleStyles.bubble, bubbleStyles.theirs, typingStyles.bubble, {
+        opacity: entrance,
+        transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }],
+      }]}
+    >
+      {dots.map((dot, i) => (
+        <Animated.View key={i} style={[typingStyles.dot, { opacity: dot.opacity, transform: [{ translateY: dot.translateY }] }]} />
+      ))}
+    </Animated.View>
+  );
+}
+
+const typingStyles = StyleSheet.create({
+  bubble: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 14 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: t.colors.muted },
+});
+
 /** Painéis do composer (GIF e emoji) entram com um deslize curto e fade —
  * mesma linguagem suave das bolhas, desligado com movimento reduzido. */
 export function PanelReveal({ children }: React.PropsWithChildren) {
