@@ -1,10 +1,12 @@
 -- REVIEW ONLY. Do not apply with all historical migrations or from app startup.
 -- Seguir unilateral, sem aceite (decisão do Marco em 22/11/2026, WhatsApp).
 -- Reciprocidade confirmada pelo Marco na mesma conversa: quando a outra
--- pessoa segue de volta, os dois viram amigos (e, quando existir conversa
--- no app, poderão trocar mensagens — o chat em si ainda não existe). A
--- amizade criada assim é a mesma friendships aceita de sempre; deixar de
--- seguir depois NÃO desfaz a amizade. Depende de orbit_private (20261122202000).
+-- pessoa segue de volta, os dois viram amigos e podem trocar mensagens (a
+-- conversa existe em 20261123012000_messages.sql). A amizade criada assim é
+-- a mesma friendships aceita de sempre. Na mesma conversa o Marco confirmou
+-- que deixar de seguir DESFAZ a amizade e remove a permissão de novas
+-- mensagens: a permissão acompanha o vínculo. Depende de orbit_private
+-- (20261122202000).
 begin;
 
 create table public.follows (
@@ -60,6 +62,29 @@ revoke all on function public.follows_mutual_friendship() from public;
 
 create trigger follows_mutual_friendship after insert on public.follows
   for each row execute function public.follows_mutual_friendship();
+
+-- Deixar de seguir desfaz a amizade (confirmação do Marco em 22/11/2026):
+-- quando o seguir mútuo se desfaz, a amizade aceita entre os dois é removida
+-- e, com ela, a permissão de novas mensagens (messages exige are_friends).
+-- O gatilho só age quando o par ERA mútuo (o outro sentido ainda existe):
+-- um seguir de mão única removido nunca apaga uma amizade que nasceu de
+-- pedido manual. O histórico de mensagens já trocadas não é apagado; o RLS
+-- de leitura continua valendo para as duas participantes.
+create function public.follows_unfriend_on_unfollow() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from public.follows f where f.follower_id = old.followed_id and f.followed_id = old.follower_id) then
+    delete from public.friendships
+    where status = 'accepted'
+      and ((requester_id = old.follower_id and addressee_id = old.followed_id)
+        or (requester_id = old.followed_id and addressee_id = old.follower_id));
+  end if;
+  return old;
+end $$;
+revoke all on function public.follows_unfriend_on_unfollow() from public;
+
+create trigger follows_unfriend_on_unfollow after delete on public.follows
+  for each row execute function public.follows_unfriend_on_unfollow();
 
 -- Os números do perfil passam a incluir Seguidores e Seguindo, ao lado de
 -- Avaliações, Amigos e Curtidas. Mesmas regras de visibilidade e bloqueio:
