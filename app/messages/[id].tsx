@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Screen, styles } from '../../src/components/ui';
 import { MotionPressable } from '../../src/components/motion';
 import { Icon } from '../../src/components/icons';
-import { ChatBubble, ChatMenu, PanelReveal, ProfilePreviewCard, type MessageState } from '../../src/components/chat-actions';
+import { ChatBubble, ChatMenu, PanelReveal, ProfilePreviewCard, TypingBubble, type MessageState } from '../../src/components/chat-actions';
 import { GifPicker } from '../../src/components/gif-picker';
 import { LoadingState } from '../../src/components/loading';
 import { tokens as t, font } from '../../src/design/tokens';
@@ -19,6 +19,7 @@ import { playChatPop } from '../../src/features/social/chat-sound';
 import { type Gif } from '../../src/features/social/giphy';
 import { buildThread, canMessageWith, normalizeMessageBody, MESSAGE_MAX } from '../../src/domain/messages.mjs';
 import { buildGifBody } from '../../src/domain/gif.mjs';
+import { typingChannelName, shouldEmitTyping, TYPING_VISIBLE_MS } from '../../src/domain/typing.mjs';
 
 // Emojis mais usados, fixos no app — sem dados externos.
 const EMOJIS = ['😀', '😂', '🥰', '😍', '🤔', '😅', '😭', '😴', '🤝', '👏', '👍', '🙏', '❤️', '🔥', '✨', '🎉', '🎬', '🎵', '📚', '🎮', '⚽', '🍕', '☕', '💯'];
@@ -56,6 +57,10 @@ export default function Conversation() {
   const animatedIds = useRef<Set<string>>(new Set());
   const mutedRef = useRef(false);
   const appState = useRef(AppState.currentState);
+  const [otherTyping, setOtherTyping] = useState(false);
+  const typingChannelRef = useRef<import('@supabase/supabase-js').RealtimeChannel | null>(null);
+  const typingLastSent = useRef(0);
+  const typingHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const profile = useQuery({
     queryKey: ['public-profile', userId, id],
@@ -130,6 +135,7 @@ export default function Conversation() {
         const row = payload.new as ChatMessage;
         if (row.sender_id !== id) return;
         animatedIds.current.add(row.id);
+        setOtherTyping(false);
         if (!mutedRef.current) playChatPop('receive');
         void markConversationDelivered(userId, id);
         void thread.refetch();
@@ -142,6 +148,55 @@ export default function Conversation() {
     // thread.refetch é estável o suficiente para este efeito.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, userId, id, allowed, unavailable]);
+
+  // "Digitando" (pedido do Marco em 23/11/2026): presença REAL por broadcast
+  // no canal simétrico da conversa — sem tabela, sem migration. O indicador
+  // só aparece quando o aparelho da outra pessoa avisa; some sozinho após
+  // TYPING_VISIBLE_MS sem novo aviso. Nada aqui simula evento dela.
+  useEffect(() => {
+    if (!supabase || !userId || !id || !allowed || unavailable) return;
+    const client = requireSupabase();
+    const channel = client.channel(typingChannelName(userId, id));
+    channel
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        const p = (payload as { payload?: { userId?: string; typing?: boolean } }).payload || {};
+        if (p.userId === userId) return; // garantia contra eco
+        if (p.typing) {
+          setOtherTyping(true);
+          if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+          typingHideTimer.current = setTimeout(() => setOtherTyping(false), TYPING_VISIBLE_MS);
+        } else {
+          setOtherTyping(false);
+        }
+      })
+      .subscribe();
+    typingChannelRef.current = channel;
+    return () => {
+      typingChannelRef.current = null;
+      if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
+      void client.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, userId, id, allowed, unavailable]);
+
+  function emitTyping(typing: boolean) {
+    const channel = typingChannelRef.current;
+    if (!channel || !userId) return;
+    void channel.send({ type: 'broadcast', event: 'typing', payload: { userId, typing } });
+  }
+
+  // Avisa a outra pessoa quando começo a digitar e, no máximo 1x a cada
+  // intervalo, enquanto continuo; rascunho esvaziado avisa que parei.
+  function changeDraft(next: string) {
+    const now = Date.now();
+    if (shouldEmitTyping(draft, next, typingLastSent.current, now)) {
+      typingLastSent.current = now;
+      emitTyping(true);
+    } else if (draft.trim() && !next.trim()) {
+      emitTyping(false);
+    }
+    setDraft(next);
+  }
 
   async function sendBody(body: string, restoreDraft: boolean) {
     if (!userId || !id) return;
@@ -174,6 +229,7 @@ export default function Conversation() {
     const body = normalizeMessageBody(draft);
     if (!body) return;
     setDraft('');
+    emitTyping(false);
     await sendBody(body, true);
   }
 
@@ -300,6 +356,7 @@ export default function Conversation() {
                         animate={animatedIds.current.has(m.id) || (seenIds.current ? !seenIds.current.has(m.id) : false)}
                       />
                     ))}
+                    {otherTyping && <TypingBubble label={`${name} está digitando`} />}
                   </ScrollView>
                 )}
                 {gifOpen && (
@@ -349,7 +406,7 @@ export default function Conversation() {
                   <TextInput
                     style={[styles.input, chat.composerInput]}
                     value={draft}
-                    onChangeText={setDraft}
+                    onChangeText={changeDraft}
                     placeholder={`Mensagem para ${name}`}
                     placeholderTextColor={t.colors.muted}
                     multiline
