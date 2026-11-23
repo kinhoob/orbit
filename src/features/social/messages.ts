@@ -13,6 +13,7 @@ export type ChatMessage = {
   body: string;
   created_at: string;
   read_at: string | null;
+  delivered_at: string | null;
 };
 
 let tableMissing = false;
@@ -41,7 +42,7 @@ export async function fetchThread(userId: string, otherId: string, limit = 200):
   if (tableMissing) return null;
   const { data, error } = await requireSupabase()
     .from('messages')
-    .select('id,sender_id,recipient_id,body,created_at,read_at')
+    .select('id,sender_id,recipient_id,body,created_at,read_at,delivered_at')
     .or(`and(sender_id.eq.${userId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${userId})`)
     .order('created_at', { ascending: true })
     .limit(limit);
@@ -57,7 +58,7 @@ export async function fetchRecentMessages(userId: string, limit = 300): Promise<
   if (tableMissing) return null;
   const { data, error } = await requireSupabase()
     .from('messages')
-    .select('id,sender_id,recipient_id,body,created_at,read_at')
+    .select('id,sender_id,recipient_id,body,created_at,read_at,delivered_at')
     .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -82,6 +83,18 @@ export async function sendMessage(userId: string, otherId: string, body: string)
     throw error;
   }
   return 'ok';
+}
+
+/**
+ * Confirma a ENTREGA: o aparelho da pessoa logada recebeu de fato as
+ * mensagens desta conversa (por busca ou evento em tempo real). É o que
+ * transforma 'enviada' em 'entregue' no aparelho de quem enviou — nada
+ * mais confirma entrega. Sem efeito em revisão.
+ */
+export async function markConversationDelivered(userId: string, otherId: string): Promise<void> {
+  if (tableMissing) return;
+  const { error } = await requireSupabase().rpc('mark_conversation_delivered', { other_user: otherId });
+  if (error) markIfMissing(error);
 }
 
 /** Marca como lidas as mensagens que recebi desta pessoa. Sem efeito em revisão. */
