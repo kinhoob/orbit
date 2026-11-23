@@ -19,7 +19,7 @@ import { playChatPop } from '../../src/features/social/chat-sound';
 import { type Gif } from '../../src/features/social/giphy';
 import { buildThread, canMessageWith, normalizeMessageBody, MESSAGE_MAX } from '../../src/domain/messages.mjs';
 import { buildGifBody } from '../../src/domain/gif.mjs';
-import { typingChannelName, shouldEmitTyping, TYPING_VISIBLE_MS } from '../../src/domain/typing.mjs';
+import { typingChannelName, typingPairKey, shouldEmitTyping, TYPING_VISIBLE_MS } from '../../src/domain/typing.mjs';
 
 // Emojis mais usados, fixos no app — sem dados externos.
 const EMOJIS = ['😀', '😂', '🥰', '😍', '🤔', '😅', '😭', '😴', '🤝', '👏', '👍', '🙏', '❤️', '🔥', '✨', '🎉', '🎬', '🎵', '📚', '🎮', '⚽', '🍕', '☕', '💯'];
@@ -58,7 +58,6 @@ export default function Conversation() {
   const mutedRef = useRef(false);
   const appState = useRef(AppState.currentState);
   const [otherTyping, setOtherTyping] = useState(false);
-  const typingChannelRef = useRef<import('@supabase/supabase-js').RealtimeChannel | null>(null);
   const typingLastSent = useRef(0);
   const typingHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -149,27 +148,27 @@ export default function Conversation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, userId, id, allowed, unavailable]);
 
-  // "Digitando" (pedido do Marco em 23/11/2026): presença REAL por broadcast
-  // em canal PRIVADO e simétrico da conversa — sem tabela nova no app. A
-  // autorização é no servidor (policies em realtime.messages, migration
-  // 20261123015000 em revisão): só os dois participantes, com amizade ativa
-  // e sem bloqueio, emitem/recebem; terceiros não escutam nem forjam, e o
-  // userId do payload é amarrado ao auth.uid() no envio. Semântica Realtime
-  // (doc Supabase, 23/11/2026): a autorização é calculada ao entrar no tópico
-  // e fica cacheada na conexão — após bloqueio ou fim de amizade, o corte no
-  // servidor vale para novas conexões, e a interrupção imediata vem deste
-  // efeito: `allowed` cai, o canal é removido e a emissão para na hora. Sem a
-  // migration aplicada, o canal privado nega tudo (fail-closed) e o
-  // indicador simplesmente não aparece. Nada aqui simula evento dela.
+  // "Digitando" (pedido do Marco em 23/11/2026): presença REAL por
+  // postgres_changes na tabela public.typing_status (migration 20261123020000
+  // em revisão) — o mesmo padrão das mensagens. A autorização é POR EVENTO no
+  // servidor: cada upsert passa pela RLS com amizade/bloqueio atuais e
+  // sender_id amarrado ao auth.uid(), e cada mudança só chega a quem a policy
+  // SELECT deixa ler naquele instante. Bloqueio ou fim de amizade corta envio
+  // e recebimento já no próximo evento, inclusive em conexão aberta antes da
+  // mudança — não depende de teardown no cliente (que também acontece: caiu
+  // `allowed`, sai o canal). Sem a migration aplicada, a tabela não existe e
+  // o recurso falha fechado: nada é exibido. Nada aqui simula evento dela.
   useEffect(() => {
     if (!supabase || !userId || !id || !allowed || unavailable) return;
     const client = requireSupabase();
-    const channel = client.channel(typingChannelName(userId, id), { config: { private: true } });
+    const pairKey = typingPairKey(userId, id);
+    const channel = client.channel(typingChannelName(userId, id));
     channel
-      .on('broadcast', { event: 'typing' }, (payload) => {
-        const p = (payload as { payload?: { userId?: string; typing?: boolean } }).payload || {};
-        if (p.userId === userId) return; // garantia contra eco
-        if (p.typing) {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'typing_status', filter: `pair_key=eq.${pairKey}` }, (payload) => {
+        const row = (payload as { new?: { sender_id?: string; is_typing?: boolean; updated_at?: string } }).new || {};
+        if (row.sender_id === userId) return; // garantia contra eco
+        const fresh = row.updated_at ? Date.now() - new Date(row.updated_at).getTime() < TYPING_VISIBLE_MS : true;
+        if (row.is_typing && fresh) {
           setOtherTyping(true);
           if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
           typingHideTimer.current = setTimeout(() => setOtherTyping(false), TYPING_VISIBLE_MS);
@@ -178,9 +177,7 @@ export default function Conversation() {
         }
       })
       .subscribe();
-    typingChannelRef.current = channel;
     return () => {
-      typingChannelRef.current = null;
       if (typingHideTimer.current) clearTimeout(typingHideTimer.current);
       void client.removeChannel(channel);
     };
@@ -188,12 +185,18 @@ export default function Conversation() {
   }, [supabase, userId, id, allowed, unavailable]);
 
   function emitTyping(typing: boolean) {
-    const channel = typingChannelRef.current;
-    if (!channel || !userId) return;
-    // Sem a migration de autorização aplicada, o servidor nega o envio —
-    // esperado e silencioso: o indicador só funciona quando a autorização
-    // existir dos dois lados.
-    void Promise.resolve(channel.send({ type: 'broadcast', event: 'typing', payload: { userId, typing } })).catch(() => {});
+    if (!supabase || !userId || !id) return;
+    // Sem a migration aplicada ou sem permissão no momento do evento, o
+    // servidor nega o upsert — esperado e silencioso: o indicador só
+    // funciona quando a autorização existir dos dois lados.
+    void Promise.resolve(
+      requireSupabase()
+        .from('typing_status')
+        .upsert(
+          { pair_key: typingPairKey(userId, id), sender_id: userId, is_typing: typing, updated_at: new Date().toISOString() },
+          { onConflict: 'pair_key,sender_id' }
+        )
+    ).catch(() => {});
   }
 
   // Avisa a outra pessoa quando começo a digitar e, no máximo 1x a cada
