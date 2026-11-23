@@ -1,14 +1,23 @@
 // Indicador "digitando" (pedido do Marco em 23/11/2026): presença REAL via
-// broadcast do Supabase Realtime — sem tabela, sem migration. O indicador só
-// aparece quando o aparelho da outra pessoa avisa que ela está digitando;
-// o app nunca simula um evento que não chegou.
+// postgres_changes na tabela public.typing_status (migration 20261123020000,
+// em revisão) — o mesmo padrão das mensagens. A autorização é avaliada POR
+// EVENTO no servidor: cada upsert passa pela RLS com a amizade/bloqueio
+// atuais e o sender_id amarrado ao auth.uid(), e cada mudança só chega a
+// quem a policy SELECT deixa ler naquele instante. O indicador só aparece
+// quando o aparelho da outra pessoa avisa que ela está digitando; o app
+// nunca simula um evento que não chegou.
 
-/** Nome simétrico do canal: os dois lados da conversa calculam o mesmo nome. */
-export function typingChannelName(a, b) {
-  return 'typing:' + [a, b].sort().join(':');
+/** Chave simétrica do par: os dois lados da conversa calculam a mesma. */
+export function typingPairKey(a, b) {
+  return [a, b].sort().join(':');
 }
 
-/** Intervalo mínimo entre avisos de "digitando", para não inundar o canal. */
+/** Nome do canal de assinatura (rótulo local; a permissão vem da RLS). */
+export function typingChannelName(a, b) {
+  return 'typing:' + typingPairKey(a, b);
+}
+
+/** Intervalo mínimo entre avisos de "digitando", para não inundar o banco. */
 export const TYPING_EMIT_INTERVAL_MS = 2000;
 
 /** Tempo que o indicador permanece sem um novo aviso antes de sumir. */
