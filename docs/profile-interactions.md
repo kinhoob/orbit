@@ -41,7 +41,7 @@ no próprio perfil o coração aparece só como contagem.
 
 ## Denunciar (registro, sem moderação)
 
-- A denúncia fica no menu de opções do perfil (botão de três pontinhos, como
+- A denúncia fica no menu de opções do perfil (botão de três tracinhos, como
   em outras redes sociais), ao lado do bloqueio — pedido do Marco em
   22/11/2026: "a parte de denunciar fica com um tres tracinhos como em
   qualquer outra rede social, com varios opções".
@@ -62,7 +62,7 @@ no próprio perfil o coração aparece só como contagem.
   como já esconde perfil e números). Enviar: somente para amigo — amizade
   aceita e sem bloqueio, verificado pelo banco a cada envio. Sem edição nem
   exclusão pela API; a função `mark_conversation_read` marca como lidas só
-  as mensagens recebidas por quem chama.
+  as mensagens recebidas por quem chama e não age quando há bloqueio.
 - A conversa abre pelo botão "Enviar mensagem" no perfil de um amigo e pela
   lista de conversas (link "Mensagens" na tela de Amizades), com contagem de
   não lidas. Envio otimista com reversão em erro.
