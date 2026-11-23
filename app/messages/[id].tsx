@@ -149,7 +149,7 @@ export default function Conversation() {
           )}
           {isMutedNow && (
             <Text style={styles.body}>
-              Silenciar fica só neste aparelho: a contagem de não lidas desta conversa some da sua lista. O ORBIT ainda não tem notificações push — quando chegarem, esta preferência passa a valer para elas.
+              Silenciar esconde a contagem de não lidas desta conversa na sua lista. O ORBIT ainda não tem notificações push, então não há notificação para silenciar — é só a contagem que some.
             </Text>
           )}
           {unavailable ? (
