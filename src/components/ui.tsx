@@ -1,5 +1,6 @@
 import React from 'react';
 import { MotionPressable, ScreenMotion } from './motion';
+import { buttonColorsFor } from '../domain/cosmetics.mjs';
 import { useWebPullToRefresh } from './pull-to-refresh';
 import { Animated, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon } from './icons';
@@ -41,9 +42,10 @@ export function Screen({ children, maxWidth = 560, onRefresh, refreshing = false
   );
 }
 
-export function Button({ label, onPress, disabled = false, variant = 'primary' }: { label: string; onPress: () => void; disabled?: boolean; variant?: 'primary' | 'outline' }) {
+export function Button({ label, onPress, disabled = false, variant = 'primary', buttonTheme }: { label: string; onPress: () => void; disabled?: boolean; variant?: 'primary' | 'outline'; buttonTheme?: string }) {
   const outline = variant === 'outline';
-  return <MotionPressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[outline ? styles.buttonOutline : styles.button, disabled && { opacity: 0.5 }]}><Text style={outline ? styles.buttonOutlineText : styles.buttonText}>{label}</Text></MotionPressable>;
+  const themed = !outline && buttonTheme ? buttonColorsFor(buttonTheme) : null;
+  return <MotionPressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[outline ? styles.buttonOutline : styles.button, themed && { backgroundColor: themed.bg }, disabled && { opacity: 0.5 }]}><Text style={[outline ? styles.buttonOutlineText : styles.buttonText, themed && { color: themed.fg }]}>{label}</Text></MotionPressable>;
 }
 
 export const styles = StyleSheet.create({
