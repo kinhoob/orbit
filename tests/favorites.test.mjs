@@ -15,11 +15,11 @@ new Function('require', 'exports', outputText)((name) => {
 }, api);
 const key = ['media-state', 'work', 'me'];
 
-test('own profile shows all tabs, other profiles hide the private saved tab', () => {
+test('favorites are pinned above the tabs, not a tab; own profile shows all tabs, other profiles hide the private saved tab', () => {
   const own = domain.profileTabsFor(true).map((tab) => tab.id);
   const other = domain.profileTabsFor(false).map((tab) => tab.id);
-  assert.deepEqual(own, ['timeline', 'favorites', 'collections', 'saved']);
-  assert.deepEqual(other, ['timeline', 'favorites', 'collections']);
+  assert.deepEqual(own, ['timeline', 'collections', 'saved']);
+  assert.deepEqual(other, ['timeline', 'collections']);
 });
 
 test('favorites carousel cards leave a peeking card to signal swiping', () => {
