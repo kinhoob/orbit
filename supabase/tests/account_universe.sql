@@ -22,7 +22,7 @@ do $$ begin
   raise exception 'Direct XP write unexpectedly permitted';
  exception when insufficient_privilege then null; end;
  begin
-  update public.profiles set profile_theme='softYellow' where id=auth.uid();
+  update public.profiles set profile_theme='royal' where id=auth.uid();
   raise exception 'Locked cosmetic unexpectedly permitted';
  exception when insufficient_privilege then null; end;
 end $$;
