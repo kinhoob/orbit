@@ -43,7 +43,7 @@ export default function PersonProfile() {
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
         <View style={{ flex: 1, gap: 18 }}>
           <FollowButton profileId={id} />
-          {canMessage && <Button label="Enviar mensagem" onPress={() => router.push({ pathname: '/messages/[id]', params: { id: id! } })} />}
+          {canMessage && <Button variant="outline" label="Enviar mensagem" onPress={() => router.push({ pathname: '/messages/[id]', params: { id: id! } })} />}
         </View>
         {!!session && session.user.id !== id && (
           <MotionPressable accessibilityRole="button" accessibilityLabel="Mais opções" accessibilityState={{ expanded: menuOpen }} onPress={() => { setMenuOpen(!menuOpen); setAction(''); }} style={{ padding: 12 }}>
@@ -70,7 +70,7 @@ export default function PersonProfile() {
       {tab === 'timeline' && <ProfileTimeline profileId={id} />}
       {tab === 'collections' && <SharedCollections profileId={id} />}
       {!!session && session.user.id !== id && action === 'report' && <ReportFlow profileId={id} startOpen />}
-      {!!session && session.user.id !== id && action === 'block' && (<><Text style={styles.body}>Bloquear impede interações entre vocês. Você pode desfazer em Configurações.</Text><Button label="Confirmar bloqueio" disabled={busy} onPress={() => { void block(); }} /><Button label="Cancelar" disabled={busy} onPress={() => setAction('')} /></>)}
+      {!!session && session.user.id !== id && action === 'block' && (<><Text style={styles.body}>Bloquear impede interações entre vocês. Você pode desfazer em Configurações.</Text><Button label="Confirmar bloqueio" disabled={busy} onPress={() => { void block(); }} /><Button variant="outline" label="Cancelar" disabled={busy} onPress={() => setAction('')} /></>)}
       {!!message && <Text accessibilityRole="alert" style={styles.error}>{message}</Text>}
       </>}
   </Screen>;
