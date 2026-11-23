@@ -143,6 +143,23 @@ do $$ begin
 exception when insufficient_privilege then null;
 end $$;
 
+-- 9b. Com bloqueio, marcar como lida também não faz nada: a mensagem
+-- anterior continua não lida, porque ninguém a está lendo.
+reset role;
+delete from public.messages;
+delete from public.blocks where blocker_id='a1111111-1111-4111-8111-111111111111';
+insert into public.messages(sender_id, recipient_id, body) values
+ ('a2222222-2222-4222-8222-222222222222','a1111111-1111-4111-8111-111111111111','antes do bloqueio');
+insert into public.blocks(blocker_id, blocked_id) values
+ ('a1111111-1111-4111-8111-111111111111','a2222222-2222-4222-8222-222222222222');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','a1111111-1111-4111-8111-111111111111',true);
+select public.mark_conversation_read('a2222222-2222-4222-8222-222222222222');
+do $$ declare n integer; begin
+ select count(*) into n from public.messages where read_at is not null;
+ if n<>0 then raise exception 'mark_conversation_read worked despite block: %', n; end if;
+end $$;
+
 -- 10. Anônimo não lê nem envia.
 reset role;
 set local role anon;
