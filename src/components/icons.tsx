@@ -6,7 +6,7 @@ export type IconName =
   | 'home' | 'compass' | 'plus' | 'bookmark' | 'user'
   | 'film' | 'tv' | 'music' | 'book' | 'game'
   | 'search' | 'edit' | 'image' | 'heart' | 'arrow-up' | 'arrow-down' | 'bell'
-  | 'eye' | 'eye-off' | 'mail' | 'check' | 'flag' | 'menu';
+  | 'eye' | 'eye-off' | 'mail' | 'check' | 'flag' | 'menu' | 'send';
 
 type Stroke = ['path' | 'circle' | 'rect', Record<string, string | number>];
 
@@ -34,6 +34,7 @@ const STROKES: Record<IconName, Stroke[]> = {
   check: [['path', { d: 'M20 6L9 17l-5-5' }]],
   flag: [['path', { d: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z' }], ['path', { d: 'M4 22v-7' }]],
   menu: [['path', { d: 'M4 6h16' }], ['path', { d: 'M4 12h16' }], ['path', { d: 'M4 18h16' }]],
+  send: [['path', { d: 'M22 2L11 13' }], ['path', { d: 'M22 2l-7 20-4-9-9-4 20-7z' }]],
 };
 
 /** Marca do ORBIT: anel creme com ponto dourado em órbita (versão estática, para o topo escuro das telas). */
