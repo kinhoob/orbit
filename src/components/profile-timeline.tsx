@@ -5,13 +5,13 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { requireSupabase } from '../lib/supabase';
 import { useAuth } from '../features/auth/provider';
 import { setRatingLike } from '../features/feed/timelines';
-import { withLike, isMissingColumnError } from '../domain/timelines.mjs';
+import { withLike, isMissingColumnError, relativeTime, scoreLabel, visibilityLabel, visibilityIcon } from '../domain/timelines.mjs';
 import { categories } from '../features/catalog/data';
 import { genreLabelsFor } from '../features/catalog/genres.mjs';
-import { IllustratedCover } from './mural';
+import { IllustratedCover, categoryIcons } from './mural';
 import { styles, Button } from './ui';
 import { LoadingState } from './loading';
-import { MotionPressable } from './motion';
+import { CardEntrance, MotionPressable } from './motion';
 import { StatePulse } from './feedback';
 import { Icon } from './icons';
 import { tokens as t, font} from '../design/tokens';
@@ -36,18 +36,21 @@ export function TimelineMedia({ media }: { media: TimelineMediaInfo }) {
   const genreLabels = genreLabelsFor(media.genres, media.category).slice(0, 3);
   const meta = [categoryLabel, media.release_year].filter(Boolean).join(' · ');
   return (
-    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-      <View style={{ width: 60, borderRadius: 10, overflow: 'hidden' }}>
+    <View style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
+      <View style={{ width: 84, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: t.colors.border, boxShadow: '0 3px 10px rgba(23,20,15,0.10)', elevation: 2 }}>
         {media.cover_url && !failed
-          ? <Image source={{ uri: media.cover_url }} resizeMode="cover" onError={() => setFailed(true)} style={{ width: 60, aspectRatio: 2 / 3 }} accessibilityLabel={`Capa de ${media.title}`} />
+          ? <Image source={{ uri: media.cover_url }} resizeMode="cover" onError={() => setFailed(true)} style={{ width: 84, aspectRatio: 2 / 3 }} accessibilityLabel={`Capa de ${media.title}`} />
           : <IllustratedCover category={media.category} aspectRatio={2 / 3} />}
       </View>
-      <View style={{ flex: 1, gap: 3 }}>
-        <Link href={{ pathname: '/media/[id]', params: { id: media.id } }} style={[styles.link, { fontFamily: font.bold, color: t.colors.text }]}>{media.title} →</Link>
-        <Text style={{ color: t.colors.muted, fontSize: 12 }}>{meta}</Text>
+      <View style={{ flex: 1, gap: 4, paddingTop: 2 }}>
+        <Link href={{ pathname: '/media/[id]', params: { id: media.id } }} style={{ fontFamily: font.bold, color: t.colors.text, fontSize: 17, lineHeight: 22, paddingVertical: 2 }}>{media.title}</Link>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Icon name={categoryIcons[media.category] ?? 'image'} size={13} color={t.colors.muted} />
+          <Text style={{ color: t.colors.muted, fontSize: 12, fontFamily: font.medium }}>{meta}</Text>
+        </View>
         {!!media.creator && <Text style={{ color: t.colors.muted, fontSize: 12 }}>{media.creator}</Text>}
         {genreLabels.length > 0 && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
             {genreLabels.map((label) => (
               <View key={label} style={{ backgroundColor: t.colors.secondary, borderRadius: 999, paddingVertical: 3, paddingHorizontal: 9 }}>
                 <Text style={{ color: t.colors.text, fontSize: 11, fontFamily: font.semibold }}>{label}</Text>
@@ -55,6 +58,53 @@ export function TimelineMedia({ media }: { media: TimelineMediaInfo }) {
             ))}
           </View>
         )}
+      </View>
+    </View>
+  );
+}
+
+/** Selo da nota em dourado (identidade do ORBIT): estrela + valor em pt-BR. */
+function ScorePill({ score }: { score: number }) {
+  const label = scoreLabel(score);
+  return (
+    <View accessibilityLabel={`Nota ${label} de 10`} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.colors.gold, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 11 }}>
+      <Icon name="star" size={14} color={t.colors.accentStrong} />
+      <Text style={{ color: t.colors.accentStrong, fontFamily: font.extrabold, fontSize: 14 }}>{label}</Text>
+    </View>
+  );
+}
+
+/** Cartão de uma avaliação da linha do tempo (perfil próprio e visitado):
+ * nota em destaque, ficha da obra, resenha em bloco de citação e curtidas. */
+export function TimelineRatingCard({ rating, userId, profileId, onToggleLike }: { rating: TimelineRating; userId?: string; profileId: string; onToggleLike?: (rating: TimelineRating) => void }) {
+  return (
+    <View style={[styles.card, { gap: 12 }]}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <ScorePill score={rating.score} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <Icon name={visibilityIcon(rating.visibility)} size={13} color={t.colors.muted} />
+          <Text style={{ color: t.colors.muted, fontSize: 12 }}>{visibilityLabel(rating.visibility)}</Text>
+        </View>
+      </View>
+      {rating.media ? <TimelineMedia media={rating.media} /> : <Text style={styles.body}>Obra indisponível</Text>}
+      {!!rating.review && (
+        <View style={{ borderLeftWidth: 3, borderLeftColor: t.colors.gold, paddingLeft: 12, paddingVertical: 2 }}>
+          <Text style={[styles.body, { color: t.colors.text }]}>{rating.review}</Text>
+        </View>
+      )}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        {rating.like_count !== undefined && (userId && userId !== rating.user_id && onToggleLike
+          ? <MotionPressable
+              accessibilityRole="button"
+              accessibilityLabel={rating.liked_by_me ? 'Remover curtida' : 'Curtir avaliação'}
+              onPress={() => onToggleLike(rating)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 }}
+            >
+              <StatePulse active={!!rating.liked_by_me}><Icon name="heart" size={18} color={rating.liked_by_me ? t.colors.accentStrong : t.colors.muted} /></StatePulse>
+              <Text style={{ color: rating.liked_by_me ? t.colors.accentStrong : t.colors.muted, fontSize: 13 }}>{rating.like_count}</Text>
+            </MotionPressable>
+          : <Text style={styles.body}>{rating.like_count ?? 0} curtidas</Text>)}
+        {userId === profileId && rating.media && <Link href={{ pathname: '/media/[id]', params: { id: rating.media.id } }} style={[styles.link, { paddingVertical: 4, fontSize: 14 }]}>Editar avaliação</Link>}
       </View>
     </View>
   );
@@ -121,32 +171,17 @@ export function ProfileTimeline({ profileId }: { profileId: string }) {
     <Text style={styles.body}>Avaliações da mais recente para a mais antiga.</Text>
     {query.isPending ? <LoadingState kind="feed" /> : query.isError ? <><Text style={styles.error}>Não foi possível carregar as avaliações.</Text><Button label="Tentar novamente" onPress={() => { void query.refetch(); }} /></>
       : !query.data.pages[0]?.length ? <Text style={styles.body}>As avaliações aparecerão aqui conforme forem publicadas.</Text>
-      : query.data.pages.flat().map(rating => <View key={rating.id} style={{ borderLeftWidth: 2, borderLeftColor: t.colors.border, paddingLeft: 18, gap: 8 }}>
-        <Text style={{ color: t.colors.muted, fontSize: 12 }}>{new Date(rating.created_at).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}</Text>
-        <View style={[styles.card, { gap: 10 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Icon name="star" size={18} color={t.colors.gold} />
-              <Text style={{ color: t.colors.accentStrong, fontFamily: font.bold, fontSize: 21 }}>{String(rating.score).replace('.', ',')}/10</Text>
-            </View>
-            <Text style={{ color: t.colors.muted }}>{rating.visibility === 'private' ? 'Privada' : rating.visibility === 'friends' ? 'Amigos' : 'Pública'}</Text>
-          </View>
-          {rating.media ? <TimelineMedia media={rating.media} /> : <Text style={styles.body}>Obra indisponível</Text>}
-          {!!rating.review && <Text style={styles.body}>{rating.review}</Text>}
-          {rating.like_count !== undefined && (userId && userId !== rating.user_id
-            ? <MotionPressable
-                accessibilityRole="button"
-                accessibilityLabel={rating.liked_by_me ? 'Remover curtida' : 'Curtir avaliação'}
-                onPress={() => { void toggleLike(rating); }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 }}
-              >
-                <StatePulse active={!!rating.liked_by_me}><Icon name="heart" size={18} color={rating.liked_by_me ? t.colors.accentStrong : t.colors.muted} /></StatePulse>
-                <Text style={{ color: rating.liked_by_me ? t.colors.accentStrong : t.colors.muted, fontSize: 13 }}>{rating.like_count}</Text>
-              </MotionPressable>
-            : <Text style={styles.body}>{rating.like_count} curtidas</Text>)}
-          {userId === profileId && rating.media && <Link href={{ pathname: '/media/[id]', params: { id: rating.media.id } }} style={styles.link}>Editar avaliação</Link>}
+      : query.data.pages.flat().map((rating, index) => (
+        /* Trilho da linha do tempo: ponto dourado no trilho, data relativa
+         * estilo X e cartão com entrada animada (mesma mola dos murais). */
+        <View key={rating.id} style={{ borderLeftWidth: 2, borderLeftColor: t.colors.border, paddingLeft: 18, gap: 8 }}>
+          <View style={{ position: 'absolute', left: -7, top: 3, width: 12, height: 12, borderRadius: 6, backgroundColor: t.colors.gold, borderWidth: 2, borderColor: t.colors.background }} />
+          <Text style={{ color: t.colors.muted, fontSize: 12, fontFamily: font.medium }}>{relativeTime(rating.created_at)}</Text>
+          <CardEntrance index={index}>
+            <TimelineRatingCard rating={rating} userId={userId} profileId={profileId} onToggleLike={(r) => { void toggleLike(r); }} />
+          </CardEntrance>
         </View>
-      </View>)}
+      ))}
     {query.hasNextPage && <Button label={query.isFetchingNextPage ? 'Carregando…' : 'Ver avaliações anteriores'} disabled={query.isFetchingNextPage} onPress={() => { void query.fetchNextPage(); }} />}
     {!!message && <Text accessibilityRole="alert" style={styles.error}>{message}</Text>}
   </View>;
