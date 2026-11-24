@@ -9,6 +9,9 @@ import { MotionPressable, useReducedMotion } from './motion';
 import { Icon } from './icons';
 import { tokens, font} from '../design/tokens';
 import { useAuth } from '../features/auth/provider';
+import { useQuery } from '@tanstack/react-query';
+import { requireSupabase } from '../lib/supabase';
+import { Avatar } from './avatar';
 import { DRAWER_WIDTH_PX, EDGE_ZONE_PX, drawerCloseOffset, drawerOpenOffset, shouldCloseDrawer, shouldOpenDrawer } from '../domain/drawer.mjs';
 
 const nativeDriver = Platform.OS !== 'web';
@@ -71,6 +74,8 @@ export function ProfileEdgeDrawer() {
 
   const go = (href: string) => { closeDrawer(); router.push(href as never); };
   const initial = (session?.user.email || '?').trim().charAt(0).toUpperCase();
+  // Mesma consulta do menu da conta: a foto de perfil aparece no avatar do topo.
+  const ownProfile = useQuery({ queryKey: ['account-menu', session?.user.id], enabled: !!session, queryFn: async () => { const { data, error } = await requireSupabase().from('profiles').select('display_name,username,avatar_url').eq('id', session!.user.id).single(); if (error) throw error; return data; } });
 
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 }}>
@@ -82,7 +87,7 @@ export function ProfileEdgeDrawer() {
         style={{ position: 'absolute', top: insets.top + 14, left: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: tokens.colors.darkSoft, borderWidth: 1.5, borderColor: tokens.colors.onDarkMuted, alignItems: 'center', justifyContent: 'center', zIndex: 31 }}
       >
         {session
-          ? <Text style={{ fontSize: 17, fontFamily: font.bold, color: tokens.colors.onDark }}>{initial}</Text>
+          ? <Avatar uri={ownProfile.data?.avatar_url} name={ownProfile.data?.display_name || ownProfile.data?.username || initial} size={41} backgroundColor="transparent" color={tokens.colors.onDark} fontSize={17} />
           : <Icon name="user" size={20} color={tokens.colors.onDark} />}
       </MotionPressable>
 
@@ -124,4 +129,3 @@ export function ProfileEdgeDrawer() {
     </View>
   );
 }
-
