@@ -9,7 +9,13 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O ORBIT usa suas fotos para você escolher a imagem do perfil."
+        }
+      ]
     ],
     "web": {
       "bundler": "metro"
