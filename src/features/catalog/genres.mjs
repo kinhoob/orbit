@@ -124,3 +124,19 @@ export function genresByCategory(list) {
   }
   return groups;
 }
+
+/** Rótulos de exibição dos gêneros de uma obra, na ordem salva, sem duplicar
+ * rótulos e ignorando ids desconhecidos ou fora da categoria da obra. */
+export function genreLabelsFor(ids, category) {
+  if (!Array.isArray(ids)) return [];
+  const seen = new Set();
+  const labels = [];
+  for (const id of ids) {
+    const genre = genres.find((g) => g.id === id && (!category || g.category === category));
+    if (genre && !seen.has(genre.label)) {
+      seen.add(genre.label);
+      labels.push(genre.label);
+    }
+  }
+  return labels;
+}
