@@ -12,7 +12,7 @@ const GAP = tokens.spacing.sm;
 /** Peso estimado do bloco de texto sob a capa, em unidades de largura da coluna. */
 const TEXT_BLOCK_WEIGHT = 0.45;
 
-const categoryIcons: Record<string, IconName> = {
+export const categoryIcons: Record<string, IconName> = {
   film: 'film', series: 'tv', anime: 'tv', music: 'music', album: 'music', book: 'book', game: 'game',
 };
 
@@ -114,4 +114,3 @@ export function CuratedBadge() {
     </View>
   );
 }
-
