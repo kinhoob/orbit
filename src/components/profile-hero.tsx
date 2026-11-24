@@ -37,9 +37,9 @@ function HeroAction({ href, icon, label, onPress, colors }: { href?: string; ico
  * equipadas e ações com ícone (Editar, Personalizar, Conquistas). Sem dados
  * do backend, mostra só a identidade — nunca nível ou XP inventado.
  */
-export function ProfileHero({ profile, progress, badgeDefinitions, onEdit, onPickAvatar, avatarBusy = false }: {
+export function ProfileHero({ profile, progress, badgeDefinitions, onEdit, onPickAvatar, onRemoveAvatar, avatarBusy = false }: {
   profile: HeroProfile; progress?: AccountProgress; badgeDefinitions?: AchievementDefinition[];
-  onEdit?: () => void; onPickAvatar?: () => void; avatarBusy?: boolean;
+  onEdit?: () => void; onPickAvatar?: () => void; onRemoveAvatar?: () => void; avatarBusy?: boolean;
 }) {
   const colors = palettes[profile.profile_theme as keyof typeof palettes] || palettes.neutral;
   const query = useAccountProgress();
@@ -70,6 +70,12 @@ export function ProfileHero({ profile, progress, badgeDefinitions, onEdit, onPic
               <View style={{ position: 'absolute', bottom: -6, backgroundColor: t.colors.gold, borderRadius: 999, paddingVertical: 3, paddingHorizontal: 10 }}>
                 <Text style={{ fontSize: 12, fontFamily: font.extrabold, color: t.colors.dark }}>Nv {p.level}</Text>
               </View>
+            )}
+            {onRemoveAvatar && !!profile.avatar_url && (
+              <MotionPressable accessibilityRole="button" accessibilityLabel="Remover foto de perfil" disabled={avatarBusy} onPress={onRemoveAvatar}
+                style={{ position: 'absolute', left: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: t.colors.dark, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.background, opacity: avatarBusy ? 0.6 : 1 }}>
+                <Icon name="close" size={15} color={t.colors.onDark} />
+              </MotionPressable>
             )}
             {onPickAvatar && (
               <MotionPressable accessibilityRole="button" accessibilityLabel={avatarBusy ? 'Enviando foto de perfil' : 'Escolher foto de perfil'} disabled={avatarBusy} onPress={onPickAvatar}
