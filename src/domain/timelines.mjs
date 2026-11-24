@@ -78,3 +78,25 @@ export function isMissingColumnError(error) {
   return code === '42703' || code === 'PGRST204'
     || /column .+ does not exist|Could not find the '.+' column/i.test(`${code} ${message}`);
 }
+
+/** Nota 0-10 em pt-BR com no máximo uma casa decimal (8.5 -> "8,5", 10 -> "10"). */
+export function scoreLabel(score) {
+  const value = Number(score);
+  if (!Number.isFinite(value)) return '0';
+  const rounded = Math.round(value * 10) / 10;
+  return String(rounded).replace('.', ',');
+}
+
+/** Rótulo da visibilidade da avaliação; valor desconhecido cai em Pública. */
+export function visibilityLabel(visibility) {
+  if (visibility === 'private') return 'Privada';
+  if (visibility === 'friends') return 'Amigos';
+  return 'Pública';
+}
+
+/** Ícone da visibilidade (mesmos nomes da grade de ícones do app). */
+export function visibilityIcon(visibility) {
+  if (visibility === 'private') return 'eye-off';
+  if (visibility === 'friends') return 'users';
+  return 'eye';
+}
