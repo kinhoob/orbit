@@ -36,7 +36,7 @@ export default function PersonProfile() {
       : profile.isPending ? <LoadingState kind="feed" />
       : profile.isError ? <><Text style={styles.error}>Não foi possível abrir este perfil.</Text><Button label="Tentar novamente" onPress={() => { void profile.refetch(); }} /></>
       : !profile.data ? <Text style={styles.body}>Este perfil não está disponível.</Text>
-      : <><Text style={styles.eyebrow}>NA SUA ÓRBITA</Text><ProfileIdentity profile={profile.data} /><EquippedBadges badges={profile.data.equipped_badges} />{!!profile.data.bio && <Text style={styles.body}>{profile.data.bio}</Text>}
+      : <><Text style={styles.eyebrow}>NA SUA ÓRBITA</Text><ProfileIdentity profile={profile.data} /><EquippedBadges badges={profile.data.equipped_badges} />
       <ProfileStatsRow profileId={id} own={false} />
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, zIndex: 20 }}>
         <View style={{ flex: 1 }}>
