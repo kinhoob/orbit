@@ -6,6 +6,7 @@ import { Button, Screen, styles } from '../src/components/ui';
 import { useAuth } from '../src/features/auth/provider';
 import { supabase } from '../src/lib/supabase';
 import { tokens as t, font} from '../src/design/tokens';
+import { Avatar } from '../src/components/avatar';
 import {
   deleteFriendship,
   fetchFriendships,
@@ -22,9 +23,7 @@ import {
 function PersonRow({ profile, children }: React.PropsWithChildren<{ profile: ProfileSummary }>) {
   return (
     <View style={social.row}>
-      <View style={social.avatar} accessibilityLabel={`Avatar de ${profile.display_name || profile.username || 'usuário'}`}>
-        <Text style={social.avatarText}>{(profile.display_name || profile.username || '?').trim().charAt(0).toUpperCase()}</Text>
-      </View>
+      <Avatar uri={profile.avatar_url} name={profile.display_name || profile.username} size={44} backgroundColor={t.colors.primary} color={t.colors.onDark} accessibilityLabel={`Avatar de ${profile.display_name || profile.username || 'usuário'}`} />
       <View style={social.rowText}>
         <Link href={{ pathname: '/people/[id]', params: { id: profile.id } }} style={social.name}>{profile.display_name || 'Sem nome'} →</Link>
         {!!profile.username && <Text style={social.username}>@{profile.username}</Text>}
@@ -261,4 +260,3 @@ const social = StyleSheet.create({
   name: { fontSize: 16, fontFamily: font.semibold, color: t.colors.text },
   username: { fontSize: 14, color: t.colors.muted },
 });
-
