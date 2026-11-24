@@ -12,6 +12,7 @@ import { relativeTime } from '../../src/domain/timelines.mjs';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { tokens as t, font} from '../../src/design/tokens';
+import { Avatar } from '../../src/components/avatar';
 
 function NotificationRow({ item, onPress }: { item: OrbitNotification; onPress: () => void }) {
   const actorName = item.actor?.display_name || item.actor?.username || '';
@@ -23,9 +24,7 @@ function NotificationRow({ item, onPress }: { item: OrbitNotification; onPress: 
       onPress={onPress}
       style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10, borderRadius: 20, backgroundColor: t.colors.surface, boxShadow: '0 4px 16px rgba(23,20,15,0.06)', elevation: 1 }, pressed && { opacity: 0.7 }]}
     >
-      <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: t.colors.gold, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 16, fontFamily: font.bold, color: t.colors.accentStrong }}>{(actorName || '?').trim().charAt(0).toUpperCase()}</Text>
-      </View>
+      <Avatar uri={item.actor?.avatar_url} name={actorName} size={42} backgroundColor={t.colors.gold} color={t.colors.accentStrong} fontSize={16} />
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={{ fontSize: 15, fontFamily: unread ? font.bold : font.medium, color: t.colors.text }}>{notificationText(item.type, actorName)}</Text>
         <Text style={{ fontSize: 12, color: t.colors.muted }}>{relativeTime(item.created_at)}</Text>
@@ -87,4 +86,4 @@ export default function Notifications() {
       <View>{query.data.map((item) => <NotificationRow key={item.id} item={item} onPress={() => open(item)} />)}</View>
     ) : null}
   </Screen>;
-                                }
+}
