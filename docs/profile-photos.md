@@ -22,5 +22,12 @@ Enquanto a migration não é aplicada, o envio da foto responde com o estado hon
 ## Limites conhecidos
 
 - O upload real NÃO foi validado de ponta a ponta: depende da migration aplicada e de um dispositivo com galeria. O que foi verificado é o contrato (caminho, tipos, limite de 5 MB, erros) e a interface com dados isolados.
-- Listas de amigos e conversas ainda mostram a inicial; mostrar a foto lá é um próximo passo natural.
-- Remover a foto (voltar à inicial) não está nesta rodada.
+
+## Rodada 2: foto em todo o app e remover foto (24/11/2026)
+
+Pedido do Marco em 24/11/2026 ("sim faça tudo", resposta à proposta de levar a foto para amigos, chat e listas e permitir remover).
+
+- Componente único `src/components/avatar.tsx`: mostra `avatar_url` e volta para a inicial quando não há foto ou a imagem falha ao carregar.
+- Agora com foto: gaveta (avatar do topo), Amizades (linhas e sugestões), Busca de pessoas, lista de conversas, cabeçalho do chat, prévia do perfil no chat, Sino (autor da notificação) e cartões das timelines do Explorar. As consultas já traziam `avatar_url`; nada novo no banco.
+- Remover foto: botão de fechar no avatar do próprio perfil. `removeAvatar` limpa `profiles.avatar_url` primeiro (a inicial volta em todas as telas) e depois apaga `avatar.jpg|png|webp|gif` da pasta do próprio usuário no bucket `avatars`. A política de DELETE já existe (só o dono). Se o Storage falhar, a tela avisa que a foto saiu do perfil mas o arquivo ainda não foi apagado.
+- Sem migration nova. Testes: 208 (inicial de fallback e caminhos de remoção). Não validado em aparelho nem com duas contas.
