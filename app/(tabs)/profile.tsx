@@ -15,10 +15,11 @@ import { ProfileTabs, PinnedFavorites } from '../../src/components/profile-tabs'
 import { SharedCollections } from '../../src/components/shared-collections';
 import { ProfileHero } from '../../src/components/profile-hero';
 import { ProfileStatsRow } from '../../src/components/profile-stats';
+import { pickAndUploadAvatar, avatarsBucketMissing } from '../../src/features/account/avatar';
 
 export default function Profile() {
   const {session,loading}=useAuth();const cache=useQueryClient();
-  const [name,setName]=useState('');const [username,setUsername]=useState('');const [bio,setBio]=useState('');const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const [editing,setEditing]=useState(false);const [tab,setTab]=useState('timeline');
+  const [name,setName]=useState('');const [username,setUsername]=useState('');const [bio,setBio]=useState('');const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const [avatarBusy,setAvatarBusy]=useState(false);const [editing,setEditing]=useState(false);const [tab,setTab]=useState('timeline');
   const query=useQuery({queryKey:['profile',session?.user.id],enabled:!!session,queryFn:async()=>{const {data,error}=await requireSupabase().from('profiles').select('*').eq('id',session!.user.id).single();if(error)throw error;return data;}});
   const savedQuery=useQuery({queryKey:['saved',session?.user.id],enabled:!!session,queryFn:async()=>{
     const client=requireSupabase();const {data,error}=await client.from('saved_items').select('media_item_id').eq('user_id',session!.user.id).order('created_at',{ascending:false}).limit(100);if(error)throw error;
@@ -28,6 +29,15 @@ export default function Profile() {
   }});
   useEffect(()=>{setName(query.data?.display_name || '');setUsername(query.data?.username || '');setBio(query.data?.bio || '');setMessage('');},[query.data,session?.user.id]);
   async function save(){if(!session)return;if(!/^[a-z0-9_]{3,30}$/.test(username)){setMessage('Use um username de 3 a 30 letras minúsculas, números ou _.');return;}setBusy(true);setMessage('');try{const {error}=await requireSupabase().from('profiles').update({display_name:name.trim(),username,bio:bio.trim()}).eq('id',session.user.id);if(error)throw error;await cache.invalidateQueries({queryKey:['profile',session.user.id]});await cache.invalidateQueries({queryKey:['account-menu',session.user.id]});setMessage('Perfil atualizado.');setEditing(false);}catch{setMessage('Não foi possível salvar. O username pode estar em uso.');}finally{setBusy(false);}}
+  async function pickAvatar(){if(!session||avatarBusy)return;setAvatarBusy(true);setMessage('');try{
+    const result=await pickAndUploadAvatar(session.user.id);
+    if(result==='uploaded'){await cache.invalidateQueries({queryKey:['profile',session.user.id]});await cache.invalidateQueries({queryKey:['account-menu',session.user.id]});await cache.invalidateQueries({queryKey:['public-profile']});setMessage('Foto de perfil atualizada.');}
+  }catch(error){const code=error instanceof Error?error.message:'';
+    if(code==='bucket-missing'||avatarsBucketMissing())setMessage('A foto de perfil chega com a próxima atualização do banco, que já está em revisão.');
+    else if(code==='too-large')setMessage('Escolha uma imagem de até 5 MB.');
+    else if(code==='unsupported-format')setMessage('Escolha uma imagem JPG, PNG, WebP ou GIF.');
+    else setMessage('Não foi possível enviar a foto. Tente novamente.');
+  }finally{setAvatarBusy(false);}}
   async function signout(){setBusy(true);try{const {error}=await requireSupabase().auth.signOut();if(error)throw error;cache.clear();}catch{setMessage('Não foi possível sair. Tente novamente.');}finally{setBusy(false);}}
   return <Screen><Text style={styles.eyebrow}>PERFIL</Text>
     {loading?<Text style={styles.body}>Carregando sessão…</Text>:!session?<View style={{gap:18}}>
@@ -37,12 +47,8 @@ export default function Profile() {
       <Link href="/auth" style={styles.link}>Entrar ou criar conta →</Link>
     </View>:<>
       {query.isPending?<Text style={styles.body}>Carregando seu perfil…</Text>:query.isError?<><Text style={styles.error}>Não foi possível carregar seu perfil. Verifique se as migrations foram aplicadas.</Text><Button label="Tentar novamente" onPress={()=>{void query.refetch();}}/></>:<>
-      <ProfileHero profile={{...query.data,display_name:name,username}} />
-      {!!bio&&<Text style={styles.body}>{bio}</Text>}
+      <ProfileHero profile={{...query.data,display_name:name,username,bio}} onEdit={()=>setEditing(true)} onPickAvatar={()=>{void pickAvatar();}} avatarBusy={avatarBusy} />
       <ProfileStatsRow profileId={session.user.id} own />
-      <Link href="/achievements" style={styles.link}>Conquistas e insígnias →</Link>
-      <Link href="/customize" style={styles.link}>Personalizar perfil</Link>
-      {!editing&&<MotionPressable accessibilityRole="button" onPress={()=>setEditing(true)} style={styles.buttonOutline}><Text style={styles.buttonOutlineText}>Editar perfil</Text></MotionPressable>}
       {editing&&<View style={{gap:14}}>
         <Text style={styles.body}>Nome</Text><TextInput style={styles.input} accessibilityLabel="Nome" value={name} onChangeText={setName} maxLength={80} editable={!busy}/>
         <Text style={styles.body}>Username</Text><TextInput style={styles.input} accessibilityLabel="Username" autoCapitalize="none" value={username} onChangeText={setUsername} maxLength={30} editable={!busy}/>
@@ -64,4 +70,4 @@ export default function Profile() {
       <Link href="/friends" style={styles.link}>Amizades →</Link><Button label="Sair da conta" disabled={busy} onPress={()=>{void signout();}}/>{!!message&&<Text accessibilityRole="alert" style={styles.body}>{message}</Text>}
     </>}
   </Screen>;
-      }
+}
