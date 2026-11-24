@@ -10,6 +10,7 @@ import { ChatBubble, ChatMenu, PanelReveal, ProfilePreviewCard, TypingBubble, ty
 import { GifPicker } from '../../src/components/gif-picker';
 import { LoadingState } from '../../src/components/loading';
 import { tokens as t, font } from '../../src/design/tokens';
+import { Avatar } from '../../src/components/avatar';
 import { supabase, requireSupabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { fetchFriendships, relationWith } from '../../src/features/social/friends';
@@ -311,9 +312,7 @@ export default function Conversation() {
              * ligação. Os três pontinhos abrem prévia do perfil e silenciar. */}
             <View style={chat.header}>
               <View style={chat.headerIdentity}>
-                <View style={chat.avatar}>
-                  <Text style={chat.avatarText}>{name.trim().charAt(0).toUpperCase()}</Text>
-                </View>
+                <Avatar uri={profile.data?.avatar_url} name={name} size={44} backgroundColor={t.colors.primary} color={t.colors.onDark} accessibilityLabel={`Avatar de ${name}`} />
                 <View style={{ flex: 1 }}>
                   <Text style={chat.headerName} numberOfLines={1}>{name}</Text>
                   {isMutedNow && (
@@ -331,6 +330,7 @@ export default function Conversation() {
               <ProfilePreviewCard
                 name={name}
                 username={profile.data?.username}
+                avatarUrl={profile.data?.avatar_url}
                 onOpen={() => { setPreview(false); router.push(`/people/${id}` as never); }}
               />
             )}
