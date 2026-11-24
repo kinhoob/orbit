@@ -12,6 +12,7 @@ import { searchProfiles } from '../social/friends';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/provider';
 import { tokens as t, font} from '../../design/tokens';
+import { Avatar } from '../../components/avatar';
 
 export function SearchScreen({ intent = 'browse' }: { intent?: 'browse' | 'review' }) {
   const [search, setSearch] = useState('');
@@ -50,7 +51,7 @@ export function SearchScreen({ intent = 'browse' }: { intent?: 'browse' | 'revie
       : !searching ? <Text style={styles.body}>Busque por nome ou username, com pelo menos duas letras.</Text>
       : people.isPending || term !== search ? <LoadingState kind="feed" />
       : people.isError ? <><Text style={styles.error}>Não foi possível buscar pessoas.</Text><Button label="Tentar novamente" onPress={() => { void people.refetch(); }} /></>
-      : people.data?.length ? <View style={{ gap: 12 }}>{people.data.map(person => <Link key={person.id} href={{ pathname: '/people/[id]', params: { id: person.id } }} asChild><MotionPressable accessibilityRole="link" style={[styles.card, { flexDirection: 'row', alignItems: 'center', padding: 16 }]}><View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.colors.accent, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: t.colors.accentStrong, fontFamily: font.bold }}>{(person.display_name || person.username || '?').charAt(0).toUpperCase()}</Text></View><View style={{ flex: 1, gap: 4 }}><Text style={{ color: t.colors.text, fontFamily: font.semibold }}>{person.display_name || person.username}</Text><Text style={{ color: t.colors.muted }}>@{person.username || 'sem username'}</Text></View><Text style={{ color: t.colors.accentStrong }}>→</Text></MotionPressable></Link>)}</View>
+      : people.data?.length ? <View style={{ gap: 12 }}>{people.data.map(person => <Link key={person.id} href={{ pathname: '/people/[id]', params: { id: person.id } }} asChild><MotionPressable accessibilityRole="link" style={[styles.card, { flexDirection: 'row', alignItems: 'center', padding: 16 }]}><Avatar uri={person.avatar_url} name={person.display_name || person.username} size={44} backgroundColor={t.colors.accent} color={t.colors.accentStrong} fontSize={16} style={{ marginRight: 12 }} /><View style={{ flex: 1, gap: 4 }}><Text style={{ color: t.colors.text, fontFamily: font.semibold }}>{person.display_name || person.username}</Text><Text style={{ color: t.colors.muted }}>@{person.username || 'sem username'}</Text></View><Text style={{ color: t.colors.accentStrong }}>→</Text></MotionPressable></Link>)}</View>
       : <Text style={styles.body}>Nenhuma pessoa encontrada.</Text>}
   </Screen>;
 }

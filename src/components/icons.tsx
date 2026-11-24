@@ -9,7 +9,7 @@ export type IconName =
   | 'eye' | 'eye-off' | 'mail' | 'check' | 'flag' | 'menu' | 'send'
   | 'ellipsis' | 'smile' | 'bell-off' | 'camera'
   | 'star' | 'sparkles' | 'medal' | 'flame' | 'trophy' | 'crown'
-  | 'users' | 'megaphone' | 'library' | 'orbit' | 'gem';
+  | 'users' | 'megaphone' | 'library' | 'orbit' | 'gem' | 'close';
 
 type Stroke = ['path' | 'circle' | 'rect', Record<string, string | number>];
 
@@ -36,6 +36,7 @@ const STROKES: Record<IconName, Stroke[]> = {
   'eye-off': [['path', { d: 'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24' }], ['path', { d: 'M1 1l22 22' }]],
   mail: [['rect', { x: 2, y: 4, width: 20, height: 16, rx: 2 }], ['path', { d: 'M22 6l-10 7L2 6' }]],
   check: [['path', { d: 'M20 6L9 17l-5-5' }]],
+  close: [['path', { d: 'M6 6l12 12' }], ['path', { d: 'M18 6L6 18' }]],
   flag: [['path', { d: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z' }], ['path', { d: 'M4 22v-7' }]],
   menu: [['path', { d: 'M4 6h16' }], ['path', { d: 'M4 12h16' }], ['path', { d: 'M4 18h16' }]],
   send: [['path', { d: 'M22 2L11 13' }], ['path', { d: 'M22 2l-7 20-4-9-9-4 20-7z' }]],

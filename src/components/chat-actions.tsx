@@ -4,6 +4,7 @@ import { Button, styles } from './ui';
 import { MotionPressable, useReducedMotion } from './motion';
 import { Icon, type IconName } from './icons';
 import { tokens as t, font } from '../design/tokens';
+import { Avatar } from './avatar';
 import { parseGifBody } from '../domain/gif.mjs';
 
 // Menu de três pontinhos da CONVERSA (pedido do Marco em 22/11/2026, com a
@@ -69,11 +70,11 @@ export function ChatMenu({ onPreview, muted, onToggleMute }: {
 
 /** Prévia do perfil dentro da conversa: só os campos que a pessoa já pode ver
  * na conversa, com caminho para o perfil completo. */
-export function ProfilePreviewCard({ name, username, onOpen }: { name: string; username?: string | null; onOpen: () => void }) {
+export function ProfilePreviewCard({ name, username, avatarUrl, onOpen }: { name: string; username?: string | null; avatarUrl?: string | null; onOpen: () => void }) {
   return (
     <View style={[styles.card, { gap: 10 }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <View style={chatMenu.avatar}><Text style={chatMenu.avatarText}>{name.trim().charAt(0).toUpperCase()}</Text></View>
+        <Avatar uri={avatarUrl} name={name} size={48} backgroundColor={t.colors.primary} color={t.colors.onDark} />
         <View style={{ flex: 1 }}>
           <Text style={chatMenu.name}>{name}</Text>
           {!!username && <Text style={styles.body}>@{username}</Text>}

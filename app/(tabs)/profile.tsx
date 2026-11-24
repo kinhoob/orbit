@@ -15,7 +15,7 @@ import { ProfileTabs, PinnedFavorites } from '../../src/components/profile-tabs'
 import { SharedCollections } from '../../src/components/shared-collections';
 import { ProfileHero } from '../../src/components/profile-hero';
 import { ProfileStatsRow } from '../../src/components/profile-stats';
-import { pickAndUploadAvatar, avatarsBucketMissing } from '../../src/features/account/avatar';
+import { pickAndUploadAvatar, removeAvatar, avatarsBucketMissing } from '../../src/features/account/avatar';
 
 export default function Profile() {
   const {session,loading}=useAuth();const cache=useQueryClient();
@@ -38,6 +38,13 @@ export default function Profile() {
     else if(code==='unsupported-format')setMessage('Escolha uma imagem JPG, PNG, WebP ou GIF.');
     else setMessage('Não foi possível enviar a foto. Tente novamente.');
   }finally{setAvatarBusy(false);}}
+  async function dropAvatar(){if(!session||avatarBusy)return;setAvatarBusy(true);setMessage('');try{
+    await removeAvatar(session.user.id);
+    setMessage('Foto de perfil removida.');
+  }catch(error){const code=error instanceof Error?error.message:'';
+    if(code==='storage-cleanup-failed')setMessage('A foto saiu do perfil, mas o arquivo ainda não foi apagado do armazenamento. Tente remover de novo.');
+    else setMessage('Não foi possível remover a foto. Tente novamente.');
+  }finally{await cache.invalidateQueries({queryKey:['profile',session.user.id]});await cache.invalidateQueries({queryKey:['account-menu',session.user.id]});await cache.invalidateQueries({queryKey:['public-profile']});setAvatarBusy(false);}}
   async function signout(){setBusy(true);try{const {error}=await requireSupabase().auth.signOut();if(error)throw error;cache.clear();}catch{setMessage('Não foi possível sair. Tente novamente.');}finally{setBusy(false);}}
   return <Screen><Text style={styles.eyebrow}>PERFIL</Text>
     {loading?<Text style={styles.body}>Carregando sessão…</Text>:!session?<View style={{gap:18}}>
@@ -47,7 +54,7 @@ export default function Profile() {
       <Link href="/auth" style={styles.link}>Entrar ou criar conta →</Link>
     </View>:<>
       {query.isPending?<Text style={styles.body}>Carregando seu perfil…</Text>:query.isError?<><Text style={styles.error}>Não foi possível carregar seu perfil. Verifique se as migrations foram aplicadas.</Text><Button label="Tentar novamente" onPress={()=>{void query.refetch();}}/></>:<>
-      <ProfileHero profile={{...query.data,display_name:name,username,bio}} onEdit={()=>setEditing(true)} onPickAvatar={()=>{void pickAvatar();}} avatarBusy={avatarBusy} />
+      <ProfileHero profile={{...query.data,display_name:name,username,bio}} onEdit={()=>setEditing(true)} onPickAvatar={()=>{void pickAvatar();}} onRemoveAvatar={()=>{void dropAvatar();}} avatarBusy={avatarBusy} />
       <ProfileStatsRow profileId={session.user.id} own />
       {editing&&<View style={{gap:14}}>
         <Text style={styles.body}>Nome</Text><TextInput style={styles.input} accessibilityLabel="Nome" value={name} onChangeText={setName} maxLength={80} editable={!busy}/>

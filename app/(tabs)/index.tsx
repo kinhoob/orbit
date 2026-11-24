@@ -83,7 +83,7 @@ function HomeSession({ account }: { account: string }) {
     queryKey: ['account-menu', session?.user.id],
     enabled: !!session && !!supabase,
     queryFn: async () => {
-      const { data, error } = await supabase!.from('profiles').select('display_name,username').eq('id', session!.user.id).single();
+      const { data, error } = await supabase!.from('profiles').select('display_name,username,avatar_url').eq('id', session!.user.id).single();
       if (error) throw error;
       return data;
     },
@@ -113,4 +113,4 @@ function HomeSession({ account }: { account: string }) {
       <Link href="/(tabs)/discover" style={styles.link}>Explorar o catálogo real →</Link>
     </Screen>
   );
-                                                                                                  }
+}

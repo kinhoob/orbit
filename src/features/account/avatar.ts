@@ -4,6 +4,7 @@ import {
   AVATAR_BUCKET,
   avatarExtension,
   avatarObjectPath,
+  avatarObjectPaths,
   avatarPublicUrl,
   avatarTooLarge,
   base64ToBytes,
@@ -59,4 +60,19 @@ export async function pickAndUploadAvatar(userId: string): Promise<AvatarPickRes
   const { error: updateError } = await client.from('profiles').update({ avatar_url: url }).eq('id', userId).select('id').single();
   if (updateError) throw new Error('profile-update-failed');
   return 'uploaded';
+}
+
+/**
+ * Remove a foto de perfil (pedido do Marco em 24/11/2026): primeiro limpa
+ * profiles.avatar_url, para a inicial voltar em todas as telas, e depois apaga
+ * os arquivos da pasta do próprio usuário no bucket (a política de DELETE só
+ * permite o dono). Se o Storage falhar, a foto já saiu do perfil e o erro
+ * 'storage-cleanup-failed' deixa a tela avisar sem fingir que tudo foi apagado.
+ */
+export async function removeAvatar(userId: string): Promise<void> {
+  const client = requireSupabase();
+  const { error: updateError } = await client.from('profiles').update({ avatar_url: null }).eq('id', userId).select('id').single();
+  if (updateError) throw new Error('profile-update-failed');
+  const { error: removeError } = await client.storage.from(AVATAR_BUCKET).remove(avatarObjectPaths(userId));
+  if (removeError) throw new Error('storage-cleanup-failed');
 }

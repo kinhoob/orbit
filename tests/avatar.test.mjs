@@ -62,3 +62,11 @@ test('base64 decodifica para os bytes originais', () => {
 test('base64 inválido falha em vez de produzir foto quebrada', () => {
   assert.throws(() => base64ToBytes('!!!!'), /inválido/);
 });
+
+test('inicial de fallback e pastas de remoção', async () => {
+  const { avatarInitial, avatarObjectPaths } = await import('../src/domain/avatar.mjs');
+  assert.equal(avatarInitial('  maria'), 'M');
+  assert.equal(avatarInitial(''), '?');
+  assert.equal(avatarInitial(null), '?');
+  assert.deepEqual(avatarObjectPaths('u-1'), ['u-1/avatar.jpg', 'u-1/avatar.png', 'u-1/avatar.webp', 'u-1/avatar.gif']);
+});

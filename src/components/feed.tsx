@@ -4,6 +4,7 @@ import { MotionPressable, CardEntrance } from './motion';
 import { StatePulse } from './feedback';
 import { Icon } from './icons';
 import { tokens, font} from '../design/tokens';
+import { Avatar } from './avatar';
 import { relativeTime, type FeedReview } from '../features/feed/timelines';
 
 const CATEGORY_ICON = { film: 'film', series: 'tv', anime: 'tv', music: 'music', album: 'music', book: 'book', game: 'game', other: 'image' } as const;
@@ -14,9 +15,7 @@ export function ReviewCard({ review, onToggleLike }: { review: FeedReview; onTog
   return (
     <View style={{ backgroundColor: tokens.colors.surface, borderRadius: 20, padding: 16, gap: 10, boxShadow: '0 4px 16px rgba(23,20,15,0.06)', elevation: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: tokens.colors.gold, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontFamily: font.bold, color: tokens.colors.text }}>{initials}</Text>
-        </View>
+        <Avatar uri={review.author.avatar_url} name={initials} size={38} backgroundColor={tokens.colors.gold} color={tokens.colors.text} fontSize={14} accessibilityLabel={`Avatar de ${review.author.display_name || review.author.username || 'perfil'}`} />
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: font.semibold, color: tokens.colors.text }}>{review.author.display_name || review.author.username}</Text>
           {review.author.username ? <Text style={{ color: tokens.colors.muted, fontSize: 12 }}>@{review.author.username} · {relativeTime(review.created_at)}</Text> : null}

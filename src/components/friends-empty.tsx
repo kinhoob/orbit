@@ -8,6 +8,7 @@ import { pickSuggestions } from '../domain/friends-suggestions.mjs';
 import { CardEntrance, MotionPressable } from './motion';
 import { Icon } from './icons';
 import { font, tokens as t } from '../design/tokens';
+import { Avatar } from './avatar';
 
 // Estado do botão de cada sugestão: ocioso, pedido enviado por mim, pedido
 // recebido da outra conta (aceitar fica em /friends) ou amizade já aceita.
@@ -24,9 +25,7 @@ function SuggestionRow({ profile, index, state, onAdd }: { profile: ProfileSumma
   const settled = state !== 'idle';
   return (
     <CardEntrance index={index} style={styles.row}>
-      <View style={styles.avatar} accessibilityLabel={`Avatar de ${name}`}>
-        <Text style={styles.avatarText}>{name.trim().charAt(0).toUpperCase()}</Text>
-      </View>
+      <Avatar uri={profile.avatar_url} name={name} size={44} backgroundColor={t.colors.primary} color={t.colors.onDark} accessibilityLabel={`Avatar de ${name}`} />
       <View style={styles.rowText}>
         <Link href={{ pathname: '/people/[id]', params: { id: profile.id } }} style={styles.name}>{name}</Link>
         {!!profile.username && <Text style={styles.username}>@{profile.username}</Text>}

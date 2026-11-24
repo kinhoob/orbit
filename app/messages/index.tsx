@@ -6,6 +6,7 @@ import { Screen, styles } from '../../src/components/ui';
 import { LoadingState } from '../../src/components/loading';
 import { Icon } from '../../src/components/icons';
 import { tokens as t, font } from '../../src/design/tokens';
+import { Avatar } from '../../src/components/avatar';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/features/auth/provider';
 import { fetchProfilesByIds, type ProfileSummary } from '../../src/features/social/friends';
@@ -65,9 +66,7 @@ export default function Conversations() {
           return (
             <Link key={c.otherId} href={{ pathname: '/messages/[id]', params: { id: c.otherId } }} style={list.rowLink}>
               <View style={list.row}>
-                <View style={list.avatar} accessibilityLabel={`Avatar de ${name}`}>
-                  <Text style={list.avatarText}>{name.trim().charAt(0).toUpperCase()}</Text>
-                </View>
+                <Avatar uri={profile?.avatar_url} name={name} size={44} backgroundColor={t.colors.primary} color={t.colors.onDark} accessibilityLabel={`Avatar de ${name}`} />
                 <View style={list.rowText}>
                   <Text style={list.name}>{name}</Text>
                   <Text style={list.preview} numberOfLines={1}>{(() => { const preview = gifPreviewLabel(c.lastBody) || c.lastBody; return c.lastMine ? `Você: ${preview}` : preview; })()}</Text>

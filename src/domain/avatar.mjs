@@ -75,3 +75,17 @@ export function base64ToBytes(base64) {
   }
   return bytes;
 }
+
+/** Inicial maiúscula usada quando não há foto; '?' sem nome. */
+export function avatarInitial(name) {
+  const trimmed = String(name ?? '').trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : '?';
+}
+
+/**
+ * Pasta do usuário no bucket: todos os formatos possíveis de avatar, para a
+ * remoção apagar o arquivo qualquer que seja a extensão enviada antes.
+ */
+export function avatarObjectPaths(userId) {
+  return Object.values(EXTENSIONS).filter((value, index, all) => all.indexOf(value) === index).map((extension) => avatarObjectPath(userId, extension));
+}
